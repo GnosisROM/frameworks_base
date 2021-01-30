@@ -4761,11 +4761,6 @@ public final class Settings {
          */
         public static final String EGG_MODE = "egg_mode";
 
-       /**
-        * @hide
-        */
-        public static final String STATUS_BAR_LOGO = "status_bar_logo";
-
         /**
          * Setting to determine whether or not to show the battery percentage in the status bar.
          *    0 - Don't show percentage
@@ -4914,7 +4909,6 @@ public final class Settings {
             PRIVATE_SETTINGS.add(EGG_MODE);
             PRIVATE_SETTINGS.add(SHOW_BATTERY_PERCENT);
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_MODE);
-            PRIVATE_SETTINGS.add(STATUS_BAR_LOGO);
         }
 
         /**

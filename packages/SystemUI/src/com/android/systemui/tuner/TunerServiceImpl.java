@@ -44,6 +44,8 @@ import com.android.systemui.util.leak.LeakDetector;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import com.android.systemui.statusbar.phone.NotificationPanelView;
+import com.android.systemui.statusbar.phone.StatusBar;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
