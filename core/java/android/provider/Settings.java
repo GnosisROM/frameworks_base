@@ -4856,6 +4856,12 @@ public final class Settings {
         }
 
         /**
+         * Whether to show Advanced action in powermenu or not
+         * @hide
+         */
+        public static final String ADVANCED_REBOOT = "advanced_reboot";
+
+        /**
          * These are all hidden system settings.
          *
          * @hide
