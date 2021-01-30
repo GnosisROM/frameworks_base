@@ -21,8 +21,8 @@ import static android.content.Intent.EXTRA_UID;
 import static android.net.ConnectivityManager.TYPE_MOBILE;
 import static android.net.ConnectivityManager.TYPE_VPN;
 import static android.net.ConnectivityManager.TYPE_WIFI;
+import static android.net.ConnectivityManager.TYPE_WIMAX;
 import static android.net.NetworkStats.DEFAULT_NETWORK_ALL;
-import static android.net.NetworkStats.DEFAULT_NETWORK_NO;
 import static android.net.NetworkStats.DEFAULT_NETWORK_YES;
 import static android.net.NetworkStats.IFACE_ALL;
 import static android.net.NetworkStats.INTERFACES_ALL;
@@ -35,15 +35,14 @@ import static android.net.NetworkStats.ROAMING_YES;
 import static android.net.NetworkStats.SET_ALL;
 import static android.net.NetworkStats.SET_DEFAULT;
 import static android.net.NetworkStats.SET_FOREGROUND;
+import static android.net.NetworkStats.STATS_PER_IFACE;
 import static android.net.NetworkStats.STATS_PER_UID;
 import static android.net.NetworkStats.TAG_ALL;
 import static android.net.NetworkStats.TAG_NONE;
 import static android.net.NetworkStats.UID_ALL;
 import static android.net.NetworkStatsHistory.FIELD_ALL;
-import static android.net.NetworkTemplate.NETWORK_TYPE_ALL;
 import static android.net.NetworkTemplate.buildTemplateMobileAll;
 import static android.net.NetworkTemplate.buildTemplateMobileWithRatType;
-import static android.net.NetworkTemplate.buildTemplateWifi;
 import static android.net.NetworkTemplate.buildTemplateWifiWildcard;
 import static android.net.TrafficStats.MB_IN_BYTES;
 import static android.net.TrafficStats.UID_REMOVED;
@@ -63,7 +62,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,7 +71,6 @@ import android.app.AlarmManager;
 import android.app.usage.NetworkStatsManager;
 import android.content.Context;
 import android.content.Intent;
-import android.database.ContentObserver;
 import android.net.DataUsageRequest;
 import android.net.INetworkManagementEventObserver;
 import android.net.INetworkStatsSession;
@@ -86,7 +83,6 @@ import android.net.NetworkState;
 import android.net.NetworkStats;
 import android.net.NetworkStatsHistory;
 import android.net.NetworkTemplate;
-import android.net.VpnInfo;
 import android.net.netstats.provider.INetworkStatsProviderCallback;
 import android.os.ConditionVariable;
 import android.os.Handler;
@@ -98,18 +94,18 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.SimpleClock;
-import android.provider.Settings;
 import android.telephony.TelephonyManager;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.internal.net.VpnInfo;
 import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.test.BroadcastInterceptingContext;
 import com.android.server.net.NetworkStatsService.NetworkStatsSettings;
 import com.android.server.net.NetworkStatsService.NetworkStatsSettings.Config;
-import com.android.testutils.HandlerUtils;
+import com.android.testutils.HandlerUtilsKt;
 import com.android.testutils.TestableNetworkStatsProviderBinder;
 
 import libcore.io.IoUtils;
@@ -146,7 +142,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     private static final String IMSI_2 = "310260";
     private static final String TEST_SSID = "AndroidAP";
 
-    private static NetworkTemplate sTemplateWifi = buildTemplateWifi(TEST_SSID);
+    private static NetworkTemplate sTemplateWifi = buildTemplateWifiWildcard();
     private static NetworkTemplate sTemplateImsi1 = buildTemplateMobileAll(IMSI_1);
     private static NetworkTemplate sTemplateImsi2 = buildTemplateMobileAll(IMSI_2);
 
@@ -177,8 +173,6 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     private NetworkStatsService mService;
     private INetworkStatsSession mSession;
     private INetworkManagementEventObserver mNetworkObserver;
-    private ContentObserver mContentObserver;
-    private Handler mHandler;
 
     private final Clock mClock = new SimpleClock(ZoneOffset.UTC) {
         @Override
@@ -218,12 +212,6 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
         mService.systemReady();
         // Verify that system ready fetches realtime stats
         verify(mStatsFactory).readNetworkStatsDetail(UID_ALL, INTERFACES_ALL, TAG_ALL);
-        // Wait for posting onChange() event to handler thread and verify that when system ready,
-        // start monitoring data usage per RAT type because the settings value is mock as false
-        // by default in expectSettings().
-        waitForIdle();
-        verify(mNetworkStatsSubscriptionsMonitor).start();
-        reset(mNetworkStatsSubscriptionsMonitor);
 
         mSession = mService.openSession();
         assertNotNull("openSession() failed", mSession);
@@ -245,19 +233,11 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
 
             @Override
             public NetworkStatsSubscriptionsMonitor makeSubscriptionsMonitor(
-                    @NonNull Context context, @NonNull Looper looper, @NonNull Executor executor,
+                    @NonNull Context context, @NonNull Executor executor,
                     @NonNull NetworkStatsService service) {
 
                 return mNetworkStatsSubscriptionsMonitor;
             }
-
-            @Override
-            public ContentObserver makeContentObserver(Handler handler,
-                    NetworkStatsSettings settings, NetworkStatsSubscriptionsMonitor monitor) {
-                mHandler = handler;
-                return mContentObserver = super.makeContentObserver(handler, settings, monitor);
-            }
-
         };
     }
 
@@ -290,6 +270,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
 
         // verify service has empty history for wifi
         assertNetworkTotal(sTemplateWifi, 0L, 0L, 0L, 0L, 0);
+
 
         // modify some number on wifi, and trigger poll event
         incrementCurrentTime(HOUR_IN_MILLIS);
@@ -566,6 +547,61 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     }
 
     @Test
+    public void testUid3gWimaxCombinedByTemplate() throws Exception {
+        // pretend that network comes online
+        expectDefaultSettings();
+        NetworkState[] states = new NetworkState[] {buildMobile3gState(IMSI_1)};
+        expectNetworkStatsSummary(buildEmptyStats());
+        expectNetworkStatsUidDetail(buildEmptyStats());
+
+        mService.forceUpdateIfaces(NETWORKS_MOBILE, states, getActiveIface(states), new VpnInfo[0]);
+
+        // create some traffic
+        incrementCurrentTime(HOUR_IN_MILLIS);
+        expectDefaultSettings();
+        expectNetworkStatsSummary(buildEmptyStats());
+        expectNetworkStatsUidDetail(new NetworkStats(getElapsedRealtime(), 1)
+                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE, 1024L, 8L, 1024L, 8L, 0L)
+                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, 0xF00D, 512L, 4L, 512L, 4L, 0L));
+        mService.incrementOperationCount(UID_RED, 0xF00D, 5);
+
+        forcePollAndWaitForIdle();
+
+        // verify service recorded history
+        assertUidTotal(sTemplateImsi1, UID_RED, 1024L, 8L, 1024L, 8L, 5);
+
+
+        // now switch over to wimax network
+        incrementCurrentTime(HOUR_IN_MILLIS);
+        expectDefaultSettings();
+        states = new NetworkState[] {buildWimaxState(TEST_IFACE2)};
+        expectNetworkStatsSummary(buildEmptyStats());
+        expectNetworkStatsUidDetail(new NetworkStats(getElapsedRealtime(), 1)
+                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE, 1024L, 8L, 1024L, 8L, 0L)
+                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, 0xF00D, 512L, 4L, 512L, 4L, 0L));
+
+        mService.forceUpdateIfaces(NETWORKS_MOBILE, states, getActiveIface(states), new VpnInfo[0]);
+        forcePollAndWaitForIdle();
+
+
+        // create traffic on second network
+        incrementCurrentTime(HOUR_IN_MILLIS);
+        expectDefaultSettings();
+        expectNetworkStatsSummary(buildEmptyStats());
+        expectNetworkStatsUidDetail(new NetworkStats(getElapsedRealtime(), 1)
+                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE, 1024L, 8L, 1024L, 8L, 0L)
+                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, 0xF00D, 512L, 4L, 512L, 4L, 0L)
+                .insertEntry(TEST_IFACE2, UID_RED, SET_DEFAULT, TAG_NONE, 512L, 4L, 256L, 2L, 0L)
+                .insertEntry(TEST_IFACE2, UID_RED, SET_DEFAULT, 0xFAAD, 512L, 4L, 256L, 2L, 0L));
+        mService.incrementOperationCount(UID_RED, 0xFAAD, 5);
+
+        forcePollAndWaitForIdle();
+
+        // verify that ALL_MOBILE template combines both
+        assertUidTotal(sTemplateImsi1, UID_RED, 1536L, 12L, 1280L, 10L, 10);
+    }
+
+    @Test
     public void testMobileStatsByRatType() throws Exception {
         final NetworkTemplate template3g =
                 buildTemplateMobileWithRatType(null, TelephonyManager.NETWORK_TYPE_UMTS);
@@ -644,7 +680,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
         when(mNetworkStatsSubscriptionsMonitor.getRatTypeForSubscriberId(anyString()))
                 .thenReturn(ratType);
         mService.handleOnCollapsedRatTypeChanged();
-        HandlerUtils.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
+        HandlerUtilsKt.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
     }
 
     @Test
@@ -862,8 +898,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     public void testMetered() throws Exception {
         // pretend that network comes online
         expectDefaultSettings();
-        NetworkState[] states =
-                new NetworkState[] {buildWifiState(true /* isMetered */, TEST_IFACE)};
+        NetworkState[] states = new NetworkState[] {buildWifiState(true /* isMetered */)};
         expectNetworkStatsSummary(buildEmptyStats());
         expectNetworkStatsUidDetail(buildEmptyStats());
 
@@ -939,7 +974,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     public void testTethering() throws Exception {
         // pretend first mobile network comes online
         expectDefaultSettings();
-        final NetworkState[] states = new NetworkState[]{buildMobile3gState(IMSI_1)};
+        NetworkState[] states = new NetworkState[] {buildMobile3gState(IMSI_1)};
         expectNetworkStatsSummary(buildEmptyStats());
         expectNetworkStatsUidDetail(buildEmptyStats());
 
@@ -949,39 +984,23 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
         incrementCurrentTime(HOUR_IN_MILLIS);
         expectDefaultSettings();
 
-        // Register custom provider and retrieve callback.
-        final TestableNetworkStatsProviderBinder provider =
-                new TestableNetworkStatsProviderBinder();
-        final INetworkStatsProviderCallback cb =
-                mService.registerNetworkStatsProvider("TEST-TETHERING-OFFLOAD", provider);
-        assertNotNull(cb);
-        final long now = getElapsedRealtime();
-
         // Traffic seen by kernel counters (includes software tethering).
-        final NetworkStats swIfaceStats = new NetworkStats(now, 1)
+        final NetworkStats ifaceStats = new NetworkStats(getElapsedRealtime(), 1)
                 .insertEntry(TEST_IFACE, 1536L, 12L, 384L, 3L);
         // Hardware tethering traffic, not seen by kernel counters.
-        final NetworkStats tetherHwIfaceStats = new NetworkStats(now, 1)
-                .insertEntry(new NetworkStats.Entry(TEST_IFACE, UID_ALL, SET_DEFAULT,
-                        TAG_NONE, METERED_YES, ROAMING_NO, DEFAULT_NETWORK_YES,
-                        512L, 4L, 128L, 1L, 0L));
-        final NetworkStats tetherHwUidStats = new NetworkStats(now, 1)
-                .insertEntry(new NetworkStats.Entry(TEST_IFACE, UID_TETHERING, SET_DEFAULT,
-                        TAG_NONE, METERED_YES, ROAMING_NO, DEFAULT_NETWORK_YES,
-                        512L, 4L, 128L, 1L, 0L));
-        cb.notifyStatsUpdated(0 /* unused */, tetherHwIfaceStats, tetherHwUidStats);
+        final NetworkStats tetherStatsHardware = new NetworkStats(getElapsedRealtime(), 1)
+                .insertEntry(TEST_IFACE, 512L, 4L, 128L, 1L);
 
-        // Fake some traffic done by apps on the device (as opposed to tethering), and record it
-        // into UID stats (as opposed to iface stats).
-        final NetworkStats localUidStats = new NetworkStats(now, 1)
+        // Traffic for UID_RED.
+        final NetworkStats uidStats = new NetworkStats(getElapsedRealtime(), 1)
                 .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE, 128L, 2L, 128L, 2L, 0L);
-        // Software per-uid tethering traffic.
-        final NetworkStats tetherSwUidStats = new NetworkStats(now, 1)
-                .insertEntry(TEST_IFACE, UID_TETHERING, SET_DEFAULT, TAG_NONE, 1408L, 10L, 256L, 1L,
+        // All tethering traffic, both hardware and software.
+        final NetworkStats tetherStats = new NetworkStats(getElapsedRealtime(), 1)
+                .insertEntry(TEST_IFACE, UID_TETHERING, SET_DEFAULT, TAG_NONE, 1920L, 14L, 384L, 2L,
                         0L);
 
-        expectNetworkStatsSummary(swIfaceStats);
-        expectNetworkStatsUidDetail(localUidStats, tetherSwUidStats);
+        expectNetworkStatsSummary(ifaceStats, tetherStatsHardware);
+        expectNetworkStatsUidDetail(uidStats, tetherStats);
         forcePollAndWaitForIdle();
 
         // verify service recorded history
@@ -1026,7 +1045,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
         long minThresholdInBytes = 2 * 1024 * 1024; // 2 MB
         assertEquals(minThresholdInBytes, request.thresholdInBytes);
 
-        HandlerUtils.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
+        HandlerUtilsKt.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
 
         // Make sure that the caller binder gets connected
         verify(mBinder).linkToDeath(any(IBinder.DeathRecipient.class), anyInt());
@@ -1092,8 +1111,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     public void testStatsProviderUpdateStats() throws Exception {
         // Pretend that network comes online.
         expectDefaultSettings();
-        final NetworkState[] states =
-                new NetworkState[]{buildWifiState(true /* isMetered */, TEST_IFACE)};
+        final NetworkState[] states = new NetworkState[]{buildWifiState(true /* isMetered */)};
         expectNetworkStatsSummary(buildEmptyStats());
         expectNetworkStatsUidDetail(buildEmptyStats());
 
@@ -1153,8 +1171,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     public void testStatsProviderSetAlert() throws Exception {
         // Pretend that network comes online.
         expectDefaultSettings();
-        NetworkState[] states =
-                new NetworkState[]{buildWifiState(true /* isMetered */, TEST_IFACE)};
+        NetworkState[] states = new NetworkState[]{buildWifiState(true /* isMetered */)};
         mService.forceUpdateIfaces(NETWORKS_WIFI, states, getActiveIface(states), new VpnInfo[0]);
 
         // Register custom provider and retrieve callback.
@@ -1166,146 +1183,12 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
 
         // Simulates alert quota of the provider has been reached.
         cb.notifyAlertReached();
-        HandlerUtils.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
+        HandlerUtilsKt.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
 
         // Verifies that polling is triggered by alert reached.
         provider.expectOnRequestStatsUpdate(0 /* unused */);
         // Verifies that global alert will be re-armed.
         provider.expectOnSetAlert(MB_IN_BYTES);
-    }
-
-    private void setCombineSubtypeEnabled(boolean enable) {
-        when(mSettings.getCombineSubtypeEnabled()).thenReturn(enable);
-        mHandler.post(() -> mContentObserver.onChange(false, Settings.Global
-                    .getUriFor(Settings.Global.NETSTATS_COMBINE_SUBTYPE_ENABLED)));
-        waitForIdle();
-        if (enable) {
-            verify(mNetworkStatsSubscriptionsMonitor).stop();
-        } else {
-            verify(mNetworkStatsSubscriptionsMonitor).start();
-        }
-    }
-
-    @Test
-    public void testDynamicWatchForNetworkRatTypeChanges() throws Exception {
-        // Build 3G template, type unknown template to get stats while network type is unknown
-        // and type all template to get the sum of all network type stats.
-        final NetworkTemplate template3g =
-                buildTemplateMobileWithRatType(null, TelephonyManager.NETWORK_TYPE_UMTS);
-        final NetworkTemplate templateUnknown =
-                buildTemplateMobileWithRatType(null, TelephonyManager.NETWORK_TYPE_UNKNOWN);
-        final NetworkTemplate templateAll =
-                buildTemplateMobileWithRatType(null, NETWORK_TYPE_ALL);
-        final NetworkState[] states = new NetworkState[]{buildMobile3gState(IMSI_1)};
-
-        expectNetworkStatsSummary(buildEmptyStats());
-        expectNetworkStatsUidDetail(buildEmptyStats());
-
-        // 3G network comes online.
-        setMobileRatTypeAndWaitForIdle(TelephonyManager.NETWORK_TYPE_UMTS);
-        mService.forceUpdateIfaces(NETWORKS_MOBILE, states, getActiveIface(states),
-                new VpnInfo[0]);
-
-        // Create some traffic.
-        incrementCurrentTime(MINUTE_IN_MILLIS);
-        expectNetworkStatsUidDetail(new NetworkStats(getElapsedRealtime(), 1)
-                .addEntry(new NetworkStats.Entry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE,
-                        12L, 18L, 14L, 1L, 0L)));
-        forcePollAndWaitForIdle();
-
-        // Since CombineSubtypeEnabled is false by default in unit test, the generated traffic
-        // will be split by RAT type. Verify 3G templates gets stats, while template with unknown
-        // RAT type gets nothing, and template with NETWORK_TYPE_ALL gets all stats.
-        assertUidTotal(template3g, UID_RED, 12L, 18L, 14L, 1L, 0);
-        assertUidTotal(templateUnknown, UID_RED, 0L, 0L, 0L, 0L, 0);
-        assertUidTotal(templateAll, UID_RED, 12L, 18L, 14L, 1L, 0);
-
-        // Stop monitoring data usage per RAT type changes NetworkStatsService records data
-        // to {@link TelephonyManager#NETWORK_TYPE_UNKNOWN}.
-        setCombineSubtypeEnabled(true);
-
-        // Call handleOnCollapsedRatTypeChanged manually to simulate the callback fired
-        // when stopping monitor, this is needed by NetworkStatsService to trigger updateIfaces.
-        mService.handleOnCollapsedRatTypeChanged();
-        HandlerUtils.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
-        // Create some traffic.
-        incrementCurrentTime(MINUTE_IN_MILLIS);
-        // Append more traffic on existing snapshot.
-        expectNetworkStatsUidDetail(new NetworkStats(getElapsedRealtime(), 1)
-                .addEntry(new NetworkStats.Entry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE,
-                        12L + 4L, 18L + 4L, 14L + 3L, 1L + 1L, 0L))
-                .addEntry(new NetworkStats.Entry(TEST_IFACE, UID_RED, SET_FOREGROUND, TAG_NONE,
-                        35L, 29L, 7L, 11L, 1L)));
-        forcePollAndWaitForIdle();
-
-        // Verify 3G counters do not increase, while template with unknown RAT type gets new
-        // traffic and template with NETWORK_TYPE_ALL gets all stats.
-        assertUidTotal(template3g, UID_RED, 12L, 18L, 14L, 1L, 0);
-        assertUidTotal(templateUnknown, UID_RED, 4L + 35L, 4L + 29L, 3L + 7L, 1L + 11L, 1);
-        assertUidTotal(templateAll, UID_RED, 16L + 35L, 22L + 29L, 17L + 7L, 2L + 11L, 1);
-
-        // Start monitoring data usage per RAT type changes and NetworkStatsService records data
-        // by a granular subtype representative of the actual subtype
-        setCombineSubtypeEnabled(false);
-
-        mService.handleOnCollapsedRatTypeChanged();
-        HandlerUtils.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
-        // Create some traffic.
-        incrementCurrentTime(MINUTE_IN_MILLIS);
-        // Append more traffic on existing snapshot.
-        expectNetworkStatsUidDetail(new NetworkStats(getElapsedRealtime(), 1)
-                .addEntry(new NetworkStats.Entry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE,
-                        22L, 26L, 19L, 5L, 0L))
-                .addEntry(new NetworkStats.Entry(TEST_IFACE, UID_RED, SET_FOREGROUND, TAG_NONE,
-                        35L, 29L, 7L, 11L, 1L)));
-        forcePollAndWaitForIdle();
-
-        // Verify traffic is split by RAT type, no increase on template with unknown RAT type
-        // and template with NETWORK_TYPE_ALL gets all stats.
-        assertUidTotal(template3g, UID_RED, 6L + 12L , 4L + 18L, 2L + 14L, 3L + 1L, 0);
-        assertUidTotal(templateUnknown, UID_RED, 4L + 35L, 4L + 29L, 3L + 7L, 1L + 11L, 1);
-        assertUidTotal(templateAll, UID_RED, 22L + 35L, 26L + 29L, 19L + 7L, 5L + 11L, 1);
-    }
-
-    @Test
-    public void testOperationCount_nonDefault_traffic() throws Exception {
-        // Pretend mobile network comes online, but wifi is the default network.
-        expectDefaultSettings();
-        NetworkState[] states = new NetworkState[]{
-                buildWifiState(true /*isMetered*/, TEST_IFACE2), buildMobile3gState(IMSI_1)};
-        expectNetworkStatsUidDetail(buildEmptyStats());
-        mService.forceUpdateIfaces(NETWORKS_WIFI, states, getActiveIface(states), new VpnInfo[0]);
-
-        // Create some traffic on mobile network.
-        incrementCurrentTime(HOUR_IN_MILLIS);
-        expectNetworkStatsUidDetail(new NetworkStats(getElapsedRealtime(), 4)
-                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE, METERED_NO, ROAMING_NO,
-                        DEFAULT_NETWORK_NO, 2L, 1L, 3L, 4L, 0L)
-                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, TAG_NONE, METERED_NO, ROAMING_NO,
-                        DEFAULT_NETWORK_YES, 1L, 3L, 2L, 1L, 0L)
-                .insertEntry(TEST_IFACE, UID_RED, SET_DEFAULT, 0xF00D, 5L, 4L, 1L, 4L, 0L));
-        // Increment operation count, which must have a specific tag.
-        mService.incrementOperationCount(UID_RED, 0xF00D, 2);
-        forcePollAndWaitForIdle();
-
-        // Verify mobile summary is not changed by the operation count.
-        final NetworkTemplate templateMobile =
-                buildTemplateMobileWithRatType(null, NETWORK_TYPE_ALL);
-        final NetworkStats statsMobile = mSession.getSummaryForAllUid(
-                templateMobile, Long.MIN_VALUE, Long.MAX_VALUE, true);
-        assertValues(statsMobile, IFACE_ALL, UID_RED, SET_ALL, TAG_NONE, METERED_ALL, ROAMING_ALL,
-                DEFAULT_NETWORK_ALL, 3L, 4L, 5L, 5L, 0);
-        assertValues(statsMobile, IFACE_ALL, UID_RED, SET_ALL, 0xF00D, METERED_ALL, ROAMING_ALL,
-                DEFAULT_NETWORK_ALL, 5L, 4L, 1L, 4L, 0);
-
-        // Verify the operation count is blamed onto the default network.
-        // TODO: Blame onto the default network is not very reasonable. Consider blame onto the
-        //  network that generates the traffic.
-        final NetworkTemplate templateWifi = buildTemplateWifiWildcard();
-        final NetworkStats statsWifi = mSession.getSummaryForAllUid(
-                templateWifi, Long.MIN_VALUE, Long.MAX_VALUE, true);
-        assertValues(statsWifi, IFACE_ALL, UID_RED, SET_ALL, 0xF00D, METERED_ALL, ROAMING_ALL,
-                DEFAULT_NETWORK_ALL, 0L, 0L, 0L, 0L, 2);
     }
 
     private static File getBaseDir(File statsDir) {
@@ -1366,6 +1249,12 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     }
 
     private void expectNetworkStatsSummary(NetworkStats summary) throws Exception {
+        expectNetworkStatsSummary(summary, new NetworkStats(0L, 0));
+    }
+
+    private void expectNetworkStatsSummary(NetworkStats summary, NetworkStats tetherStats)
+            throws Exception {
+        expectNetworkStatsTethering(STATS_PER_IFACE, tetherStats);
         expectNetworkStatsSummaryDev(summary.clone());
         expectNetworkStatsSummaryXt(summary.clone());
     }
@@ -1376,6 +1265,11 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
 
     private void expectNetworkStatsSummaryXt(NetworkStats summary) throws Exception {
         when(mStatsFactory.readNetworkStatsSummaryXt()).thenReturn(summary);
+    }
+
+    private void expectNetworkStatsTethering(int how, NetworkStats stats)
+            throws Exception {
+        when(mNetManager.getNetworkStatsTethering(how)).thenReturn(stats);
     }
 
     private void expectNetworkStatsUidDetail(NetworkStats detail) throws Exception {
@@ -1435,19 +1329,18 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
     }
 
     private static NetworkState buildWifiState() {
-        return buildWifiState(false, TEST_IFACE);
+        return buildWifiState(false);
     }
 
-    private static NetworkState buildWifiState(boolean isMetered, @NonNull String iface) {
+    private static NetworkState buildWifiState(boolean isMetered) {
         final NetworkInfo info = new NetworkInfo(TYPE_WIFI, 0, null, null);
         info.setDetailedState(DetailedState.CONNECTED, null, null);
         final LinkProperties prop = new LinkProperties();
-        prop.setInterfaceName(iface);
+        prop.setInterfaceName(TEST_IFACE);
         final NetworkCapabilities capabilities = new NetworkCapabilities();
         capabilities.setCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED, !isMetered);
         capabilities.setCapability(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING, true);
         capabilities.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
-        capabilities.setSSID(TEST_SSID);
         return new NetworkState(info, prop, capabilities, WIFI_NETWORK, null, TEST_SSID);
     }
 
@@ -1467,6 +1360,17 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
         capabilities.setCapability(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING, !isRoaming);
         capabilities.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
         return new NetworkState(info, prop, capabilities, MOBILE_NETWORK, subscriberId, null);
+    }
+
+    private static NetworkState buildWimaxState(@NonNull String iface) {
+        final NetworkInfo info = new NetworkInfo(TYPE_WIMAX, 0, null, null);
+        info.setDetailedState(DetailedState.CONNECTED, null, null);
+        final LinkProperties prop = new LinkProperties();
+        prop.setInterfaceName(iface);
+        final NetworkCapabilities capabilities = new NetworkCapabilities();
+        capabilities.setCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED, false);
+        capabilities.setCapability(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING, true);
+        return new NetworkState(info, prop, capabilities, MOBILE_NETWORK, null, null);
     }
 
     private NetworkStats buildEmptyStats() {
@@ -1499,11 +1403,7 @@ public class NetworkStatsServiceTest extends NetworkStatsBaseTest {
 
     private void forcePollAndWaitForIdle() {
         mServiceContext.sendBroadcast(new Intent(ACTION_NETWORK_STATS_POLL));
-        waitForIdle();
-    }
-
-    private void waitForIdle() {
-        HandlerUtils.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
+        HandlerUtilsKt.waitForIdle(mHandlerThread, WAIT_TIMEOUT);
     }
 
     static class LatchedHandler extends Handler {

@@ -19,6 +19,7 @@ package android.telephony.ims;
 import android.annotation.IntDef;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.content.pm.PackageManager;
 import android.telephony.SubscriptionManager;
 import android.text.TextUtils;
@@ -82,6 +83,7 @@ public final class ImsException extends Exception {
      * @hide
      */
     @SystemApi
+    @TestApi
     public ImsException(@Nullable String message) {
         super(getMessage(message, CODE_ERROR_UNSPECIFIED));
     }
@@ -92,6 +94,7 @@ public final class ImsException extends Exception {
      * @hide
      */
     @SystemApi
+    @TestApi
     public ImsException(@Nullable String message, @ImsErrorCode int code) {
         super(getMessage(message, code));
         mCode = code;
@@ -105,6 +108,7 @@ public final class ImsException extends Exception {
      * @hide
      */
     @SystemApi
+    @TestApi
     public ImsException(@Nullable String message, @ImsErrorCode  int code,
             @Nullable Throwable cause) {
         super(getMessage(message, code), cause);

@@ -604,8 +604,6 @@ bool JavaClassGenerator::Generate(const StringPiece& package_name_to_generate,
     rewrite_method->AppendStatement("final int packageIdBits = p << 24;");
   }
 
-  const bool is_public = (options_.types == JavaClassGeneratorOptions::SymbolTypes::kPublic);
-
   for (const auto& package : table_->packages) {
     for (const auto& type : package->types) {
       if (type->type == ResourceType::kAttrPrivate) {
@@ -614,7 +612,8 @@ bool JavaClassGenerator::Generate(const StringPiece& package_name_to_generate,
       }
 
       // Stay consistent with AAPT and generate an empty type class if the R class is public.
-      const bool force_creation_if_empty = is_public;
+      const bool force_creation_if_empty =
+          (options_.types == JavaClassGeneratorOptions::SymbolTypes::kPublic);
 
       std::unique_ptr<ClassDefinition> class_def;
       if (out != nullptr) {
@@ -638,7 +637,8 @@ bool JavaClassGenerator::Generate(const StringPiece& package_name_to_generate,
         }
       }
 
-      if (out != nullptr && type->type == ResourceType::kStyleable && is_public) {
+      if (out != nullptr && type->type == ResourceType::kStyleable &&
+          options_.types == JavaClassGeneratorOptions::SymbolTypes::kPublic) {
         // When generating a public R class, we don't want Styleable to be part
         // of the API. It is only emitted for documentation purposes.
         class_def->GetCommentBuilder()->AppendComment("@doconly");
@@ -657,7 +657,7 @@ bool JavaClassGenerator::Generate(const StringPiece& package_name_to_generate,
 
   if (out != nullptr) {
     AppendJavaDocAnnotations(options_.javadoc_annotations, r_class.GetCommentBuilder());
-    ClassDefinition::WriteJavaFile(&r_class, out_package_name, options_.use_final, !is_public, out);
+    ClassDefinition::WriteJavaFile(&r_class, out_package_name, options_.use_final, out);
   }
   return true;
 }

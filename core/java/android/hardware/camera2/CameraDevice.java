@@ -20,6 +20,7 @@ import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.hardware.camera2.params.InputConfiguration;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
@@ -357,6 +358,7 @@ public abstract class CameraDevice implements AutoCloseable {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static final int SESSION_OPERATION_MODE_NORMAL =
             0; // ICameraDeviceUser.NORMAL_MODE;
 
@@ -367,6 +369,7 @@ public abstract class CameraDevice implements AutoCloseable {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static final int SESSION_OPERATION_MODE_CONSTRAINED_HIGH_SPEED =
             1; // ICameraDeviceUser.CONSTRAINED_HIGH_SPEED_MODE;
 
@@ -377,6 +380,7 @@ public abstract class CameraDevice implements AutoCloseable {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static final int SESSION_OPERATION_MODE_VENDOR_START =
             0x8000; // ICameraDeviceUser.VENDOR_MODE_START;
 
@@ -419,6 +423,7 @@ public abstract class CameraDevice implements AutoCloseable {
      * @hide
      */
     @SystemApi
+    @TestApi
     @Deprecated
     public abstract void createCustomCaptureSession(
             InputConfiguration inputConfig,

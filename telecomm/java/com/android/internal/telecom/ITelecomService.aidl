@@ -179,11 +179,6 @@ interface ITelecomService {
     boolean isInCall(String callingPackage, String callingFeatureId);
 
     /**
-     * @see TelecomServiceImpl#hasCompanionInCallServiceAccess
-     */
-    boolean hasCompanionInCallServiceAccess(String callingPackage);
-
-    /**
      * @see TelecomServiceImpl#isInManagedCall
      */
     boolean isInManagedCall(String callingPackage, String callingFeatureId);
@@ -196,7 +191,7 @@ interface ITelecomService {
     /**
      * @see TelecomServiceImpl#getCallState
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     int getCallState();
 
     /**
@@ -330,8 +325,6 @@ interface ITelecomService {
      * @see TelecomServiceImpl#handleCallIntent
      */
     void handleCallIntent(in Intent intent, in String callingPackageProxy);
-
-    void cleanupStuckCalls();
 
     void setTestDefaultCallRedirectionApp(String packageName);
 

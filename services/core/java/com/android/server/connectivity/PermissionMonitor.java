@@ -29,12 +29,14 @@ import static android.os.Process.INVALID_UID;
 import static android.os.Process.SYSTEM_UID;
 
 import android.annotation.NonNull;
+import android.annotation.UserIdInt;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManagerInternal;
+import android.content.pm.UserInfo;
 import android.net.INetd;
 import android.net.UidRange;
 import android.os.Build;
@@ -54,6 +56,7 @@ import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.IndentingPrintWriter;
 import com.android.server.LocalServices;
 import com.android.server.SystemConfig;
+import com.android.server.pm.permission.PermissionManagerServiceInternal;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,7 +74,7 @@ import java.util.Set;
  *
  * @hide
  */
-public class PermissionMonitor implements PackageManagerInternal.PackageListObserver {
+public class PermissionMonitor {
     private static final String TAG = "PermissionMonitor";
     private static final boolean DBG = true;
     protected static final Boolean SYSTEM = Boolean.TRUE;
@@ -79,9 +82,9 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
     private static final int VERSION_Q = Build.VERSION_CODES.Q;
 
     private final PackageManager mPackageManager;
+    private final PackageManagerInternal mPackageManagerInternal;
     private final UserManager mUserManager;
     private final INetd mNetd;
-    private final Dependencies mDeps;
 
     // Values are User IDs.
     @GuardedBy("this")
@@ -102,30 +105,64 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
     @GuardedBy("this")
     private final Set<Integer> mAllApps = new HashSet<>();
 
-    /**
-     * Dependencies of PermissionMonitor, for injection in tests.
-     */
-    @VisibleForTesting
-    public static class Dependencies {
-        /**
-         * Get device first sdk version.
-         */
-        public int getDeviceFirstSdkInt() {
-            return Build.VERSION.FIRST_SDK_INT;
+    private class PackageListObserver implements PackageManagerInternal.PackageListObserver {
+
+        @Override
+        public void onPackageAdded(String packageName, int uid) {
+            sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
+        }
+
+        @Override
+        public void onPackageChanged(@NonNull String packageName, int uid) {
+            sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
+        }
+
+        @Override
+        public void onPackageRemoved(String packageName, int uid) {
+            sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
         }
     }
 
-    public PermissionMonitor(@NonNull final Context context, @NonNull final INetd netd) {
-        this(context, netd, new Dependencies());
+    private int getPermissionForUid(int uid) {
+        int permission = 0;
+        // Check all the packages for this UID. The UID has the permission if any of the
+        // packages in it has the permission.
+        String[] packages = mPackageManager.getPackagesForUid(uid);
+        if (packages != null && packages.length > 0) {
+            for (String name : packages) {
+                final PackageInfo app = getPackageInfo(name);
+                if (app != null && app.requestedPermissions != null) {
+                    permission |= getNetdPermissionMask(app.requestedPermissions,
+                          app.requestedPermissionsFlags);
+                }
+            }
+        } else {
+            // The last package of this uid is removed from device. Clean the package up.
+            permission = INetd.PERMISSION_UNINSTALLED;
+        }
+        return permission;
     }
 
-    @VisibleForTesting
-    PermissionMonitor(@NonNull final Context context, @NonNull final INetd netd,
-            @NonNull final Dependencies deps) {
+    // implements OnRuntimePermissionStateChangedListener
+    private void enforceINTERNETAsRuntimePermission(@NonNull String packageName,
+            @UserIdInt int userId) {
+        // userId is _not_ uid
+        int uid = mPackageManagerInternal.getPackageUid(packageName, 0, userId);
+        sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
+    }
+
+    public PermissionMonitor(Context context, INetd netd) {
         mPackageManager = context.getPackageManager();
         mUserManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
         mNetd = netd;
-        mDeps = deps;
+
+        mPackageManagerInternal = LocalServices.getService(
+                PackageManagerInternal.class);
+
+        final PermissionManagerServiceInternal permManagerInternal = LocalServices.getService(
+                PermissionManagerServiceInternal.class);
+        permManagerInternal.addOnRuntimePermissionStateChangedListener(
+                this::enforceINTERNETAsRuntimePermission);
     }
 
     // Intended to be called only once at startup, after the system is ready. Installs a broadcast
@@ -135,7 +172,7 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
 
         PackageManagerInternal pmi = LocalServices.getService(PackageManagerInternal.class);
         if (pmi != null) {
-            pmi.getPackageList(this);
+            pmi.getPackageList(new PackageListObserver());
         } else {
             loge("failed to get the PackageManagerInternal service");
         }
@@ -173,9 +210,11 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
             netdPermsUids.put(uid, netdPermsUids.get(uid) | otherNetdPerms);
         }
 
-        final List<UserHandle> users = mUserManager.getUserHandles(true /* excludeDying */);
-        for (UserHandle user : users) {
-            mUsers.add(user.getIdentifier());
+        List<UserInfo> users = mUserManager.getUsers(true);  // exclude dying users
+        if (users != null) {
+            for (UserInfo user : users) {
+                mUsers.add(user.id);
+            }
         }
 
         final SparseArray<ArraySet<String>> systemPermission =
@@ -204,6 +243,11 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
     }
 
     @VisibleForTesting
+    protected int getDeviceFirstSdkInt() {
+        return Build.VERSION.FIRST_SDK_INT;
+    }
+
+    @VisibleForTesting
     boolean hasPermission(@NonNull final PackageInfo app, @NonNull final String permission) {
         if (app.requestedPermissions == null || app.requestedPermissionsFlags == null) {
             return false;
@@ -225,7 +269,7 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
         if (app.applicationInfo != null) {
             // Backward compatibility for b/114245686, on devices that launched before Q daemons
             // and apps running as the system UID are exempted from this check.
-            if (app.applicationInfo.uid == SYSTEM_UID && mDeps.getDeviceFirstSdkInt() < VERSION_Q) {
+            if (app.applicationInfo.uid == SYSTEM_UID && getDeviceFirstSdkInt() < VERSION_Q) {
                 return true;
             }
 
@@ -338,38 +382,15 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
         return currentPermission;
     }
 
-    private int getPermissionForUid(final int uid) {
-        int permission = INetd.PERMISSION_NONE;
-        // Check all the packages for this UID. The UID has the permission if any of the
-        // packages in it has the permission.
-        final String[] packages = mPackageManager.getPackagesForUid(uid);
-        if (packages != null && packages.length > 0) {
-            for (String name : packages) {
-                final PackageInfo app = getPackageInfo(name);
-                if (app != null && app.requestedPermissions != null) {
-                    permission |= getNetdPermissionMask(app.requestedPermissions,
-                            app.requestedPermissionsFlags);
-                }
-            }
-        } else {
-            // The last package of this uid is removed from device. Clean the package up.
-            permission = INetd.PERMISSION_UNINSTALLED;
-        }
-        return permission;
-    }
-
     /**
-     * Called when a package is added.
+     * Called when a package is added. See {link #ACTION_PACKAGE_ADDED}.
      *
      * @param packageName The name of the new package.
      * @param uid The uid of the new package.
      *
      * @hide
      */
-    @Override
-    public synchronized void onPackageAdded(@NonNull final String packageName, final int uid) {
-        sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
-
+    public synchronized void onPackageAdded(String packageName, int uid) {
         // If multiple packages share a UID (cf: android:sharedUserId) and ask for different
         // permissions, don't downgrade (i.e., if it's already SYSTEM, leave it as is).
         final Boolean permission = highestPermissionForUid(mApps.get(uid), packageName);
@@ -396,17 +417,13 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
     }
 
     /**
-     * Called when a package is removed.
+     * Called when a package is removed. See {link #ACTION_PACKAGE_REMOVED}.
      *
-     * @param packageName The name of the removed package or null.
      * @param uid containing the integer uid previously assigned to the package.
      *
      * @hide
      */
-    @Override
-    public synchronized void onPackageRemoved(@NonNull final String packageName, final int uid) {
-        sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
-
+    public synchronized void onPackageRemoved(int uid) {
         // If the newly-removed package falls within some VPN's uid range, update Netd with it.
         // This needs to happen before the mApps update below, since removeBypassingUids() depends
         // on mApps to check if the package can bypass VPN.
@@ -449,19 +466,6 @@ public class PermissionMonitor implements PackageManagerInternal.PackageListObse
             apps.put(uid, NETWORK);  // doesn't matter which permission we pick here
             update(mUsers, apps, false);
         }
-    }
-
-    /**
-     * Called when a package is changed.
-     *
-     * @param packageName The name of the changed package.
-     * @param uid The uid of the changed package.
-     *
-     * @hide
-     */
-    @Override
-    public synchronized void onPackageChanged(@NonNull final String packageName, final int uid) {
-        sendPackagePermissionsForUid(uid, getPermissionForUid(uid));
     }
 
     private static int getNetdPermissionMask(String[] requestedPermissions,

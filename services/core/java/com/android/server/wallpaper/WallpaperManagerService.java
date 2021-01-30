@@ -2036,7 +2036,7 @@ public class WallpaperManagerService extends IWallpaperManager.Stub
                 }
                 WallpaperData wd = mWallpaperMap.get(user.id);
                 if (wd == null) {
-                    // User hasn't started yet, so load their settings to peek at the wallpaper
+                    // User hasn't started yet, so load her settings to peek at the wallpaper
                     loadSettingsLocked(user.id, false);
                     wd = mWallpaperMap.get(user.id);
                 }
@@ -3084,7 +3084,7 @@ public class WallpaperManagerService extends IWallpaperManager.Stub
                     mLockWallpaperMap.put(userId, wallpaper);
                     ensureSaneWallpaperData(wallpaper);
                 } else {
-                    // rationality fallback: we're in bad shape, but establishing a known
+                    // sanity fallback: we're in bad shape, but establishing a known
                     // valid system+lock WallpaperData will keep us from dying.
                     Slog.wtf(TAG, "Didn't find wallpaper in non-lock case!");
                     wallpaper = new WallpaperData(userId, getWallpaperDir(userId),

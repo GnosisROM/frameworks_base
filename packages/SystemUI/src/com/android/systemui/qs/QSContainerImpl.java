@@ -61,12 +61,9 @@ public class QSContainerImpl extends FrameLayout {
     private QuickStatusBarHeader mHeader;
     private float mQsExpansion;
     private QSCustomizer mQSCustomizer;
-    private View mDragHandle;
     private View mQSPanelContainer;
 
     private View mBackground;
-    private View mBackgroundGradient;
-    private View mStatusBarBackground;
 
     private int mSideMargins;
     private boolean mQsDisabled;
@@ -86,10 +83,7 @@ public class QSContainerImpl extends FrameLayout {
         mQSDetail = findViewById(R.id.qs_detail);
         mHeader = findViewById(R.id.header);
         mQSCustomizer = findViewById(R.id.qs_customize);
-        mDragHandle = findViewById(R.id.qs_drag_handle_view);
         mBackground = findViewById(R.id.quick_settings_background);
-        mStatusBarBackground = findViewById(R.id.quick_settings_status_bar_background);
-        mBackgroundGradient = findViewById(R.id.quick_settings_gradient_view);
         updateResources();
         mHeader.getHeaderQsPanel().setMediaVisibilityChangedListener((visible) -> {
             if (mHeader.getHeaderQsPanel().isShown()) {
@@ -123,7 +117,6 @@ public class QSContainerImpl extends FrameLayout {
     @Override
     protected void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        setBackgroundGradientVisibility(newConfig);
         updateResources();
         mSizePoint.set(0, 0); // Will be retrieved on next measure pass.
     }
@@ -193,7 +186,6 @@ public class QSContainerImpl extends FrameLayout {
         final boolean disabled = (state2 & DISABLE2_QUICK_SETTINGS) != 0;
         if (disabled == mQsDisabled) return;
         mQsDisabled = disabled;
-        setBackgroundGradientVisibility(getResources().getConfiguration());
         mBackground.setVisibility(mQsDisabled ? View.GONE : View.VISIBLE);
     }
 
@@ -234,8 +226,6 @@ public class QSContainerImpl extends FrameLayout {
         int height = calculateContainerHeight();
         setBottom(getTop() + height);
         mQSDetail.setBottom(getTop() + height);
-        // Pin the drag handle to the bottom of the panel.
-        mDragHandle.setTranslationY(height - mDragHandle.getHeight());
         mBackground.setTop(mQSPanelContainer.getTop());
         updateBackgroundBottom(height, animate);
     }
@@ -261,27 +251,15 @@ public class QSContainerImpl extends FrameLayout {
                 + mHeader.getHeight();
     }
 
-    private void setBackgroundGradientVisibility(Configuration newConfig) {
-        if (newConfig.orientation == ORIENTATION_LANDSCAPE) {
-            mBackgroundGradient.setVisibility(View.INVISIBLE);
-            mStatusBarBackground.setVisibility(View.INVISIBLE);
-        } else {
-            mBackgroundGradient.setVisibility(mQsDisabled ? View.INVISIBLE : View.VISIBLE);
-            mStatusBarBackground.setVisibility(View.VISIBLE);
-        }
-    }
-
     public void setExpansion(float expansion) {
         mQsExpansion = expansion;
-        mDragHandle.setAlpha(1.0f - expansion);
         updateExpansion();
     }
 
     private void updatePaddingsAndMargins() {
         for (int i = 0; i < getChildCount(); i++) {
             View view = getChildAt(i);
-            if (view == mStatusBarBackground || view == mBackgroundGradient
-                    || view == mQSCustomizer) {
+            if (view == mQSCustomizer) {
                 // Some views are always full width
                 continue;
             }

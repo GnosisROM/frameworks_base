@@ -77,8 +77,6 @@ public abstract class ApexManager {
     public static final int MATCH_ACTIVE_PACKAGE = 1 << 0;
     static final int MATCH_FACTORY_PACKAGE = 1 << 1;
 
-    private static final String VNDK_APEX_MODULE_NAME_PREFIX = "com.android.vndk.";
-
     private static final Singleton<ApexManager> sApexManagerSingleton =
             new Singleton<ApexManager>() {
                 @Override
@@ -323,9 +321,9 @@ public abstract class ApexManager {
      * Copies the CE apex data directory for the given {@code userId} to a backup location, for use
      * in case of rollback.
      *
-     * @return boolean true if the snapshot was successful
+     * @return long inode for the snapshot directory if the snapshot was successful, or -1 if not
      */
-    public abstract boolean snapshotCeData(int userId, int rollbackId, String apexPackageName);
+    public abstract long snapshotCeData(int userId, int rollbackId, String apexPackageName);
 
     /**
      * Restores the snapshot of the CE apex data directory for the given {@code userId}.
@@ -350,11 +348,6 @@ public abstract class ApexManager {
      * @return boolean true if the delete was successful
      */
     public abstract boolean destroyCeSnapshotsNotSpecified(int userId, int[] retainRollbackIds);
-
-    /**
-     * Inform apexd that the boot has completed.
-     */
-    public abstract void markBootCompleted();
 
     /**
      * Dumps various state information to the provided {@link PrintWriter} object.
@@ -528,9 +521,7 @@ public abstract class ApexManager {
                         activePackagesSet.add(packageInfo.packageName);
                     }
                     if (ai.isFactory) {
-                        // Don't throw when the duplicating APEX is VNDK APEX
-                        if (factoryPackagesSet.contains(packageInfo.packageName)
-                                && !ai.moduleName.startsWith(VNDK_APEX_MODULE_NAME_PREFIX)) {
+                        if (factoryPackagesSet.contains(packageInfo.packageName)) {
                             throw new IllegalStateException(
                                     "Two factory packages have the same name: "
                                             + packageInfo.packageName);
@@ -826,7 +817,7 @@ public abstract class ApexManager {
         }
 
         @Override
-        public boolean snapshotCeData(int userId, int rollbackId, String apexPackageName) {
+        public long snapshotCeData(int userId, int rollbackId, String apexPackageName) {
             String apexModuleName;
             synchronized (mLock) {
                 Preconditions.checkState(mPackageNameToApexModuleName != null,
@@ -835,14 +826,13 @@ public abstract class ApexManager {
             }
             if (apexModuleName == null) {
                 Slog.e(TAG, "Invalid apex package name: " + apexPackageName);
-                return false;
+                return -1;
             }
             try {
-                waitForApexService().snapshotCeData(userId, rollbackId, apexModuleName);
-                return true;
+                return waitForApexService().snapshotCeData(userId, rollbackId, apexModuleName);
             } catch (Exception e) {
                 Slog.e(TAG, e.getMessage(), e);
-                return false;
+                return -1;
             }
         }
 
@@ -886,15 +876,6 @@ public abstract class ApexManager {
             } catch (Exception e) {
                 Slog.e(TAG, e.getMessage(), e);
                 return false;
-            }
-        }
-
-        @Override
-        public void markBootCompleted() {
-            try {
-                waitForApexService().markBootCompleted();
-            } catch (RemoteException re) {
-                Slog.e(TAG, "Unable to contact apexservice", re);
             }
         }
 
@@ -1125,7 +1106,7 @@ public abstract class ApexManager {
         }
 
         @Override
-        public boolean snapshotCeData(int userId, int rollbackId, String apexPackageName) {
+        public long snapshotCeData(int userId, int rollbackId, String apexPackageName) {
             throw new UnsupportedOperationException();
         }
 
@@ -1142,11 +1123,6 @@ public abstract class ApexManager {
         @Override
         public boolean destroyCeSnapshotsNotSpecified(int userId, int[] retainRollbackIds) {
             return true;
-        }
-
-        @Override
-        public void markBootCompleted() {
-            // No-op
         }
 
         @Override

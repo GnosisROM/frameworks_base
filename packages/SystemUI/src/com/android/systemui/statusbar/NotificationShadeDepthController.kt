@@ -65,11 +65,11 @@ class NotificationShadeDepthController @Inject constructor(
     dumpManager: DumpManager
 ) : PanelExpansionListener, Dumpable {
     companion object {
-        private const val WAKE_UP_ANIMATION_ENABLED = true
+        private const val WAKE_UP_ANIMATION_ENABLED = false
         private const val VELOCITY_SCALE = 100f
         private const val MAX_VELOCITY = 3000f
         private const val MIN_VELOCITY = -MAX_VELOCITY
-        private const val INTERACTION_BLUR_FRACTION = 0.4f
+        private const val INTERACTION_BLUR_FRACTION = 0.9f
         private const val ANIMATION_BLUR_FRACTION = 1f - INTERACTION_BLUR_FRACTION
         private const val TAG = "DepthController"
     }
@@ -174,13 +174,7 @@ class NotificationShadeDepthController @Inject constructor(
             }
         }
 
-        // Home controls have black background, this means that we should not have blur when they
-        // are fully visible, otherwise we'll enter Client Composition unnecessarily.
-        var globalActionsRadius = globalActionsSpring.radius
-        if (showingHomeControls) {
-            globalActionsRadius = 0
-        }
-        var blur = max(shadeRadius.toInt(), globalActionsRadius)
+        var blur = max(shadeRadius.toInt(), globalActionsSpring.radius)
 
         // Make blur be 0 if it is necessary to stop blur effect.
         if (scrimsVisible) {

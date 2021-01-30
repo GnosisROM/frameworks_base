@@ -25,6 +25,7 @@
 
 #include "ServiceWrappers.h"
 #include "jni.h"
+#include "nativehelper/JNIHelp.h"
 #include "path.h"
 
 using namespace std::literals;

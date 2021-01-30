@@ -17,21 +17,18 @@ package android.net;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
-import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.os.IBinder;
 import android.os.RemoteException;
 
 import com.android.internal.util.Preconditions;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Class that allows creation and management of per-app, test-only networks
  *
  * @hide
  */
-@SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
+@TestApi
 public class TestNetworkManager {
     /**
      * Prefix for tun interfaces created by this class.
@@ -60,7 +57,7 @@ public class TestNetworkManager {
      * @param network The test network that should be torn down
      * @hide
      */
-    @SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
+    @TestApi
     public void teardownTestNetwork(@NonNull Network network) {
         try {
             mService.teardownTestNetwork(network.netId);
@@ -105,7 +102,7 @@ public class TestNetworkManager {
      * @param binder A binder object guarding the lifecycle of this test network.
      * @hide
      */
-    @SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
+    @TestApi
     public void setupTestNetwork(@NonNull String iface, @NonNull IBinder binder) {
         setupTestNetwork(iface, null, true, new int[0], binder);
     }
@@ -130,29 +127,12 @@ public class TestNetworkManager {
      * @param linkAddrs an array of LinkAddresses to assign to the TUN interface
      * @return A ParcelFileDescriptor of the underlying TUN interface. Close this to tear down the
      *     TUN interface.
-     * @deprecated Use {@link #createTunInterface(Collection)} instead.
      * @hide
      */
-    @Deprecated
-    @NonNull
+    @TestApi
     public TestNetworkInterface createTunInterface(@NonNull LinkAddress[] linkAddrs) {
-        return createTunInterface(Arrays.asList(linkAddrs));
-    }
-
-    /**
-     * Create a tun interface for testing purposes
-     *
-     * @param linkAddrs an array of LinkAddresses to assign to the TUN interface
-     * @return A ParcelFileDescriptor of the underlying TUN interface. Close this to tear down the
-     *     TUN interface.
-     * @hide
-     */
-    @SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
-    @NonNull
-    public TestNetworkInterface createTunInterface(@NonNull Collection<LinkAddress> linkAddrs) {
         try {
-            final LinkAddress[] arr = new LinkAddress[linkAddrs.size()];
-            return mService.createTunInterface(linkAddrs.toArray(arr));
+            return mService.createTunInterface(linkAddrs);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
@@ -165,8 +145,7 @@ public class TestNetworkManager {
      *     TAP interface.
      * @hide
      */
-    @SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
-    @NonNull
+    @TestApi
     public TestNetworkInterface createTapInterface() {
         try {
             return mService.createTapInterface();

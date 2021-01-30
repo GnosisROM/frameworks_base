@@ -66,8 +66,6 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
-import android.os.ResultReceiver;
-import android.os.ShellCallback;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
@@ -188,6 +186,10 @@ public class HdmiControlService extends SystemService {
     // Whether System Audio Mode is activated or not.
     @GuardedBy("mLock")
     private boolean mSystemAudioActivated = false;
+
+    private static final boolean isHdmiCecNeverClaimPlaybackLogicAddr =
+            SystemProperties.getBoolean(
+                    Constants.PROPERTY_HDMI_CEC_NEVER_CLAIM_PLAYBACK_LOGICAL_ADDRESS, false);
 
     /**
      * Interface to report send result.
@@ -787,6 +789,10 @@ public class HdmiControlService extends SystemService {
         // A container for [Device type, Local device info].
         ArrayList<HdmiCecLocalDevice> localDevices = new ArrayList<>();
         for (int type : mLocalDevices) {
+            if (type == HdmiDeviceInfo.DEVICE_PLAYBACK
+                    && isHdmiCecNeverClaimPlaybackLogicAddr) {
+                continue;
+            }
             HdmiCecLocalDevice localDevice = mCecController.getLocalDevice(type);
             if (localDevice == null) {
                 localDevice = HdmiCecLocalDevice.create(this, type);
@@ -1201,6 +1207,10 @@ public class HdmiControlService extends SystemService {
             }
             ArrayList<HdmiCecLocalDevice> localDevices = new ArrayList<>();
             for (int type : mLocalDevices) {
+                if (type == HdmiDeviceInfo.DEVICE_PLAYBACK
+                        && isHdmiCecNeverClaimPlaybackLogicAddr) {
+                    continue;
+                }
                 HdmiCecLocalDevice localDevice = mCecController.getLocalDevice(type);
                 if (localDevice == null) {
                     localDevice = HdmiCecLocalDevice.create(this, type);
@@ -1967,21 +1977,7 @@ public class HdmiControlService extends SystemService {
 
         @Override
         public void powerOnRemoteDevice(int logicalAddress, int powerStatus) {
-            enforceAccessPermission();
-            runOnServiceThread(new Runnable() {
-                @Override
-                public void run() {
-                    Slog.i(TAG, "Device "
-                            + logicalAddress + " power status is " + powerStatus
-                            + " before power on command sent out");
-                    if (getSwitchDevice() != null) {
-                        getSwitchDevice().sendUserControlPressedAndReleased(
-                                logicalAddress, HdmiCecKeycode.CEC_KEYCODE_POWER_ON_FUNCTION);
-                    } else {
-                        Slog.e(TAG, "Can't get the correct local device to handle routing.");
-                    }
-                }
-            });
+            // TODO(amyjojo): implement the method
         }
 
         @Override
@@ -2290,16 +2286,6 @@ public class HdmiControlService extends SystemService {
                                     audioSystem().mAddress, Constants.ADDR_BROADCAST, true));
                 }
             });
-        }
-
-        @Override
-        public void onShellCommand(@Nullable FileDescriptor in, @Nullable FileDescriptor out,
-                @Nullable FileDescriptor err, String[] args,
-                @Nullable ShellCallback callback, ResultReceiver resultReceiver)
-                throws RemoteException {
-            enforceAccessPermission();
-            new HdmiControlShellCommand(this)
-                    .exec(this, in, out, err, args, callback, resultReceiver);
         }
 
         @Override

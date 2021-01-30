@@ -25,20 +25,17 @@ import android.content.ServiceConnection
 import android.net.ConnectivityManager
 import android.net.IDnsResolver
 import android.net.INetd
+import android.net.INetworkPolicyManager
 import android.net.INetworkStatsService
 import android.net.LinkProperties
-import android.net.NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL
 import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
-import android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED
 import android.net.NetworkCapabilities.TRANSPORT_CELLULAR
 import android.net.NetworkRequest
 import android.net.TestNetworkStackClient
-import android.net.Uri
 import android.net.metrics.IpConnectivityLog
 import android.os.ConditionVariable
 import android.os.IBinder
 import android.os.INetworkManagementService
-import android.os.UserHandle
 import android.testing.TestableContext
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -47,6 +44,8 @@ import com.android.server.ConnectivityService
 import com.android.server.LocalServices
 import com.android.server.NetworkAgentWrapper
 import com.android.server.TestNetIdManager
+import com.android.server.connectivity.DefaultNetworkMetrics
+import com.android.server.connectivity.IpConnectivityMetrics
 import com.android.server.connectivity.MockableSystemProperties
 import com.android.server.connectivity.ProxyTracker
 import com.android.server.net.NetworkPolicyManagerInternal
@@ -56,20 +55,15 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.AdditionalAnswers
 import org.mockito.Mock
 import org.mockito.Mockito.any
-import org.mockito.Mockito.anyInt
 import org.mockito.Mockito.doNothing
 import org.mockito.Mockito.doReturn
-import org.mockito.Mockito.eq
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.spy
 import org.mockito.MockitoAnnotations
 import org.mockito.Spy
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -89,11 +83,17 @@ class ConnectivityServiceIntegrationTest {
     @Mock
     private lateinit var statsService: INetworkStatsService
     @Mock
+    private lateinit var policyManager: INetworkPolicyManager
+    @Mock
     private lateinit var log: IpConnectivityLog
     @Mock
     private lateinit var netd: INetd
     @Mock
     private lateinit var dnsResolver: IDnsResolver
+    @Mock
+    private lateinit var metricsLogger: IpConnectivityMetrics.Logger
+    @Mock
+    private lateinit var defaultMetrics: DefaultNetworkMetrics
     @Spy
     private var context = TestableContext(realContext)
 
@@ -110,10 +110,6 @@ class ConnectivityServiceIntegrationTest {
         private val bindingCondition = ConditionVariable(false)
 
         private val realContext get() = InstrumentationRegistry.getInstrumentation().context
-        private val httpProbeUrl get() =
-            realContext.getResources().getString(R.string.config_captive_portal_http_url)
-        private val httpsProbeUrl get() =
-            realContext.getResources().getString(R.string.config_captive_portal_https_url)
 
         private class InstrumentationServiceConnection : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -147,10 +143,8 @@ class ConnectivityServiceIntegrationTest {
     @Before
     fun setUp() {
         MockitoAnnotations.initMocks(this)
-        val asUserCtx = mock(Context::class.java, AdditionalAnswers.delegatesTo<Context>(context))
-        doReturn(UserHandle.ALL).`when`(asUserCtx).user
-        doReturn(asUserCtx).`when`(context).createContextAsUser(eq(UserHandle.ALL), anyInt())
-        doNothing().`when`(context).sendStickyBroadcast(any(), any())
+        doReturn(defaultMetrics).`when`(metricsLogger).defaultNetworkMetrics()
+        doNothing().`when`(context).sendStickyBroadcastAsUser(any(), any(), any())
 
         networkStackClient = TestNetworkStackClient(realContext)
         networkStackClient.init()
@@ -164,15 +158,16 @@ class ConnectivityServiceIntegrationTest {
         cm = ConnectivityManager(context, service)
         context.addMockSystemService(Context.CONNECTIVITY_SERVICE, cm)
 
-        service.systemReadyInternal()
+        service.systemReady()
     }
 
     private inner class TestConnectivityService(deps: Dependencies) : ConnectivityService(
-            context, netManager, statsService, dnsResolver, log, netd, deps)
+            context, netManager, statsService, policyManager, dnsResolver, log, netd, deps)
 
     private fun makeDependencies(): ConnectivityService.Dependencies {
         val deps = spy(ConnectivityService.Dependencies())
         doReturn(networkStackClient).`when`(deps).networkStack
+        doReturn(metricsLogger).`when`(deps).metricsLogger
         doReturn(mock(ProxyTracker::class.java)).`when`(deps).makeProxyTracker(any(), any())
         doReturn(mock(MockableSystemProperties::class.java)).`when`(deps).systemProperties
         doReturn(TestNetIdManager()).`when`(deps).makeNetIdManager()
@@ -193,11 +188,14 @@ class ConnectivityServiceIntegrationTest {
         val testCallback = TestableNetworkCallback()
 
         cm.registerNetworkCallback(request, testCallback)
-        nsInstrumentation.addHttpResponse(HttpResponse(httpProbeUrl, responseCode = 204))
-        nsInstrumentation.addHttpResponse(HttpResponse(httpsProbeUrl, responseCode = 204))
+        nsInstrumentation.addHttpResponse(HttpResponse(
+                "http://test.android.com",
+                responseCode = 204, contentLength = 42, redirectUrl = null))
+        nsInstrumentation.addHttpResponse(HttpResponse(
+                "https://secure.test.android.com",
+                responseCode = 204, contentLength = 42, redirectUrl = null))
 
-        val na = NetworkAgentWrapper(TRANSPORT_CELLULAR, LinkProperties(), null /* ncTemplate */,
-                context)
+        val na = NetworkAgentWrapper(TRANSPORT_CELLULAR, LinkProperties(), context)
         networkStackClient.verifyNetworkMonitorCreated(na.network, TEST_TIMEOUT_MS)
 
         na.addCapability(NET_CAPABILITY_INTERNET)
@@ -205,53 +203,5 @@ class ConnectivityServiceIntegrationTest {
 
         testCallback.expectAvailableThenValidatedCallbacks(na.network, TEST_TIMEOUT_MS)
         assertEquals(2, nsInstrumentation.getRequestUrls().size)
-    }
-
-    @Test
-    fun testCapportApi() {
-        val request = NetworkRequest.Builder()
-                .clearCapabilities()
-                .addCapability(NET_CAPABILITY_INTERNET)
-                .build()
-        val testCb = TestableNetworkCallback()
-        val apiUrl = "https://capport.android.com"
-
-        cm.registerNetworkCallback(request, testCb)
-        nsInstrumentation.addHttpResponse(HttpResponse(
-                apiUrl,
-                """
-                    |{
-                    |  "captive": true,
-                    |  "user-portal-url": "https://login.capport.android.com",
-                    |  "venue-info-url": "https://venueinfo.capport.android.com"
-                    |}
-                """.trimMargin()))
-
-        // Tests will fail if a non-mocked query is received: mock the HTTPS probe, but not the
-        // HTTP probe as it should not be sent.
-        // Even if the HTTPS probe succeeds, a portal should be detected as the API takes precedence
-        // in that case.
-        nsInstrumentation.addHttpResponse(HttpResponse(httpsProbeUrl, responseCode = 204))
-
-        val lp = LinkProperties()
-        lp.captivePortalApiUrl = Uri.parse(apiUrl)
-        val na = NetworkAgentWrapper(TRANSPORT_CELLULAR, lp, null /* ncTemplate */, context)
-        networkStackClient.verifyNetworkMonitorCreated(na.network, TEST_TIMEOUT_MS)
-
-        na.addCapability(NET_CAPABILITY_INTERNET)
-        na.connect()
-
-        testCb.expectAvailableCallbacks(na.network, validated = false, tmt = TEST_TIMEOUT_MS)
-
-        val capportData = testCb.expectLinkPropertiesThat(na, TEST_TIMEOUT_MS) {
-            it.captivePortalData != null
-        }.lp.captivePortalData
-        assertNotNull(capportData)
-        assertTrue(capportData.isCaptive)
-        assertEquals(Uri.parse("https://login.capport.android.com"), capportData.userPortalUrl)
-        assertEquals(Uri.parse("https://venueinfo.capport.android.com"), capportData.venueInfoUrl)
-
-        val nc = testCb.expectCapabilitiesWith(NET_CAPABILITY_CAPTIVE_PORTAL, na, TEST_TIMEOUT_MS)
-        assertFalse(nc.hasCapability(NET_CAPABILITY_VALIDATED))
     }
 }

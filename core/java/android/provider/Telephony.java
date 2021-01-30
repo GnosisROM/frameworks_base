@@ -627,7 +627,7 @@ public final class Telephony {
              * @return the URI for the new message
              * @hide
              */
-            @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+            @UnsupportedAppUsage
             public static Uri addMessage(int subId, ContentResolver resolver,
                     String address, String body, String subject, Long date, boolean read) {
                 return addMessageToUri(subId, resolver, CONTENT_URI, address, body,
@@ -687,7 +687,7 @@ public final class Telephony {
              * @return the URI for the new message
              * @hide
              */
-            @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+            @UnsupportedAppUsage
             public static Uri addMessage(int subId, ContentResolver resolver,
                     String address, String body, String subject, Long date) {
                 return addMessageToUri(subId, resolver, CONTENT_URI, address, body,
@@ -734,7 +734,7 @@ public final class Telephony {
              * @return the URI for the new message
              * @hide
              */
-            @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+            @UnsupportedAppUsage
             public static Uri addMessage(int subId, ContentResolver resolver,
                     String address, String body, String subject, Long date) {
                 return addMessageToUri(subId, resolver, CONTENT_URI, address, body,
@@ -781,7 +781,7 @@ public final class Telephony {
              * @return the URI for the new message
              * @hide
              */
-            @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+            @UnsupportedAppUsage
             public static Uri addMessage(ContentResolver resolver,
                     String address, String body, String subject, Long date,
                     boolean deliveryReport, long threadId) {
@@ -1357,7 +1357,8 @@ public final class Telephony {
                 Object[] messages;
                 try {
                     messages = (Object[]) intent.getSerializableExtra("pdus");
-                } catch (ClassCastException e) {
+                }
+                catch (ClassCastException e) {
                     Rlog.e(TAG, "getMessagesFromIntent: " + e);
                     return null;
                 }
@@ -1369,12 +1370,9 @@ public final class Telephony {
 
                 String format = intent.getStringExtra("format");
                 int subId = intent.getIntExtra(SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX,
-                        SubscriptionManager.INVALID_SUBSCRIPTION_ID);
-                if (subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
-                    Rlog.v(TAG, "getMessagesFromIntent with valid subId : " + subId);
-                } else {
-                    Rlog.v(TAG, "getMessagesFromIntent");
-                }
+                        SubscriptionManager.getDefaultSmsSubscriptionId());
+
+                Rlog.v(TAG, " getMessagesFromIntent sub_id : " + subId);
 
                 int pduCount = messages.length;
                 SmsMessage[] msgs = new SmsMessage[pduCount];
@@ -3970,7 +3968,6 @@ public final class Telephony {
          * <p>Type: INTEGER</p>
          * @hide
          */
-        @SystemApi
         public static final int MATCH_ALL_APN_SET_ID = -1;
 
         /**
@@ -4045,6 +4042,7 @@ public final class Telephony {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static final class CellBroadcasts implements BaseColumns {
 
         /**
@@ -5167,14 +5165,6 @@ public final class Telephony {
         public static final String COLUMN_IMS_RCS_UCE_ENABLED = "ims_rcs_uce_enabled";
 
         /**
-         * TelephonyProvider column name for determining if the user has enabled cross SIM calling
-         * for this subscription.
-         *
-         * @hide
-         */
-        public static final String COLUMN_CROSS_SIM_CALLING_ENABLED = "cross_sim_calling_enabled";
-
-        /**
          * TelephonyProvider column name for whether a subscription is opportunistic, that is,
          * whether the network it connects to is limited in functionality or coverage.
          * For example, CBRS.
@@ -5278,13 +5268,5 @@ public final class Telephony {
          * @hide
          */
         public static final String COLUMN_ALLOWED_NETWORK_TYPES = "allowed_network_types";
-
-        /**
-         * TelephonyProvider column name for RCS configuration.
-         * <p>TYPE: BLOB
-         *
-         * @hide
-         */
-        public static final String COLUMN_RCS_CONFIG = "rcs_config";
     }
 }

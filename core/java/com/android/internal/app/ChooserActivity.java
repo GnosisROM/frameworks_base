@@ -3086,7 +3086,7 @@ public class ChooserActivity extends ResolverActivity implements
                     final TargetInfo ti = mChooserMultiProfilePagerAdapter.getActiveListAdapter()
                             .targetInfoForPosition(mListPosition, /* filtered */ true);
 
-                    // This should always be the case for ItemViewHolder, check for validity
+                    // This should always be the case for ItemViewHolder, check for sanity
                     if (ti instanceof DisplayResolveInfo) {
                         showTargetDetails((DisplayResolveInfo) ti);
                     }
@@ -3466,7 +3466,7 @@ public class ChooserActivity extends ResolverActivity implements
                     v.setOnLongClickListener(v1 -> {
                         final TargetInfo ti = mChooserListAdapter.targetInfoForPosition(
                                 holder.getItemIndex(column), true);
-                        // This should always be the case for non-DS targets, check for validity
+                        // This should always be the case for non-DS targets, check for sanity
                         if (ti instanceof DisplayResolveInfo) {
                             showTargetDetails((DisplayResolveInfo) ti);
                         }

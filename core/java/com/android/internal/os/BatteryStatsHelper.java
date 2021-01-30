@@ -26,7 +26,6 @@ import android.hardware.SensorManager;
 import android.net.ConnectivityManager;
 import android.os.BatteryStats;
 import android.os.BatteryStats.Uid;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.MemoryFile;
 import android.os.Parcel;
@@ -264,6 +263,16 @@ public class BatteryStatsHelper {
         mStats = null;
     }
 
+    private void clearAllStats() {
+        clearStats();
+        sStatsXfer = null;
+        sBatteryBroadcastXfer = null;
+        for (File f : sFileXfer.keySet()) {
+            f.delete();
+        }
+        sFileXfer.clear();
+     }
+
     @UnsupportedAppUsage
     public BatteryStats getStats() {
         if (mStats == null) {
@@ -272,7 +281,7 @@ public class BatteryStatsHelper {
         return mStats;
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public Intent getBatteryBroadcast() {
         if (mBatteryBroadcast == null && mCollectBatteryBroadcast) {
             load();
@@ -361,7 +370,7 @@ public class BatteryStatsHelper {
     /**
      * Refreshes the power usage list.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void refreshStats(int statsType, SparseArray<UserHandle> asUsers) {
         refreshStats(statsType, asUsers, SystemClock.elapsedRealtime() * 1000,
                 SystemClock.uptimeMillis() * 1000);
@@ -1051,6 +1060,15 @@ public class BatteryStatsHelper {
         if (mCollectBatteryBroadcast) {
             mBatteryBroadcast = mContext.registerReceiver(null,
                     new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        }
+    }
+
+    public void resetStatistics() {
+        try {
+            clearAllStats();
+            mBatteryInfo.resetStatistics();
+        } catch (RemoteException e) {
+            Log.e(TAG, "RemoteException:", e);
         }
     }
 

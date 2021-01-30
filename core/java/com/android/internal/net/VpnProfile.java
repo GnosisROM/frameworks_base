@@ -21,14 +21,12 @@ import android.compat.annotation.UnsupportedAppUsage;
 import android.net.Ikev2VpnProfile;
 import android.net.PlatformVpnProfile;
 import android.net.ProxyInfo;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 
 import com.android.internal.annotations.VisibleForTesting;
-import com.android.net.module.util.ProxyUtils;
 
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
@@ -237,7 +235,7 @@ public final class VpnProfile implements Cloneable, Parcelable {
      *
      * <p>See {@link #encode()}
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static VpnProfile decode(String key, byte[] value) {
         try {
             if (key == null) {
@@ -286,12 +284,10 @@ public final class VpnProfile implements Cloneable, Parcelable {
                 String exclList = (values.length > 17) ? values[17] : "";
                 String pacFileUrl = (values.length > 18) ? values[18] : "";
                 if (!host.isEmpty() || !port.isEmpty() || !exclList.isEmpty()) {
-                    profile.proxy =
-                            ProxyInfo.buildDirectProxy(host, port.isEmpty() ?
-                                    0 : Integer.parseInt(port),
-                                    ProxyUtils.exclusionStringAsList(exclList));
+                    profile.proxy = new ProxyInfo(host, port.isEmpty() ?
+                            0 : Integer.parseInt(port), exclList);
                 } else if (!pacFileUrl.isEmpty()) {
-                    profile.proxy = ProxyInfo.buildPacProxy(Uri.parse(pacFileUrl));
+                    profile.proxy = new ProxyInfo(pacFileUrl);
                 }
             } // else profile.proxy = null
 
@@ -340,8 +336,8 @@ public final class VpnProfile implements Cloneable, Parcelable {
             builder.append(VALUE_DELIMITER).append(proxy.getPort());
             builder.append(VALUE_DELIMITER)
                     .append(
-                            ProxyUtils.exclusionListAsString(proxy.getExclusionList()) != null
-                                    ? ProxyUtils.exclusionListAsString(proxy.getExclusionList())
+                            proxy.getExclusionListAsString() != null
+                                    ? proxy.getExclusionListAsString()
                                     : "");
             builder.append(VALUE_DELIMITER).append(proxy.getPacFileUrl().toString());
         } else {

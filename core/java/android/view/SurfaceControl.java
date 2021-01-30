@@ -314,7 +314,7 @@ public final class SurfaceControl implements Parcelable {
      * Surface creation flag: Surface is created hidden
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final int HIDDEN = 0x00000004;
 
     /**
@@ -2559,7 +2559,7 @@ public final class SurfaceControl implements Parcelable {
         }
 
         /**
-         * Specify how the buffer associated with this Surface is mapped in to the
+         * Specify how the buffer assosciated with this Surface is mapped in to the
          * parent coordinate space. The source frame will be scaled to fit the destination
          * frame, after being rotated according to the orientation parameter.
          *
@@ -2679,7 +2679,7 @@ public final class SurfaceControl implements Parcelable {
          * @return Itself.
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public Transaction setCornerRadius(SurfaceControl sc, float cornerRadius) {
             checkPreconditions(sc);
             nativeSetCornerRadius(mNativeObject, sc.mNativeObject, cornerRadius);

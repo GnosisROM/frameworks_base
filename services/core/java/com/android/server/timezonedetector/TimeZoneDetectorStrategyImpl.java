@@ -199,13 +199,12 @@ public final class TimeZoneDetectorStrategyImpl implements TimeZoneDetectorStrat
     }
 
     @Override
-    public synchronized boolean suggestManualTimeZone(
-            @NonNull ManualTimeZoneSuggestion suggestion) {
+    public synchronized void suggestManualTimeZone(@NonNull ManualTimeZoneSuggestion suggestion) {
         Objects.requireNonNull(suggestion);
 
         String timeZoneId = suggestion.getZoneId();
         String cause = "Manual time suggestion received: suggestion=" + suggestion;
-        return setDeviceTimeZoneIfRequired(ORIGIN_MANUAL, timeZoneId, cause);
+        setDeviceTimeZoneIfRequired(ORIGIN_MANUAL, timeZoneId, cause);
     }
 
     @Override
@@ -306,7 +305,7 @@ public final class TimeZoneDetectorStrategyImpl implements TimeZoneDetectorStrat
     }
 
     @GuardedBy("this")
-    private boolean setDeviceTimeZoneIfRequired(
+    private void setDeviceTimeZoneIfRequired(
             @Origin int origin, @NonNull String newZoneId, @NonNull String cause) {
         Objects.requireNonNull(newZoneId);
         Objects.requireNonNull(cause);
@@ -320,7 +319,7 @@ public final class TimeZoneDetectorStrategyImpl implements TimeZoneDetectorStrat
                             + ", newZoneId=" + newZoneId
                             + ", cause=" + cause);
                 }
-                return false;
+                return;
             }
         } else {
             if (mCallback.isAutoTimeZoneDetectionEnabled()) {
@@ -330,7 +329,7 @@ public final class TimeZoneDetectorStrategyImpl implements TimeZoneDetectorStrat
                             + ", newZoneId=" + newZoneId
                             + ", cause=" + cause);
                 }
-                return false;
+                return;
             }
         }
 
@@ -347,7 +346,7 @@ public final class TimeZoneDetectorStrategyImpl implements TimeZoneDetectorStrat
                         + ", newZoneId=" + newZoneId
                         + ", cause=" + cause);
             }
-            return true;
+            return;
         }
 
         mCallback.setDeviceTimeZone(newZoneId);
@@ -360,7 +359,6 @@ public final class TimeZoneDetectorStrategyImpl implements TimeZoneDetectorStrat
             Slog.d(LOG_TAG, msg);
         }
         mTimeZoneChangesLog.log(msg);
-        return true;
     }
 
     private static boolean isOriginAutomatic(@Origin int origin) {

@@ -115,8 +115,8 @@ import java.util.function.Supplier;
  *     <dt>{@link #MODE_ALLOWED}
  *     <dd>Allow the access
  *     <dt>{@link #MODE_IGNORED}
- *     <dd>Don't allow the access, i.e. don't perform the requested action or return no or
- *     placeholder data
+ *     <dd>Don't allow the access, i.e. don't perform the requested action or return no or dummy
+ *     data
  *     <dt>{@link #MODE_ERRORED}
  *     <dd>Throw a {@link SecurityException} on access. This can be suppressed by using a
  *     {@code ...noThrow} method to check the mode
@@ -135,7 +135,7 @@ import java.util.function.Supplier;
  * <p>Each platform defined runtime permission (beside background modifiers) has an associated app
  * op which is used for tracking but also to allow for silent failures. I.e. if the runtime
  * permission is denied the caller gets a {@link SecurityException}, but if the permission is
- * granted and the app-op is {@link #MODE_IGNORED} then the callers gets placeholder behavior, e.g.
+ * granted and the app-op is {@link #MODE_IGNORED} then the callers gets dummy behavior, e.g.
  * location callbacks would not happen.
  *
  * <h3>App-op permissions</h3>
@@ -447,6 +447,7 @@ public class AppOpsManager {
      * state the more important the UID is for the user.
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int UID_STATE_PERSISTENT = 100;
 
@@ -455,6 +456,7 @@ public class AppOpsManager {
      * state the more important the UID is for the user.
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int UID_STATE_TOP = 200;
 
@@ -466,6 +468,7 @@ public class AppOpsManager {
      * @hide
      * @deprecated
      */
+    @TestApi
     @SystemApi
     @Deprecated
     public static final int UID_STATE_FOREGROUND_SERVICE_LOCATION = 300;
@@ -475,6 +478,7 @@ public class AppOpsManager {
      * state the more important the UID is for the user.
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int UID_STATE_FOREGROUND_SERVICE = 400;
 
@@ -483,6 +487,7 @@ public class AppOpsManager {
      * state the more important the UID is for the user.
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int UID_STATE_FOREGROUND = 500;
 
@@ -498,6 +503,7 @@ public class AppOpsManager {
      * state the more important the UID is for the user.
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int UID_STATE_BACKGROUND = 600;
 
@@ -506,6 +512,7 @@ public class AppOpsManager {
      * state the more important the UID is for the user.
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int UID_STATE_CACHED = 700;
 
@@ -583,6 +590,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int OP_FLAG_SELF = 0x1;
 
@@ -593,6 +601,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int OP_FLAG_TRUSTED_PROXY = 0x2;
 
@@ -603,6 +612,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int OP_FLAG_UNTRUSTED_PROXY = 0x4;
 
@@ -613,6 +623,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int OP_FLAG_TRUSTED_PROXIED = 0x8;
 
@@ -623,6 +634,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int OP_FLAG_UNTRUSTED_PROXIED = 0x10;
 
@@ -634,6 +646,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int OP_FLAGS_ALL =
             OP_FLAG_SELF
@@ -778,7 +791,7 @@ public class AppOpsManager {
     //  - add the op to the appropriate template in AppOpsState.OpsTemplate (settings app)
 
     /** @hide No operation specified. */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final int OP_NONE = AppProtoEnums.APP_OP_NONE;
     /** @hide Access to coarse location information. */
     @UnsupportedAppUsage
@@ -845,8 +858,6 @@ public class AppOpsManager {
     /** @hide */
     @UnsupportedAppUsage
     public static final int OP_SEND_SMS = AppProtoEnums.APP_OP_SEND_SMS;
-    /** @hide */
-    public static final int OP_MANAGE_ONGOING_CALLS = AppProtoEnums.APP_OP_MANAGE_ONGOING_CALLS;
     /** @hide */
     @UnsupportedAppUsage
     public static final int OP_READ_ICC_SMS = AppProtoEnums.APP_OP_READ_ICC_SMS;
@@ -1138,7 +1149,7 @@ public class AppOpsManager {
 
     /** @hide */
     @UnsupportedAppUsage
-    public static final int _NUM_OP = 104;
+    public static final int _NUM_OP = 103;
 
     /** Access to coarse location information. */
     public static final String OPSTR_COARSE_LOCATION = "android:coarse_location";
@@ -1155,7 +1166,7 @@ public class AppOpsManager {
     public static final String OPSTR_GET_USAGE_STATS
             = "android:get_usage_stats";
     /** Activate a VPN connection without user intervention. @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_ACTIVATE_VPN
             = "android:activate_vpn";
     /** Allows an application to read the user's contacts data. */
@@ -1237,7 +1248,7 @@ public class AppOpsManager {
     public static final String OPSTR_WRITE_SETTINGS
             = "android:write_settings";
     /** @hide Get device accounts. */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_GET_ACCOUNTS
             = "android:get_accounts";
     public static final String OPSTR_READ_PHONE_NUMBERS
@@ -1246,7 +1257,7 @@ public class AppOpsManager {
     public static final String OPSTR_PICTURE_IN_PICTURE
             = "android:picture_in_picture";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_INSTANT_APP_START_FOREGROUND
             = "android:instant_app_start_foreground";
     /** Answer incoming phone calls */
@@ -1256,129 +1267,129 @@ public class AppOpsManager {
      * Accept call handover
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_ACCEPT_HANDOVER
             = "android:accept_handover";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_GPS = "android:gps";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_VIBRATE = "android:vibrate";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WIFI_SCAN = "android:wifi_scan";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_POST_NOTIFICATION = "android:post_notification";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_NEIGHBORING_CELLS = "android:neighboring_cells";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WRITE_SMS = "android:write_sms";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_RECEIVE_EMERGENCY_BROADCAST =
             "android:receive_emergency_broadcast";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_READ_ICC_SMS = "android:read_icc_sms";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WRITE_ICC_SMS = "android:write_icc_sms";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_ACCESS_NOTIFICATIONS = "android:access_notifications";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_PLAY_AUDIO = "android:play_audio";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_READ_CLIPBOARD = "android:read_clipboard";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WRITE_CLIPBOARD = "android:write_clipboard";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_TAKE_MEDIA_BUTTONS = "android:take_media_buttons";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_TAKE_AUDIO_FOCUS = "android:take_audio_focus";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_AUDIO_MASTER_VOLUME = "android:audio_master_volume";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_AUDIO_VOICE_VOLUME = "android:audio_voice_volume";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_AUDIO_RING_VOLUME = "android:audio_ring_volume";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_AUDIO_MEDIA_VOLUME = "android:audio_media_volume";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_AUDIO_ALARM_VOLUME = "android:audio_alarm_volume";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_AUDIO_NOTIFICATION_VOLUME =
             "android:audio_notification_volume";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_AUDIO_BLUETOOTH_VOLUME = "android:audio_bluetooth_volume";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WAKE_LOCK = "android:wake_lock";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_MUTE_MICROPHONE = "android:mute_microphone";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_TOAST_WINDOW = "android:toast_window";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_PROJECT_MEDIA = "android:project_media";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WRITE_WALLPAPER = "android:write_wallpaper";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_ASSIST_STRUCTURE = "android:assist_structure";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_ASSIST_SCREENSHOT = "android:assist_screenshot";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_TURN_SCREEN_ON = "android:turn_screen_on";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_RUN_IN_BACKGROUND = "android:run_in_background";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_AUDIO_ACCESSIBILITY_VOLUME =
             "android:audio_accessibility_volume";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_REQUEST_INSTALL_PACKAGES = "android:request_install_packages";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_RUN_ANY_IN_BACKGROUND = "android:run_any_in_background";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_CHANGE_WIFI_STATE = "android:change_wifi_state";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_REQUEST_DELETE_PACKAGES = "android:request_delete_packages";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_BIND_ACCESSIBILITY_SERVICE =
             "android:bind_accessibility_service";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_MANAGE_IPSEC_TUNNELS = "android:manage_ipsec_tunnels";
     /** @hide */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_START_FOREGROUND = "android:start_foreground";
     /** @hide */
     public static final String OPSTR_BLUETOOTH_SCAN = "android:bluetooth_scan";
@@ -1394,25 +1405,25 @@ public class AppOpsManager {
             "android:sms_financial_transactions";
 
     /** @hide Read media of audio type. */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_READ_MEDIA_AUDIO = "android:read_media_audio";
     /** @hide Write media of audio type. */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WRITE_MEDIA_AUDIO = "android:write_media_audio";
     /** @hide Read media of video type. */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_READ_MEDIA_VIDEO = "android:read_media_video";
     /** @hide Write media of video type. */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WRITE_MEDIA_VIDEO = "android:write_media_video";
     /** @hide Read media of image type. */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_READ_MEDIA_IMAGES = "android:read_media_images";
     /** @hide Write media of image type. */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_WRITE_MEDIA_IMAGES = "android:write_media_images";
     /** @hide Has a legacy (non-isolated) view of storage. */
-    @SystemApi
+    @SystemApi @TestApi
     public static final String OPSTR_LEGACY_STORAGE = "android:legacy_storage";
     /** @hide Read location metadata from media */
     public static final String OPSTR_ACCESS_MEDIA_LOCATION = "android:access_media_location";
@@ -1426,6 +1437,7 @@ public class AppOpsManager {
     public static final String OPSTR_QUERY_ALL_PACKAGES = "android:query_all_packages";
     /** @hide Access all external storage */
     @SystemApi
+    @TestApi
     public static final String OPSTR_MANAGE_EXTERNAL_STORAGE =
             "android:manage_external_storage";
 
@@ -1443,20 +1455,10 @@ public class AppOpsManager {
     @SystemApi
     public static final String OPSTR_INTERACT_ACROSS_PROFILES = "android:interact_across_profiles";
     /** @hide Start Platform VPN without user intervention */
-    @SystemApi
     public static final String OPSTR_ACTIVATE_PLATFORM_VPN = "android:activate_platform_vpn";
     /** @hide */
     @SystemApi
     public static final String OPSTR_LOADER_USAGE_STATS = "android:loader_usage_stats";
-
-    /**
-     * Grants an app access to the {@link android.telecom.InCallService} API to see
-     * information about ongoing calls and to enable control of calls.
-     * @hide
-     */
-    @SystemApi
-    @TestApi
-    public static final String OPSTR_MANAGE_ONGOING_CALLS = "android:manage_ongoing_calls";
 
     /**
      * AppOp granted to apps that we are started via {@code am instrument -e --no-isolated-storage}
@@ -1563,7 +1565,6 @@ public class AppOpsManager {
             OP_MANAGE_EXTERNAL_STORAGE,
             OP_INTERACT_ACROSS_PROFILES,
             OP_LOADER_USAGE_STATS,
-            OP_MANAGE_ONGOING_CALLS,
     };
 
     /**
@@ -1678,7 +1679,6 @@ public class AppOpsManager {
             OP_PHONE_CALL_MICROPHONE,           // OP_PHONE_CALL_MICROPHONE
             OP_PHONE_CALL_CAMERA,               // OP_PHONE_CALL_CAMERA
             OP_RECORD_AUDIO_HOTWORD,            // RECORD_AUDIO_HOTWORD
-            OP_MANAGE_ONGOING_CALLS,            // MANAGE_ONGOING_CALLS
     };
 
     /**
@@ -1788,7 +1788,6 @@ public class AppOpsManager {
             OPSTR_PHONE_CALL_MICROPHONE,
             OPSTR_PHONE_CALL_CAMERA,
             OPSTR_RECORD_AUDIO_HOTWORD,
-            OPSTR_MANAGE_ONGOING_CALLS,
     };
 
     /**
@@ -1899,7 +1898,6 @@ public class AppOpsManager {
             "PHONE_CALL_MICROPHONE",
             "PHONE_CALL_CAMERA",
             "RECORD_AUDIO_HOTWORD",
-            "MANAGE_ONGOING_CALLS",
     };
 
     /**
@@ -1941,7 +1939,7 @@ public class AppOpsManager {
             null, // no permission for writing clipboard
             null, // no permission for taking media buttons
             null, // no permission for taking audio focus
-            null, // no permission for changing global volume
+            null, // no permission for changing master volume
             null, // no permission for changing voice volume
             null, // no permission for changing ring volume
             null, // no permission for changing media volume
@@ -2011,7 +2009,6 @@ public class AppOpsManager {
             null, // no permission for OP_PHONE_CALL_MICROPHONE
             null, // no permission for OP_PHONE_CALL_CAMERA
             null, // no permission for OP_RECORD_AUDIO_HOTWORD
-            Manifest.permission.MANAGE_ONGOING_CALLS,
     };
 
     /**
@@ -2123,7 +2120,6 @@ public class AppOpsManager {
             null, // PHONE_CALL_MICROPHONE
             null, // PHONE_CALL_MICROPHONE
             null, // RECORD_AUDIO_HOTWORD
-            null, // MANAGE_ONGOING_CALLS
     };
 
     /**
@@ -2234,7 +2230,6 @@ public class AppOpsManager {
             null, // PHONE_CALL_MICROPHONE
             null, // PHONE_CALL_CAMERA
             null, // RECORD_AUDIO_HOTWORD
-            null, // MANAGE_ONGOING_CALLS
     };
 
     /**
@@ -2344,7 +2339,6 @@ public class AppOpsManager {
             AppOpsManager.MODE_ALLOWED, // PHONE_CALL_MICROPHONE
             AppOpsManager.MODE_ALLOWED, // PHONE_CALL_CAMERA
             AppOpsManager.MODE_ALLOWED, // OP_RECORD_AUDIO_HOTWORD
-            AppOpsManager.MODE_DEFAULT, // MANAGE_ONGOING_CALLS
     };
 
     /**
@@ -2458,7 +2452,6 @@ public class AppOpsManager {
             false, // PHONE_CALL_MICROPHONE
             false, // PHONE_CALL_CAMERA
             false, // RECORD_AUDIO_HOTWORD
-            true, // MANAGE_ONGOING_CALLS
     };
 
     /**
@@ -2570,7 +2563,7 @@ public class AppOpsManager {
      * Retrieve a non-localized name for the operation, for debugging output.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static String opToName(int op) {
         if (op == OP_NONE) return "NONE";
         return op < sOpNames.length ? sOpNames[op] : ("Unknown(" + op + ")");
@@ -2601,7 +2594,7 @@ public class AppOpsManager {
      * Retrieve the permission associated with an operation, or null if there is not one.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @TestApi
     public static String opToPermission(int op) {
         return sOpPerms[op];
@@ -2667,6 +2660,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static int opToDefaultMode(@NonNull String appOp) {
         return opToDefaultMode(strOpToOp(appOp));
@@ -2756,6 +2750,7 @@ public class AppOpsManager {
      * Class holding all of the operation information associated with an app.
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final class PackageOps implements Parcelable {
         private final String mPackageName;
@@ -2834,6 +2829,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     // @DataClass(genHiddenConstructor = true, genHiddenCopyConstructor = true)
     // genHiddenCopyConstructor does not work for @hide @SystemApi classes
@@ -3201,6 +3197,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     @Immutable
     // @DataClass(genHiddenConstructor = true) codegen verifier is broken
@@ -3774,6 +3771,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @Immutable
     @SystemApi
     // @DataClass(genHiddenConstructor = true) codegen verifier is broken
@@ -4451,6 +4449,7 @@ public class AppOpsManager {
      * @hide
      */
     @Immutable
+    @TestApi
     @SystemApi
     public static final class HistoricalOpsRequest {
         private final int mUid;
@@ -4481,6 +4480,7 @@ public class AppOpsManager {
          *
          * @hide
          */
+        @TestApi
         @SystemApi
         public static final class Builder {
             private int mUid = Process.INVALID_UID;
@@ -4618,6 +4618,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final class HistoricalOps implements Parcelable {
         private long mBeginTimeMillis;
@@ -5054,6 +5055,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final class HistoricalUidOps implements Parcelable {
         private final int mUid;
@@ -5307,6 +5309,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final class HistoricalPackageOps implements Parcelable {
         private final @NonNull String mPackageName;
@@ -5637,6 +5640,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     /* codegen verifier cannot deal with nested class parameters
     @DataClass(genHiddenConstructor = true,
@@ -5947,6 +5951,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final class HistoricalOp implements Parcelable {
         private final int mOp;
@@ -6493,7 +6498,7 @@ public class AppOpsManager {
      * Retrieve current operation state for all applications.
      *
      * The mode of the ops returned are set for the package but may not reflect their effective
-     * state due to UID policy or because it's controlled by a different global op.
+     * state due to UID policy or because it's controlled by a different master op.
      *
      * Use {@link #unsafeCheckOp(String, int, String)}} or
      * {@link #noteOp(String, int, String, String, String)} if the effective mode is needed.
@@ -6517,7 +6522,7 @@ public class AppOpsManager {
      * Retrieve current operation state for all applications.
      *
      * The mode of the ops returned are set for the package but may not reflect their effective
-     * state due to UID policy or because it's controlled by a different global op.
+     * state due to UID policy or because it's controlled by a different master op.
      *
      * Use {@link #unsafeCheckOp(String, int, String)}} or
      * {@link #noteOp(String, int, String, String, String)} if the effective mode is needed.
@@ -6539,7 +6544,7 @@ public class AppOpsManager {
      * Retrieve current operation state for one application.
      *
      * The mode of the ops returned are set for the package but may not reflect their effective
-     * state due to UID policy or because it's controlled by a different global op.
+     * state due to UID policy or because it's controlled by a different master op.
      *
      * Use {@link #unsafeCheckOp(String, int, String)}} or
      * {@link #noteOp(String, int, String, String, String)} if the effective mode is needed.
@@ -6572,7 +6577,7 @@ public class AppOpsManager {
      * package must match.
      *
      * The mode of the ops returned are set for the package but may not reflect their effective
-     * state due to UID policy or because it's controlled by a different global op.
+     * state due to UID policy or because it's controlled by a different master op.
      *
      * Use {@link #unsafeCheckOp(String, int, String)}} or
      * {@link #noteOp(String, int, String, String, String)} if the effective mode is needed.
@@ -6583,6 +6588,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     @RequiresPermission(android.Manifest.permission.GET_APP_OPS_STATS)
     public @NonNull List<AppOpsManager.PackageOps> getOpsForPackage(int uid,
@@ -6617,6 +6623,7 @@ public class AppOpsManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     @RequiresPermission(android.Manifest.permission.GET_APP_OPS_STATS)
     public void getHistoricalOps(@NonNull HistoricalOpsRequest request,
@@ -6725,6 +6732,7 @@ public class AppOpsManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(android.Manifest.permission.MANAGE_APP_OPS_MODES)
     public void setUidMode(@NonNull String appOp, int uid, @Mode int mode) {
         try {
@@ -6778,6 +6786,7 @@ public class AppOpsManager {
      * be changed.
      * @hide
      */
+    @TestApi
     @SystemApi
     @RequiresPermission(android.Manifest.permission.MANAGE_APP_OPS_MODES)
     public void setMode(@NonNull String op, int uid, @Nullable String packageName,
@@ -6814,7 +6823,7 @@ public class AppOpsManager {
 
     /** @hide */
     @RequiresPermission(android.Manifest.permission.MANAGE_APP_OPS_MODES)
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void resetAllModes() {
         try {
             mService.resetAllModes(mContext.getUserId(), null);
@@ -8719,6 +8728,7 @@ public class AppOpsManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(Manifest.permission.GET_APP_OPS_STATS)
     public @Nullable RuntimeAppOpAccessMessage collectRuntimeAppOpAccessMessage() {
         try {
@@ -8733,6 +8743,7 @@ public class AppOpsManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static String[] getOpStrs() {
         return Arrays.copyOf(sOpToString, sOpToString.length);
     }

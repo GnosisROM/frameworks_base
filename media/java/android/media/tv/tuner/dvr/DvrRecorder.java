@@ -47,7 +47,6 @@ public class DvrRecorder implements AutoCloseable {
     private static int sInstantId = 0;
     private int mSegmentId = 0;
     private int mOverflow;
-    private Boolean mIsStopped = null;
 
     private native int nativeAttachFilter(Filter filter);
     private native int nativeDetachFilter(Filter filter);
@@ -136,13 +135,7 @@ public class DvrRecorder implements AutoCloseable {
                 .write(FrameworkStatsLog.TV_TUNER_DVR_STATUS, mUserId,
                     FrameworkStatsLog.TV_TUNER_DVR_STATUS__TYPE__RECORD,
                     FrameworkStatsLog.TV_TUNER_DVR_STATUS__STATE__STARTED, mSegmentId, 0);
-        synchronized (mIsStopped) {
-            int result = nativeStartDvr();
-            if (result == Tuner.RESULT_SUCCESS) {
-                mIsStopped = false;
-            }
-            return result;
-        }
+        return nativeStartDvr();
     }
 
     /**
@@ -159,13 +152,7 @@ public class DvrRecorder implements AutoCloseable {
                 .write(FrameworkStatsLog.TV_TUNER_DVR_STATUS, mUserId,
                     FrameworkStatsLog.TV_TUNER_DVR_STATUS__TYPE__RECORD,
                     FrameworkStatsLog.TV_TUNER_DVR_STATUS__STATE__STOPPED, mSegmentId, mOverflow);
-        synchronized (mIsStopped) {
-            int result = nativeStopDvr();
-            if (result == Tuner.RESULT_SUCCESS) {
-                mIsStopped = true;
-            }
-            return result;
-        }
+        return nativeStopDvr();
     }
 
     /**
@@ -177,13 +164,7 @@ public class DvrRecorder implements AutoCloseable {
      */
     @Result
     public int flush() {
-        synchronized (mIsStopped) {
-            if (mIsStopped) {
-                return nativeFlushDvr();
-            }
-            Log.w(TAG, "Cannot flush non-stopped Record DVR.");
-            return Tuner.RESULT_INVALID_STATE;
-        }
+        return nativeFlushDvr();
     }
 
     /**

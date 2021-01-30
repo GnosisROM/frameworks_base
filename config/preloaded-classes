@@ -3716,9 +3716,9 @@ android.media.IRemoteVolumeObserver
 android.media.IRingtonePlayer$Stub$Proxy
 android.media.IRingtonePlayer$Stub
 android.media.IRingtonePlayer
-android.media.IStrategyPreferredDevicesDispatcher$Stub$Proxy
-android.media.IStrategyPreferredDevicesDispatcher$Stub
-android.media.IStrategyPreferredDevicesDispatcher
+android.media.IStrategyPreferredDeviceDispatcher$Stub$Proxy
+android.media.IStrategyPreferredDeviceDispatcher$Stub
+android.media.IStrategyPreferredDeviceDispatcher
 android.media.IVolumeController$Stub$Proxy
 android.media.IVolumeController$Stub
 android.media.IVolumeController
@@ -4539,6 +4539,7 @@ android.os.AsyncTask
 android.os.BadParcelableException
 android.os.BaseBundle$NoImagePreloadHolder
 android.os.BaseBundle
+android.os.BasicShellCommandHandler
 android.os.BatteryManager
 android.os.BatteryManagerInternal
 android.os.BatteryProperty$1
@@ -9564,7 +9565,6 @@ com.android.internal.widget.VerifyCredentialResponse$1
 com.android.internal.widget.VerifyCredentialResponse
 com.android.internal.widget.ViewClippingUtil$ClippingParameters
 com.android.internal.widget.ViewClippingUtil
-com.android.modules.utils.BasicShellCommandHandler
 com.android.okhttp.Address
 com.android.okhttp.AndroidShimResponseCache
 com.android.okhttp.Authenticator
@@ -9990,6 +9990,8 @@ dalvik.system.CloseGuard$DefaultReporter
 dalvik.system.CloseGuard$Reporter
 dalvik.system.CloseGuard$Tracker
 dalvik.system.CloseGuard
+dalvik.system.DalvikLogHandler
+dalvik.system.DalvikLogging
 dalvik.system.DelegateLastClassLoader
 dalvik.system.DexClassLoader
 dalvik.system.DexFile$1
@@ -11759,6 +11761,7 @@ libcore.util.XmlObjectFactory
 libcore.util.ZoneInfo$CheckedArithmeticException
 libcore.util.ZoneInfo$WallTime
 libcore.util.ZoneInfo
+org.apache.harmony.dalvik.NativeTestTarget
 org.apache.harmony.dalvik.ddmc.Chunk
 org.apache.harmony.dalvik.ddmc.ChunkHandler
 org.apache.harmony.dalvik.ddmc.DdmServer
@@ -11949,7 +11952,6 @@ sun.nio.fs.LinuxFileSystemProvider
 sun.nio.fs.NativeBuffer$Deallocator
 sun.nio.fs.NativeBuffer
 sun.nio.fs.NativeBuffers
-sun.nio.fs.UnixChannelFactory
 sun.nio.fs.UnixChannelFactory$Flags
 sun.nio.fs.UnixConstants
 sun.nio.fs.UnixException

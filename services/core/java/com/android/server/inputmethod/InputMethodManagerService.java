@@ -2212,7 +2212,8 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
      * @param client {@link android.os.Binder} proxy that is associated with the singleton instance
      *               of {@link android.view.inputmethod.InputMethodManager} that runs on the client
      *               process
-     * @param inputContext communication channel for the fallback {@link InputConnection}
+     * @param inputContext communication channel for the dummy
+     *                     {@link android.view.inputmethod.InputConnection}
      * @param selfReportedDisplayId self-reported display ID to which the client is associated.
      *                              Whether the client is still allowed to access to this display
      *                              or not needs to be evaluated every time the client interacts
@@ -3201,7 +3202,7 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
         boolean res = false;
         if (mCurMethod != null) {
             if (DEBUG) Slog.d(TAG, "showCurrentInputLocked: mCurToken=" + mCurToken);
-            // create a placeholder token for IMS so that IMS cannot inject windows into client app.
+            // create a dummy token for IMS so that IMS cannot inject windows into client app.
             Binder showInputToken = new Binder();
             mShowRequestWindowMap.put(showInputToken, windowToken);
             executeOrSendMessage(mCurMethod, mCaller.obtainMessageIIOOO(

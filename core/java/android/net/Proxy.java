@@ -20,11 +20,8 @@ import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.content.Context;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
-
-import com.android.net.module.util.ProxyUtils;
 
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
@@ -207,7 +204,7 @@ public final class Proxy {
                 if (host.equalsIgnoreCase("localhost")) {
                     return true;
                 }
-                if (InetAddresses.parseNumericAddress(host).isLoopbackAddress()) {
+                if (NetworkUtils.numericToInetAddress(host).isLoopbackAddress()) {
                     return true;
                 }
             }
@@ -244,7 +241,7 @@ public final class Proxy {
     }
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final void setHttpProxySystemProperty(ProxyInfo p) {
         String host = null;
         String port = null;
@@ -253,7 +250,7 @@ public final class Proxy {
         if (p != null) {
             host = p.getHost();
             port = Integer.toString(p.getPort());
-            exclList = ProxyUtils.exclusionListAsString(p.getExclusionList());
+            exclList = p.getExclusionListAsString();
             pacFileUrl = p.getPacFileUrl();
         }
         setHttpProxySystemProperty(host, port, exclList, pacFileUrl);

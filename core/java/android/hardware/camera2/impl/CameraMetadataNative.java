@@ -64,7 +64,6 @@ import android.hardware.camera2.params.TonemapCurve;
 import android.hardware.camera2.utils.TypeReference;
 import android.location.Location;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.ServiceSpecificException;
@@ -261,7 +260,7 @@ public class CameraMetadataNative implements Parcelable {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public final boolean hasTag() {
             return mHasTag;
         }
@@ -271,7 +270,7 @@ public class CameraMetadataNative implements Parcelable {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public final void cacheTag(int tag) {
             mHasTag = true;
             mTag = tag;
@@ -1684,7 +1683,7 @@ public class CameraMetadataNative implements Parcelable {
         mDisplaySize = displaySize;
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private long mMetadataPtr; // native std::shared_ptr<CameraMetadata>*
 
     @FastNative
@@ -1693,24 +1692,35 @@ public class CameraMetadataNative implements Parcelable {
     private static native long nativeAllocateCopy(long ptr)
             throws NullPointerException;
 
+    @FastNative
     private static synchronized native void nativeWriteToParcel(Parcel dest, long ptr);
+    @FastNative
     private static synchronized native void nativeReadFromParcel(Parcel source, long ptr);
+    @FastNative
     private static synchronized native void nativeSwap(long ptr, long otherPtr)
             throws NullPointerException;
+    @FastNative
     private static synchronized native void nativeClose(long ptr);
+    @FastNative
     private static synchronized native boolean nativeIsEmpty(long ptr);
+    @FastNative
     private static synchronized native int nativeGetEntryCount(long ptr);
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
+    @FastNative
     private static synchronized native byte[] nativeReadValues(int tag, long ptr);
+    @FastNative
     private static synchronized native void nativeWriteValues(int tag, byte[] src, long ptr);
     private static synchronized native void nativeDump(long ptr) throws IOException; // dump to LOGD
 
+    @FastNative
     private static synchronized native ArrayList nativeGetAllVendorKeys(long ptr, Class keyClass);
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
+    @FastNative
     private static synchronized native int nativeGetTagFromKeyLocal(long ptr, String keyName)
             throws IllegalArgumentException;
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
+    @FastNative
     private static synchronized native int nativeGetTypeFromTagLocal(long ptr, int tag)
             throws IllegalArgumentException;
     @FastNative

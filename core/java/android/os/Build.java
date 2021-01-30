@@ -106,24 +106,6 @@ public class Build {
     public static final String HARDWARE = getString("ro.hardware");
 
     /**
-     * The SKU of the hardware (from the kernel command line). The SKU is reported by the bootloader
-     * to configure system software features.
-     */
-    @NonNull
-    public static final String SKU = getString("ro.boot.hardware.sku");
-
-    /**
-     * The SKU of the device as set by the original design manufacturer (ODM). This is a
-     * runtime-initialized property set during startup to configure device services.
-     *
-     * <p>The ODM SKU may have multiple variants for the same system SKU in case a manufacturer
-     * produces variants of the same design. For example, the same build may be released with
-     * variations in physical keyboard and/or display hardware, each with a different ODM SKU.
-     */
-    @NonNull
-    public static final String ODM_SKU = getString("ro.boot.product.hardware.sku");
-
-    /**
      * Whether this build was for an emulator device.
      * @hide
      */
@@ -285,7 +267,7 @@ public class Build {
          * most recently applied a security patch.
          */
         public static final String SECURITY_PATCH = SystemProperties.get(
-                "ro.build.version.security_patch", "");
+                "ro.build.version.real_security_patch", "");
 
         /**
          * The user-visible SDK version of the framework in its raw String
@@ -317,7 +299,6 @@ public class Build {
          * @see #SDK_INT
          * @hide
          */
-        @SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
         @TestApi
         public static final int FIRST_SDK_INT = SystemProperties
                 .getInt("ro.product.first_api_level", 0);
@@ -1054,11 +1035,6 @@ public class Build {
          *
          */
         public static final int R = 30;
-
-        /**
-         * S.
-         */
-        public static final int S = CUR_DEVELOPMENT;
     }
 
     /** The type of build, like "user" or "eng". */

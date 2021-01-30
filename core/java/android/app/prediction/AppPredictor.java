@@ -70,6 +70,7 @@ import java.util.function.Consumer;
  * @hide
  */
 @SystemApi
+@TestApi
 public final class AppPredictor {
 
     private static final String TAG = AppPredictor.class.getSimpleName();

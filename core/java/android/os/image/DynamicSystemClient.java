@@ -22,6 +22,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -35,6 +36,8 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.ParcelableException;
 import android.os.RemoteException;
+import android.os.SystemProperties;
+import android.util.FeatureFlagUtils;
 import android.util.Slog;
 
 import java.lang.annotation.Retention;
@@ -65,9 +68,8 @@ import java.util.concurrent.Executor;
  * @hide
  */
 @SystemApi
+@TestApi
 public class DynamicSystemClient {
-    private static final String TAG = "DynamicSystemClient";
-
     /** @hide */
     @IntDef(prefix = { "STATUS_" }, value = {
             STATUS_UNKNOWN,
@@ -91,6 +93,8 @@ public class DynamicSystemClient {
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface StatusChangedCause {}
+
+    private static final String TAG = "DynSystemClient";
 
     /** Listener for installation status updates. */
     public interface OnStatusChangedListener {
@@ -238,7 +242,7 @@ public class DynamicSystemClient {
 
     private class DynSystemServiceConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName className, IBinder service) {
-            Slog.v(TAG, "onServiceConnected: " + className);
+            Slog.v(TAG, "DynSystemService connected");
 
             mService = new Messenger(service);
 
@@ -249,12 +253,18 @@ public class DynamicSystemClient {
                 mService.send(msg);
             } catch (RemoteException e) {
                 Slog.e(TAG, "Unable to get status from installation service");
-                notifyOnStatusChangedListener(STATUS_UNKNOWN, CAUSE_ERROR_IPC, 0, e);
+                if (mExecutor != null) {
+                    mExecutor.execute(() -> {
+                        mListener.onStatusChanged(STATUS_UNKNOWN, CAUSE_ERROR_IPC, 0, e);
+                    });
+                } else {
+                    mListener.onStatusChanged(STATUS_UNKNOWN, CAUSE_ERROR_IPC, 0, e);
+                }
             }
         }
 
         public void onServiceDisconnected(ComponentName className) {
-            Slog.v(TAG, "onServiceDisconnected: " + className);
+            Slog.v(TAG, "DynSystemService disconnected");
             mService = null;
         }
     }
@@ -276,6 +286,7 @@ public class DynamicSystemClient {
      * @hide
      */
     @SystemApi
+    @TestApi
     public DynamicSystemClient(@NonNull Context context) {
         mContext = context;
         mConnection = new DynSystemServiceConnection();
@@ -303,20 +314,6 @@ public class DynamicSystemClient {
         mExecutor = null;
     }
 
-    private void notifyOnStatusChangedListener(
-            int status, int cause, long progress, Throwable detail) {
-        if (mListener != null) {
-            if (mExecutor != null) {
-                mExecutor.execute(
-                        () -> {
-                            mListener.onStatusChanged(status, cause, progress, detail);
-                        });
-            } else {
-                mListener.onStatusChanged(status, cause, progress, detail);
-            }
-        }
-    }
-
     /**
      * Bind to {@code DynamicSystem} installation service. Binding to the installation service
      * allows it to send status updates to {@link #OnStatusChangedListener}. It is recommanded
@@ -325,7 +322,13 @@ public class DynamicSystemClient {
      */
     @RequiresPermission(android.Manifest.permission.INSTALL_DYNAMIC_SYSTEM)
     @SystemApi
+    @TestApi
     public void bind() {
+        if (!featureFlagEnabled()) {
+            Slog.w(TAG, FeatureFlagUtils.DYNAMIC_SYSTEM + " not enabled; bind() aborted.");
+            return;
+        }
+
         Intent intent = new Intent();
         intent.setClassName("com.android.dynsystem",
                 "com.android.dynsystem.DynamicSystemInstallationService");
@@ -342,6 +345,7 @@ public class DynamicSystemClient {
      */
     @RequiresPermission(android.Manifest.permission.INSTALL_DYNAMIC_SYSTEM)
     @SystemApi
+    @TestApi
     public void unbind() {
         if (!mBound) {
             return;
@@ -377,6 +381,7 @@ public class DynamicSystemClient {
      */
     @RequiresPermission(android.Manifest.permission.INSTALL_DYNAMIC_SYSTEM)
     @SystemApi
+    @TestApi
     public void start(@NonNull Uri systemUrl, @BytesLong long systemSize) {
         start(systemUrl, systemSize, 0 /* Use the default userdata size */);
     }
@@ -396,6 +401,11 @@ public class DynamicSystemClient {
     @RequiresPermission(android.Manifest.permission.INSTALL_DYNAMIC_SYSTEM)
     public void start(@NonNull Uri systemUrl, @BytesLong long systemSize,
             @BytesLong long userdataSize) {
+        if (!featureFlagEnabled()) {
+            Slog.w(TAG, FeatureFlagUtils.DYNAMIC_SYSTEM + " not enabled; start() aborted.");
+            return;
+        }
+
         Intent intent = new Intent();
 
         intent.setClassName("com.android.dynsystem",
@@ -403,12 +413,16 @@ public class DynamicSystemClient {
 
         intent.setData(systemUrl);
         intent.setAction(ACTION_START_INSTALL);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
         intent.putExtra(KEY_SYSTEM_SIZE, systemSize);
         intent.putExtra(KEY_USERDATA_SIZE, userdataSize);
 
         mContext.startActivity(intent);
+    }
+
+    private boolean featureFlagEnabled() {
+        return SystemProperties.getBoolean(
+                FeatureFlagUtils.PERSIST_PREFIX + FeatureFlagUtils.DYNAMIC_SYSTEM, false);
     }
 
     private void handleMessage(Message msg) {
@@ -424,7 +438,13 @@ public class DynamicSystemClient {
 
                 Throwable detail = t == null ? null : t.getCause();
 
-                notifyOnStatusChangedListener(status, cause, progress, detail);
+                if (mExecutor != null) {
+                    mExecutor.execute(() -> {
+                        mListener.onStatusChanged(status, cause, progress, detail);
+                    });
+                } else {
+                    mListener.onStatusChanged(status, cause, progress, detail);
+                }
                 break;
             default:
                 // do nothing

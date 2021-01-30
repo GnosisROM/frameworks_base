@@ -27,7 +27,6 @@ import static com.android.server.NetworkManagementSocketTagger.kernelToTag;
 import android.annotation.Nullable;
 import android.net.INetd;
 import android.net.NetworkStats;
-import android.net.VpnInfo;
 import android.net.util.NetdService;
 import android.os.RemoteException;
 import android.os.StrictMode;
@@ -35,6 +34,7 @@ import android.os.SystemClock;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.net.VpnInfo;
 import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.ProcFileReader;
 
@@ -59,7 +59,7 @@ public class NetworkStatsFactory {
     private static final String TAG = "NetworkStatsFactory";
 
     private static final boolean USE_NATIVE_PARSING = true;
-    private static final boolean VALIDATE_NATIVE_STATS = false;
+    private static final boolean SANITY_CHECK_NATIVE = false;
 
     /** Path to {@code /proc/net/xt_qtaguid/iface_stat_all}. */
     private final File mStatsXtIfaceAll;
@@ -347,7 +347,7 @@ public class NetworkStatsFactory {
                             INTERFACES_ALL, TAG_ALL, mUseBpfStats) != 0) {
                         throw new IOException("Failed to parse network stats");
                     }
-                    if (VALIDATE_NATIVE_STATS) {
+                    if (SANITY_CHECK_NATIVE) {
                         final NetworkStats javaStats = javaReadNetworkStatsDetail(mStatsXtUid,
                                 UID_ALL, INTERFACES_ALL, TAG_ALL);
                         assertEquals(javaStats, stats);

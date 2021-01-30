@@ -902,7 +902,7 @@ public class AudioEffect {
      * In case of success, the returns the number of meaningful integers in value array.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public int getParameter(int[] param, int[] value)
             throws IllegalStateException {
         if (param.length > 2 || value.length > 2) {
@@ -971,7 +971,7 @@ public class AudioEffect {
      * @see #getParameter(byte[], byte[])
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public int getParameter(int[] param, byte[] value)
             throws IllegalStateException {
         if (param.length > 2) {

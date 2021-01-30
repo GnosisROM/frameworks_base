@@ -87,7 +87,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.database.ContentObserver;
 import android.net.DataUsageRequest;
 import android.net.INetworkManagementEventObserver;
 import android.net.INetworkStatsService;
@@ -104,8 +103,6 @@ import android.net.NetworkStats.NonMonotonicObserver;
 import android.net.NetworkStatsHistory;
 import android.net.NetworkTemplate;
 import android.net.TrafficStats;
-import android.net.Uri;
-import android.net.VpnInfo;
 import android.net.netstats.provider.INetworkStatsProvider;
 import android.net.netstats.provider.INetworkStatsProviderCallback;
 import android.net.netstats.provider.NetworkStatsProvider;
@@ -144,6 +141,7 @@ import android.util.proto.ProtoOutputStream;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.net.VpnInfo;
 import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.DumpUtils;
 import com.android.internal.util.FileRotator;
@@ -214,9 +212,6 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
     private final PowerManager.WakeLock mWakeLock;
 
     private final boolean mUseBpfTrafficStats;
-
-    private final ContentObserver mContentObserver;
-    private final ContentResolver mContentResolver;
 
     @VisibleForTesting
     public static final String ACTION_NETWORK_STATS_POLL =
@@ -442,10 +437,7 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
         handlerThread.start();
         mHandler = new NetworkStatsHandler(handlerThread.getLooper());
         mNetworkStatsSubscriptionsMonitor = deps.makeSubscriptionsMonitor(mContext,
-                mHandler.getLooper(), new HandlerExecutor(mHandler), this);
-        mContentResolver = mContext.getContentResolver();
-        mContentObserver = mDeps.makeContentObserver(mHandler, mSettings,
-                mNetworkStatsSubscriptionsMonitor);
+                new HandlerExecutor(mHandler), this);
     }
 
     /**
@@ -468,31 +460,11 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
          */
         @NonNull
         public NetworkStatsSubscriptionsMonitor makeSubscriptionsMonitor(@NonNull Context context,
-                @NonNull Looper looper, @NonNull Executor executor,
-                @NonNull NetworkStatsService service) {
+                @NonNull Executor executor, @NonNull NetworkStatsService service) {
             // TODO: Update RatType passively in NSS, instead of querying into the monitor
             //  when forceUpdateIface.
-            return new NetworkStatsSubscriptionsMonitor(context, looper, executor,
-                    (subscriberId, type) -> service.handleOnCollapsedRatTypeChanged());
-        }
-
-        /**
-         * Create a ContentObserver instance which is used to observe settings changes,
-         * and dispatch onChange events on handler thread.
-         */
-        public @NonNull ContentObserver makeContentObserver(@NonNull Handler handler,
-                @NonNull NetworkStatsSettings settings,
-                @NonNull NetworkStatsSubscriptionsMonitor monitor) {
-            return new ContentObserver(handler) {
-                @Override
-                public void onChange(boolean selfChange, @NonNull Uri uri) {
-                    if (!settings.getCombineSubtypeEnabled()) {
-                        monitor.start();
-                    } else {
-                        monitor.stop();
-                    }
-                }
-            };
+            return new NetworkStatsSubscriptionsMonitor(context, executor, (subscriberId, type) ->
+                    service.handleOnCollapsedRatTypeChanged());
         }
     }
 
@@ -552,21 +524,17 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
 
         //  schedule periodic pall alarm based on {@link NetworkStatsSettings#getPollInterval()}.
         final PendingIntent pollIntent =
-                PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_NETWORK_STATS_POLL),
-                        PendingIntent.FLAG_IMMUTABLE);
+                PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_NETWORK_STATS_POLL), 0);
 
         final long currentRealtime = SystemClock.elapsedRealtime();
         mAlarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, currentRealtime,
                 mSettings.getPollInterval(), pollIntent);
 
-        mContentResolver.registerContentObserver(Settings.Global
-                .getUriFor(Settings.Global.NETSTATS_COMBINE_SUBTYPE_ENABLED),
-                        false /* notifyForDescendants */, mContentObserver);
-
-        // Post a runnable on handler thread to call onChange(). It's for getting current value of
-        // NETSTATS_COMBINE_SUBTYPE_ENABLED to decide start or stop monitoring RAT type changes.
-        mHandler.post(() -> mContentObserver.onChange(false, Settings.Global
-                .getUriFor(Settings.Global.NETSTATS_COMBINE_SUBTYPE_ENABLED)));
+        // TODO: listen to settings changed to support dynamically enable/disable.
+        // watch for networkType changes
+        if (!mSettings.getCombineSubtypeEnabled()) {
+            mNetworkStatsSubscriptionsMonitor.start();
+        }
 
         registerGlobalAlert();
     }
@@ -591,8 +559,6 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
         if (!mSettings.getCombineSubtypeEnabled()) {
             mNetworkStatsSubscriptionsMonitor.stop();
         }
-
-        mContentResolver.unregisterContentObserver(mContentObserver);
 
         final long currentTime = mClock.millis();
 
@@ -1084,10 +1050,12 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
             return nativeIfaceStats;
         } else {
             // When tethering offload is in use, nativeIfaceStats does not contain usage from
-            // offload, add it back here. Note that the included statistics might be stale
-            // since polling newest stats from hardware might impact system health and not
-            // suitable for TrafficStats API use cases.
-            return nativeIfaceStats + getProviderIfaceStats(iface, type);
+            // offload, add it back here.
+            // When tethering offload is not in use, nativeIfaceStats contains tethering usage.
+            // this does not cause double-counting of tethering traffic, because
+            // NetdTetheringStatsProvider returns zero NetworkStats
+            // when called with STATS_PER_IFACE.
+            return nativeIfaceStats + getTetherStats(iface, type);
         }
     }
 
@@ -1098,28 +1066,39 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
             return nativeTotalStats;
         } else {
             // Refer to comment in getIfaceStats
-            return nativeTotalStats + getProviderIfaceStats(IFACE_ALL, type);
+            return nativeTotalStats + getTetherStats(IFACE_ALL, type);
         }
     }
 
-    private long getProviderIfaceStats(@Nullable String iface, int type) {
-        final NetworkStats providerSnapshot = getNetworkStatsFromProviders(STATS_PER_IFACE);
-        final HashSet<String> limitIfaces;
+    private long getTetherStats(String iface, int type) {
+        final NetworkStats tetherSnapshot;
+        final long token = Binder.clearCallingIdentity();
+        try {
+            tetherSnapshot = getNetworkStatsTethering(STATS_PER_IFACE);
+        } catch (RemoteException e) {
+            Slog.w(TAG, "Error get TetherStats: " + e);
+            return 0;
+        } finally {
+            Binder.restoreCallingIdentity(token);
+        }
+        HashSet<String> limitIfaces;
         if (iface == IFACE_ALL) {
             limitIfaces = null;
         } else {
-            limitIfaces = new HashSet<>();
+            limitIfaces = new HashSet<String>();
             limitIfaces.add(iface);
         }
-        final NetworkStats.Entry entry = providerSnapshot.getTotal(null, limitIfaces);
+        NetworkStats.Entry entry = tetherSnapshot.getTotal(null, limitIfaces);
+        if (LOGD) Slog.d(TAG, "TetherStats: iface=" + iface + " type=" + type +
+                " entry=" + entry);
         switch (type) {
-            case TrafficStats.TYPE_RX_BYTES:
+            case 0: // TYPE_RX_BYTES
                 return entry.rxBytes;
-            case TrafficStats.TYPE_RX_PACKETS:
+            case 1: // TYPE_RX_PACKETS
                 return entry.rxPackets;
-            case TrafficStats.TYPE_TX_BYTES:
+            case 2: // TYPE_TX_BYTES
                 return entry.txBytes;
-            case TrafficStats.TYPE_TX_PACKETS:
+            case 3: // TYPE_TX_PACKETS
                 return entry.txPackets;
             default:
                 return 0;
@@ -1416,6 +1395,14 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
         final NetworkStats devSnapshot = readNetworkStatsSummaryDev();
         Trace.traceEnd(TRACE_TAG_NETWORK);
 
+        // Tethering snapshot for dev and xt stats. Counts per-interface data from tethering stats
+        // providers that isn't already counted by dev and XT stats.
+        Trace.traceBegin(TRACE_TAG_NETWORK, "snapshotTether");
+        final NetworkStats tetherSnapshot = getNetworkStatsTethering(STATS_PER_IFACE);
+        Trace.traceEnd(TRACE_TAG_NETWORK);
+        xtSnapshot.combineAllValues(tetherSnapshot);
+        devSnapshot.combineAllValues(tetherSnapshot);
+
         // Snapshot for dev/xt stats from all custom stats providers. Counts per-interface data
         // from stats providers that isn't already counted by dev and XT stats.
         Trace.traceBegin(TRACE_TAG_NETWORK, "snapshotStatsProvider");
@@ -1490,7 +1477,29 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
         final boolean persistUid = (flags & FLAG_PERSIST_UID) != 0;
         final boolean persistForce = (flags & FLAG_PERSIST_FORCE) != 0;
 
-        performPollFromProvidersLocked();
+        // Request asynchronous stats update from all providers for next poll. And wait a bit of
+        // time to allow providers report-in given that normally binder call should be fast. Note
+        // that size of list might be changed because addition/removing at the same time. For
+        // addition, the stats of the missed provider can only be collected in next poll;
+        // for removal, wait might take up to MAX_STATS_PROVIDER_POLL_WAIT_TIME_MS
+        // once that happened.
+        // TODO: request with a valid token.
+        Trace.traceBegin(TRACE_TAG_NETWORK, "provider.requestStatsUpdate");
+        final int registeredCallbackCount = mStatsProviderCbList.size();
+        mStatsProviderSem.drainPermits();
+        invokeForAllStatsProviderCallbacks(
+                (cb) -> cb.mProvider.onRequestStatsUpdate(0 /* unused */));
+        try {
+            mStatsProviderSem.tryAcquire(registeredCallbackCount,
+                    MAX_STATS_PROVIDER_POLL_WAIT_TIME_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            // Strictly speaking it's possible a provider happened to deliver between the timeout
+            // and the log, and that doesn't matter too much as this is just a debug log.
+            Log.d(TAG, "requestStatsUpdate - providers responded "
+                    + mStatsProviderSem.availablePermits()
+                    + "/" + registeredCallbackCount + " : " + e);
+        }
+        Trace.traceEnd(TRACE_TAG_NETWORK);
 
         // TODO: consider marking "untrusted" times in historical stats
         final long currentTime = mClock.millis();
@@ -1532,33 +1541,6 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
         // finally, dispatch updated event to any listeners
         mHandler.sendMessage(mHandler.obtainMessage(MSG_BROADCAST_NETWORK_STATS_UPDATED));
 
-        Trace.traceEnd(TRACE_TAG_NETWORK);
-    }
-
-    @GuardedBy("mStatsLock")
-    private void performPollFromProvidersLocked() {
-        // Request asynchronous stats update from all providers for next poll. And wait a bit of
-        // time to allow providers report-in given that normally binder call should be fast. Note
-        // that size of list might be changed because addition/removing at the same time. For
-        // addition, the stats of the missed provider can only be collected in next poll;
-        // for removal, wait might take up to MAX_STATS_PROVIDER_POLL_WAIT_TIME_MS
-        // once that happened.
-        // TODO: request with a valid token.
-        Trace.traceBegin(TRACE_TAG_NETWORK, "provider.requestStatsUpdate");
-        final int registeredCallbackCount = mStatsProviderCbList.size();
-        mStatsProviderSem.drainPermits();
-        invokeForAllStatsProviderCallbacks(
-                (cb) -> cb.mProvider.onRequestStatsUpdate(0 /* unused */));
-        try {
-            mStatsProviderSem.tryAcquire(registeredCallbackCount,
-                    MAX_STATS_PROVIDER_POLL_WAIT_TIME_MS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            // Strictly speaking it's possible a provider happened to deliver between the timeout
-            // and the log, and that doesn't matter too much as this is just a debug log.
-            Log.d(TAG, "requestStatsUpdate - providers responded "
-                    + mStatsProviderSem.availablePermits()
-                    + "/" + registeredCallbackCount + " : " + e);
-        }
         Trace.traceEnd(TRACE_TAG_NETWORK);
     }
 
@@ -1915,13 +1897,9 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
     }
 
     /**
-     * Return snapshot of current non-offloaded tethering statistics. Will return empty
-     * {@link NetworkStats} if any problems are encountered, or queried by {@code STATS_PER_IFACE}
-     * since it is already included by {@link #nativeGetIfaceStat}.
-     * See {@code OffloadTetheringStatsProvider} for offloaded tethering stats.
+     * Return snapshot of current tethering statistics. Will return empty
+     * {@link NetworkStats} if any problems are encountered.
      */
-    // TODO: Remove this by implementing {@link NetworkStatsProvider} for non-offloaded
-    //  tethering stats.
     private NetworkStats getNetworkStatsTethering(int how) throws RemoteException {
         try {
             return mNetworkManager.getNetworkStatsTethering(how);
@@ -2213,6 +2191,13 @@ public class NetworkStatsService extends INetworkStatsService.Stub {
             return getGlobalLong(NETSTATS_UID_TAG_PERSIST_BYTES, def);
         }
     }
+
+    private static int TYPE_RX_BYTES;
+    private static int TYPE_RX_PACKETS;
+    private static int TYPE_TX_BYTES;
+    private static int TYPE_TX_PACKETS;
+    private static int TYPE_TCP_RX_PACKETS;
+    private static int TYPE_TCP_TX_PACKETS;
 
     private static native long nativeGetTotalStat(int type, boolean useBpfStats);
     private static native long nativeGetIfaceStat(String iface, int type, boolean useBpfStats);

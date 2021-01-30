@@ -83,9 +83,9 @@ public class ResourcesImpl {
 
     static final String TAG_PRELOAD = TAG + ".preload";
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private static final boolean TRACE_FOR_PRELOAD = false; // Do we still need it?
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private static final boolean TRACE_FOR_MISS_PRELOAD = false; // Do we still need it?
 
     public static final boolean TRACE_FOR_DETAILED_PRELOAD =
@@ -102,7 +102,7 @@ public class ResourcesImpl {
     private static final Object sSync = new Object();
 
     private static boolean sPreloaded;
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private boolean mPreloading;
 
     // Information about preloaded resources.  Note that they are not
@@ -160,7 +160,7 @@ public class ResourcesImpl {
 
     private PluralRules mPluralRule;
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private final Configuration mConfiguration = new Configuration();
 
     static {
@@ -180,7 +180,7 @@ public class ResourcesImpl {
      * @param displayAdjustments this resource's Display override and compatibility info.
      *                           Must not be null.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public ResourcesImpl(@NonNull AssetManager assets, @Nullable DisplayMetrics metrics,
             @Nullable Configuration config, @NonNull DisplayAdjustments displayAdjustments) {
         mAssets = assets;
@@ -199,7 +199,7 @@ public class ResourcesImpl {
         return mAssets;
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     DisplayMetrics getDisplayMetrics() {
         if (DEBUG_CONFIG) Slog.v(TAG, "Returning DisplayMetrics: " + mMetrics.widthPixels
                 + "x" + mMetrics.heightPixels + " " + mMetrics.density);
@@ -227,7 +227,7 @@ public class ResourcesImpl {
         }
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void getValue(@AnyRes int id, TypedValue outValue, boolean resolveRefs)
             throws NotFoundException {
         boolean found = mAssets.getResourceValue(id, 0, outValue, resolveRefs);
@@ -548,24 +548,7 @@ public class ResourcesImpl {
             remainder = languageTag.substring(separator);
         }
 
-        // No need to convert to lower cases because the language in the return value of
-        // Locale.toLanguageTag has been lower-cased.
-        final String adjustedLanguage;
-        switch(language) {
-            case "id":
-                adjustedLanguage = "in";
-                break;
-            case "yi":
-                adjustedLanguage = "ji";
-                break;
-            case "he":
-                adjustedLanguage = "iw";
-                break;
-            default:
-                adjustedLanguage = language;
-                break;
-        }
-        return adjustedLanguage + remainder;
+        return Locale.adjustLanguageCode(language) + remainder;
     }
 
     /**

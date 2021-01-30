@@ -252,4 +252,5 @@ TEST_F(CompilerTest, DoNotTranslateTest) {
   AssertTranslations(this, "donottranslate", expected_not_translatable);
   AssertTranslations(this, "donottranslate_foo", expected_not_translatable);
 }
+
 }  // namespace aapt

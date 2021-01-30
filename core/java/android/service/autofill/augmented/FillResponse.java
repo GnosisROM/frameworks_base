@@ -18,6 +18,7 @@ package android.service.autofill.augmented;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.os.Bundle;
 import android.service.autofill.Dataset;
 
@@ -32,6 +33,7 @@ import java.util.List;
  * @hide
  */
 @SystemApi
+@TestApi
 @DataClass(
         genBuilder = true,
         genHiddenGetters = true)

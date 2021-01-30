@@ -21,7 +21,6 @@ import static android.app.servertransaction.ActivityLifecycleItem.UNDEFINED;
 
 import android.app.ClientTransactionHandler;
 import android.compat.annotation.UnsupportedAppUsage;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -38,7 +37,7 @@ import java.util.Objects;
  */
 public class NewIntentItem extends ClientTransactionItem {
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private List<ReferrerIntent> mIntents;
     private boolean mResume;
 

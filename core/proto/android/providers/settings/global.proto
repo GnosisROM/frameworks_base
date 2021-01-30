@@ -433,36 +433,35 @@ message GlobalSettingsProto {
         // Ordered GPU debug layer list for GLES
         // i.e. <layer1>:<layer2>:...:<layerN>
         optional SettingProto debug_layers_gles = 7;
-        // Updatable Driver - global preference for all Apps
+        // Game Driver - global preference for all Apps
         // 0 = Default
-        // 1 = All Apps use updatable production driver
-        // 2 = All apps use updatable prerelease driver
-        // 3 = All Apps use system graphics driver
-        optional SettingProto updatable_driver_all_apps = 8;
-        // Updatable Driver - List of Apps selected to use updatable production driver
+        // 1 = All Apps use Game Driver
+        // 2 = All Apps use system graphics driver
+        optional SettingProto game_driver_all_apps = 8;
+        // Game Driver - List of Apps selected to use Game Driver
         // i.e. <pkg1>,<pkg2>,...,<pkgN>
-        optional SettingProto updatable_driver_production_opt_in_apps = 9;
-        // Updatable Driver - List of Apps selected not to use updatable production driver
+        optional SettingProto game_driver_opt_in_apps = 9;
+        // Game Driver - List of Apps selected not to use Game Driver
         // i.e. <pkg1>,<pkg2>,...,<pkgN>
-        optional SettingProto updatable_driver_production_opt_out_apps = 10;
-        // Updatable Driver - List of Apps that are forbidden to use updatable production driver
-        optional SettingProto updatable_driver_production_denylist = 11;
-        // Updatable Driver - List of Apps that are allowed to use updatable production driver
-        optional SettingProto updatable_driver_production_allowlist = 12;
+        optional SettingProto game_driver_opt_out_apps = 10;
+        // Game Driver - List of Apps that are forbidden to use Game Driver
+        optional SettingProto game_driver_blacklist = 11;
+        // Game Driver - List of Apps that are allowed to use Game Driver
+        optional SettingProto game_driver_whitelist = 12;
         // ANGLE - List of Apps that can check ANGLE rules
-        optional SettingProto angle_allowlist = 13;
-        // Updatable Driver - List of denylists, each denylist is a denylist for
-        // a specific updatable production driver version
-        optional SettingProto updatable_driver_production_denylists = 14;
+        optional SettingProto angle_whitelist = 13;
+        // Game Driver - List of blacklists, each blacklist is a blacklist for
+        // a specific Game Driver version
+        optional SettingProto game_driver_blacklists = 14;
         // ANGLE - Show a dialog box when ANGLE is selected for the currently running PKG
         optional SettingProto show_angle_in_use_dialog = 15;
-        // Updatable Driver - List of libraries in sphal accessible by updatable driver
-        optional SettingProto updatable_driver_sphal_libraries = 16;
+        // Game Driver - List of libraries in sphal accessible by Game Driver
+        optional SettingProto game_driver_sphal_libraries = 16;
         // ANGLE - External package containing ANGLE libraries
         optional SettingProto angle_debug_package = 17;
-        // Updatable Driver - List of Apps selected to use updatable prerelease driver
+        // Game Driver - List of Apps selected to use prerelease Game Driver
         // i.e. <pkg1>,<pkg2>,...,<pkgN>
-        optional SettingProto updatable_driver_prerelease_opt_in_apps = 18;
+        optional SettingProto game_driver_prerelease_opt_in_apps = 18;
     }
     optional Gpu gpu = 59;
 
@@ -911,8 +910,13 @@ message GlobalSettingsProto {
         optional SettingProto storage_full_threshold_bytes = 4 [ (android.privacy).dest = DEST_AUTOMATIC ];
         optional SettingProto storage_cache_percentage = 5 [ (android.privacy).dest = DEST_AUTOMATIC ];
         optional SettingProto storage_cache_max_bytes = 6 [ (android.privacy).dest = DEST_AUTOMATIC ];
-        // Used to be sys_vdso
-        reserved 7;
+        // System VDSO global setting. This links to the "sys.vdso" system property.
+        // The following values are supported:
+        // false  -> both 32 and 64 bit vdso disabled
+        // 32     -> 32 bit vdso enabled
+        // 64     -> 64 bit vdso enabled
+        // Any other value defaults to both 32 bit and 64 bit true.
+        optional SettingProto vdso = 7 [ (android.privacy).dest = DEST_AUTOMATIC ];
         // UidCpuPower global setting. This links the sys.uidcpupower system property.
         // The following values are supported:
         // 0 -> /proc/uid_cpupower/* are disabled

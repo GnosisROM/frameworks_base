@@ -23,7 +23,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
-import android.icu.text.DateTimePatternGenerator;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Parcelable;
@@ -53,6 +52,8 @@ import com.android.systemui.statusbar.phone.StatusBarIconController;
 import com.android.systemui.statusbar.policy.ConfigurationController.ConfigurationListener;
 import com.android.systemui.tuner.TunerService;
 import com.android.systemui.tuner.TunerService.Tunable;
+
+import libcore.icu.LocaleData;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -191,7 +192,7 @@ public class Clock extends TextView implements DemoMode, Tunable, CommandQueue.C
             mBroadcastDispatcher.registerReceiverWithHandler(mIntentReceiver, filter,
                     Dependency.get(Dependency.TIME_TICK_HANDLER), UserHandle.ALL);
             Dependency.get(TunerService.class).addTunable(this, CLOCK_SECONDS,
-                    StatusBarIconController.ICON_HIDE_LIST);
+                    StatusBarIconController.ICON_BLACKLIST);
             mCommandQueue.addCallback(this);
             if (mShowDark) {
                 Dependency.get(DarkIconDispatcher.class).addDarkReceiver(this);
@@ -305,8 +306,8 @@ public class Clock extends TextView implements DemoMode, Tunable, CommandQueue.C
         if (CLOCK_SECONDS.equals(key)) {
             mShowSeconds = TunerService.parseIntegerSwitch(newValue, false);
             updateShowSeconds();
-        } else if (StatusBarIconController.ICON_HIDE_LIST.equals(key)) {
-            setClockVisibleByUser(!StatusBarIconController.getIconHideList(getContext(), newValue)
+        } else {
+            setClockVisibleByUser(!StatusBarIconController.getIconBlacklist(getContext(), newValue)
                     .contains("clock"));
             updateClockVisibility();
         }
@@ -390,21 +391,20 @@ public class Clock extends TextView implements DemoMode, Tunable, CommandQueue.C
     private final CharSequence getSmallTime() {
         Context context = getContext();
         boolean is24 = DateFormat.is24HourFormat(context, mCurrentUserId);
-        DateTimePatternGenerator dtpg = DateTimePatternGenerator.getInstance(
-                context.getResources().getConfiguration().locale);
+        LocaleData d = LocaleData.get(context.getResources().getConfiguration().locale);
 
         final char MAGIC1 = '\uEF00';
         final char MAGIC2 = '\uEF01';
 
         SimpleDateFormat sdf;
         String format = mShowSeconds
-                ? is24 ? dtpg.getBestPattern("Hms") : dtpg.getBestPattern("hms")
-                : is24 ? dtpg.getBestPattern("Hm") : dtpg.getBestPattern("hm");
+                ? is24 ? d.timeFormat_Hms : d.timeFormat_hms
+                : is24 ? d.timeFormat_Hm : d.timeFormat_hm;
         if (!format.equals(mClockFormatString)) {
             mContentDescriptionFormat = new SimpleDateFormat(format);
             /*
              * Search for an unquoted "a" in the format string, so we can
-             * add marker characters around it to let us find it again after
+             * add dummy characters around it to let us find it again after
              * formatting and change its size.
              */
             if (mAmPmStyle != AM_PM_STYLE_NORMAL) {

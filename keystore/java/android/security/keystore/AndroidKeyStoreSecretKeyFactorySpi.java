@@ -177,7 +177,7 @@ public class AndroidKeyStoreSecretKeyFactorySpi extends SecretKeyFactorySpi {
                 && (keymasterSwEnforcedUserAuthenticators == 0);
         boolean userAuthenticationValidWhileOnBody =
                 keyCharacteristics.hwEnforced.getBoolean(KeymasterDefs.KM_TAG_ALLOW_WHILE_ON_BODY);
-        boolean trustedUserPresenceRequired =
+        boolean trustedUserPresenceRequred =
                 keyCharacteristics.hwEnforced.getBoolean(
                     KeymasterDefs.KM_TAG_TRUSTED_USER_PRESENCE_REQUIRED);
 
@@ -209,13 +209,9 @@ public class AndroidKeyStoreSecretKeyFactorySpi extends SecretKeyFactorySpi {
                 keymasterHwEnforcedUserAuthenticators,
                 userAuthenticationRequirementEnforcedBySecureHardware,
                 userAuthenticationValidWhileOnBody,
-                trustedUserPresenceRequired,
+                trustedUserPresenceRequred,
                 invalidatedByBiometricEnrollment,
-                userConfirmationRequired,
-                // Keystore 1.0 does not tell us the exact security level of the key
-                // so we report an unknown but secure security level.
-                insideSecureHardware ? KeyProperties.SECURITY_LEVEL_UNKNOWN_SECURE
-                        : KeyProperties.SECURITY_LEVEL_SOFTWARE);
+                userConfirmationRequired);
     }
 
     private static BigInteger getGateKeeperSecureUserId() throws ProviderException {

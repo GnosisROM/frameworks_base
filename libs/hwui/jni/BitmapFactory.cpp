@@ -16,7 +16,7 @@
 #include "Utils.h"
 
 #include <HardwareBitmapUploader.h>
-#include <nativehelper/JNIPlatformHelp.h>
+#include <nativehelper/JNIHelp.h>
 #include <androidfw/Asset.h>
 #include <androidfw/ResourceTypes.h>
 #include <cutils/compiler.h>

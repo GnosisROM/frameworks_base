@@ -23,17 +23,8 @@ android_test_helper_app {
 java_test_host {
     name: "StagedInstallInternalTest",
     srcs: ["src/**/*.java"],
-    libs: ["tradefed", "cts-shim-host-lib"],
-    static_libs: [
-        "testng",
-        "compatibility-tradefed",
-        "frameworks-base-hostutils",
-        "cts-install-lib-host",
-    ],
-    data: [
-        ":com.android.apex.cts.shim.v2_prebuilt",
-        ":TestAppAv1",
-    ],
+    libs: ["tradefed"],
+    static_libs: ["testng", "compatibility-tradefed"],
     test_suites: ["general-tests"],
     test_config: "StagedInstallInternalTest.xml",
 }

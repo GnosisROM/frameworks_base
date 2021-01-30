@@ -75,7 +75,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -830,7 +829,7 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
     }
 
     class C implements Callbacks {
-        private final Map<Callbacks, Handler> mCallbackMap = new ConcurrentHashMap<>();
+        private final HashMap<Callbacks, Handler> mCallbackMap = new HashMap<>();
 
         public void add(Callbacks callback, Handler handler) {
             if (callback == null || handler == null) throw new IllegalArgumentException();

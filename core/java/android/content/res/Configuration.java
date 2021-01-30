@@ -815,7 +815,7 @@ public final class Configuration implements Parcelable, Comparable<Configuration
      * {@link ActivityInfo#CONFIG_ASSETS_PATHS}.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @TestApi
     public int assetsSeq;
 
@@ -1871,7 +1871,7 @@ public final class Configuration implements Parcelable, Comparable<Configuration
      */
     public boolean isOtherSeqNewer(Configuration other) {
         if (other == null) {
-            // Validation check.
+            // Sanity check.
             return false;
         }
         if (other.seq == 0) {
@@ -2280,7 +2280,7 @@ public final class Configuration implements Parcelable, Comparable<Configuration
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static String resourceQualifierString(Configuration config) {
         return resourceQualifierString(config, null);
     }

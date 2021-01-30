@@ -43,6 +43,7 @@ import android.annotation.SdkConstant;
 import android.annotation.SuppressLint;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.annotation.TestApi;
 import android.annotation.WorkerThread;
 import android.app.Activity;
 import android.app.ActivityThread;
@@ -60,7 +61,6 @@ import android.content.res.ObbScanner;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.os.Handler;
@@ -294,7 +294,7 @@ public class StorageManager {
     public static final int FSTRIM_FLAG_DEEP = IVold.FSTRIM_FLAG_DEEP_TRIM;
 
     /** @hide The volume is not encrypted. */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final int ENCRYPTION_STATE_NONE =
             IVold.ENCRYPTION_STATE_NONE;
 
@@ -634,7 +634,7 @@ public class StorageManager {
      * @hide
      */
     @Deprecated
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void enableUsbMassStorage() {
     }
 
@@ -644,7 +644,7 @@ public class StorageManager {
      * @hide
      */
     @Deprecated
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void disableUsbMassStorage() {
     }
 
@@ -655,7 +655,7 @@ public class StorageManager {
      * @hide
      */
     @Deprecated
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public boolean isUsbMassStorageConnected() {
         return false;
     }
@@ -811,7 +811,7 @@ public class StorageManager {
     }
 
     /** {@hide} */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public @Nullable VolumeInfo findVolumeById(String id) {
         Preconditions.checkNotNull(id);
         // TODO; go directly to service to make this faster
@@ -1032,7 +1032,7 @@ public class StorageManager {
     }
 
     /** {@hide} */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void format(String volId) {
         try {
             mStorageManager.format(volId);
@@ -1074,7 +1074,7 @@ public class StorageManager {
     }
 
     /** {@hide} */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void partitionPublic(String diskId) {
         try {
             mStorageManager.partitionPublic(diskId);
@@ -1236,7 +1236,7 @@ public class StorageManager {
     }
 
     /** {@hide} */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private static @Nullable StorageVolume getStorageVolume(StorageVolume[] volumes, File file) {
         if (file == null) {
             return null;
@@ -1484,7 +1484,7 @@ public class StorageManager {
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public long getStorageFullBytes(File path) {
         return Settings.Global.getLong(mResolver, Settings.Global.SYS_STORAGE_FULL_THRESHOLD_BYTES,
                 DEFAULT_FULL_THRESHOLD_BYTES);
@@ -1601,7 +1601,7 @@ public class StorageManager {
      * @return true for file encrypted. (Implies isEncrypted() == true)
      *         false not encrypted or block encrypted
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static boolean isFileEncryptedNativeOnly() {
         if (!isEncrypted()) {
             return false;
@@ -1707,6 +1707,7 @@ public class StorageManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static boolean hasIsolatedStorage() {
         // Prefer to use snapshot for current boot when available
         return SystemProperties.getBoolean(PROP_ISOLATED_STORAGE_SNAPSHOT,
@@ -2221,7 +2222,7 @@ public class StorageManager {
     /** @hide */
     @SystemApi
     @WorkerThread
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public long getAllocatableBytes(@NonNull UUID storageUuid,
             @RequiresPermission @AllocateFlags int flags) throws IOException {
         try {
@@ -2270,7 +2271,7 @@ public class StorageManager {
     /** @hide */
     @SystemApi
     @WorkerThread
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public void allocateBytes(@NonNull UUID storageUuid, @BytesLong long bytes,
             @RequiresPermission @AllocateFlags int flags) throws IOException {
         try {
@@ -2320,7 +2321,7 @@ public class StorageManager {
     /** @hide */
     @SystemApi
     @WorkerThread
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public void allocateBytes(FileDescriptor fd, @BytesLong long bytes,
             @RequiresPermission @AllocateFlags int flags) throws IOException {
         final File file = ParcelFileDescriptor.getFile(fd);
@@ -2683,10 +2684,10 @@ public class StorageManager {
 
     /// Consts to match the password types in cryptfs.h
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final int CRYPT_TYPE_PASSWORD = IVold.PASSWORD_TYPE_PASSWORD;
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final int CRYPT_TYPE_DEFAULT = IVold.PASSWORD_TYPE_DEFAULT;
     /** @hide */
     public static final int CRYPT_TYPE_PATTERN = IVold.PASSWORD_TYPE_PATTERN;

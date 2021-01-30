@@ -181,7 +181,7 @@ public final class FileUtils {
      * @return 0 on success, otherwise errno.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static int setPermissions(FileDescriptor fd, int mode, int uid, int gid) {
         try {
             Os.fchmod(fd, mode);
@@ -664,7 +664,7 @@ public final class FileUtils {
     }
 
     /** {@hide} */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static void stringToFile(File file, String string) throws IOException {
         stringToFile(file.getAbsolutePath(), string);
     }
@@ -713,7 +713,7 @@ public final class FileUtils {
      *             to its potential for collision.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @Deprecated
     public static long checksumCrc32(File file) throws FileNotFoundException, IOException {
         CRC32 checkSummer = new CRC32();
@@ -800,7 +800,7 @@ public final class FileUtils {
      * @return if any files were deleted.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static boolean deleteOlderFiles(File dir, int minCount, long minAgeMs) {
         if (minCount < 0 || minAgeMs < 0) {
             throw new IllegalArgumentException("Constraints must be positive or 0");
@@ -909,7 +909,7 @@ public final class FileUtils {
     }
 
     /** {@hide} */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static boolean deleteContents(File dir) {
         File[] files = dir.listFiles();
         boolean success = true;
@@ -1306,7 +1306,7 @@ public final class FileUtils {
 
     /** {@hide} */
     public static int translateModeStringToPosix(String mode) {
-        // Quick check for invalid chars
+        // Sanity check for invalid chars
         for (int i = 0; i < mode.length(); i++) {
             switch (mode.charAt(i)) {
                 case 'r':

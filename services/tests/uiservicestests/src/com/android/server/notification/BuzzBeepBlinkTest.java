@@ -1185,7 +1185,7 @@ public class BuzzBeepBlinkTest extends UiServiceTestCase {
         NotificationRecord r = getLightsNotification();
         mService.buzzBeepBlinkLocked(r);
         verifyNeverLights();
-        assertTrue(r.isInterruptive());
+        assertFalse(r.isInterruptive());
         assertEquals(-1, r.getLastAudiblyAlertedMs());
     }
 
@@ -1343,22 +1343,6 @@ public class BuzzBeepBlinkTest extends UiServiceTestCase {
         verifyLights();
         assertTrue(group.isInterruptive());
         assertEquals(-1, group.getLastAudiblyAlertedMs());
-    }
-
-    @Test
-    public void testLightsCheckCurrentUser() {
-        final Notification n = new Builder(getContext(), "test")
-                .setSmallIcon(android.R.drawable.sym_def_app_icon).build();
-        int userId = mUser.getIdentifier() + 10;
-        StatusBarNotification sbn = new StatusBarNotification(mPkg, mPkg, 0, mTag, mUid,
-                mPid, n, UserHandle.of(userId), null, System.currentTimeMillis());
-        NotificationRecord r = new NotificationRecord(getContext(), sbn,
-                new NotificationChannel("test", "test", IMPORTANCE_HIGH));
-
-        mService.buzzBeepBlinkLocked(r);
-        verifyNeverLights();
-        assertFalse(r.isInterruptive());
-        assertEquals(-1, r.getLastAudiblyAlertedMs());
     }
 
     @Test

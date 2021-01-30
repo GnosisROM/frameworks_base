@@ -214,10 +214,8 @@ final class HdmiCecLocalDeviceTv extends HdmiCecLocalDevice {
         resetSelectRequestBuffer();
         launchDeviceDiscovery();
         startQueuedActions();
-        if (!mDelayedMessageBuffer.isBuffered(Constants.MESSAGE_ACTIVE_SOURCE)) {
-            mService.sendCecCommand(HdmiCecMessageBuilder.buildRequestActiveSource(mAddress));
-        }
     }
+
 
     @ServiceThreadOnly
     private List<Integer> initLocalDeviceAddresses() {
@@ -1098,11 +1096,10 @@ final class HdmiCecLocalDeviceTv extends HdmiCecLocalDevice {
         HdmiDeviceInfo avr = getAvrDeviceInfo();
         if (avr != null
                 && (avrAddress == avr.getLogicalAddress())
-                && isConnectedToArcPort(avr.getPhysicalAddress())) {
+                && isConnectedToArcPort(avr.getPhysicalAddress())
+                && isDirectConnectAddress(avr.getPhysicalAddress())) {
             if (enabled) {
-                return isConnected(avr.getPortId())
-                    && isArcFeatureEnabled(avr.getPortId())
-                    && isDirectConnectAddress(avr.getPhysicalAddress());
+                return isConnected(avr.getPortId()) && isArcFeatureEnabled(avr.getPortId());
             } else {
                 return true;
             }
@@ -1569,11 +1566,10 @@ final class HdmiCecLocalDeviceTv extends HdmiCecLocalDevice {
         // When the device is not unplugged but reawaken from standby, we check if the System
         // Audio Control Feature is enabled or not then decide if turning SAM on/off accordingly.
         if (getAvrDeviceInfo() != null && portId == getAvrDeviceInfo().getPortId()) {
-            HdmiLogger.debug("Port ID:%d, 5v=%b", portId, connected);
             if (!connected) {
                 setSystemAudioMode(false);
-            } else {
-                onNewAvrAdded(getAvrDeviceInfo());
+            } else if (mSystemAudioControlFeatureEnabled != mService.isSystemAudioActivated()){
+                setSystemAudioMode(mSystemAudioControlFeatureEnabled);
             }
         }
 
@@ -1668,7 +1664,6 @@ final class HdmiCecLocalDeviceTv extends HdmiCecLocalDevice {
         if (avr == null) {
             return;
         }
-        setArcStatus(false);
 
         // Seq #44.
         removeAction(RequestArcInitiationAction.class);

@@ -24,8 +24,6 @@ cc_library_shared {
 
     cflags: ["-Werror"],
 
-    header_libs: ["jni_headers"],
-
     shared_libs: [
         "libdl",
         "liblog",

@@ -16,9 +16,12 @@
 
 package android.net;
 
+import static android.net.PlatformVpnProfile.TYPE_IKEV2_IPSEC_PSK;
+import static android.net.PlatformVpnProfile.TYPE_IKEV2_IPSEC_RSA;
+import static android.net.PlatformVpnProfile.TYPE_IKEV2_IPSEC_USER_PASS;
+
 import static com.android.internal.annotations.VisibleForTesting.Visibility;
 import static com.android.internal.util.Preconditions.checkStringNotEmpty;
-import static com.android.net.module.util.NetworkStackConstants.IPV6_MIN_MTU;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -155,8 +158,9 @@ public final class Ikev2VpnProfile extends PlatformVpnProfile {
         // IPv6 MTU is greater; since profiles may be started by the system on IPv4 and IPv6
         // networks, the VPN must provide a link fulfilling the stricter of the two conditions
         // (at least that of the IPv6 MTU).
-        if (mMaxMtu < IPV6_MIN_MTU) {
-            throw new IllegalArgumentException("Max MTU must be at least" + IPV6_MIN_MTU);
+        if (mMaxMtu < LinkProperties.MIN_MTU_V6) {
+            throw new IllegalArgumentException(
+                    "Max MTU must be at least" + LinkProperties.MIN_MTU_V6);
         }
 
         switch (mType) {
@@ -807,8 +811,9 @@ public final class Ikev2VpnProfile extends PlatformVpnProfile {
             // IPv6 MTU is greater; since profiles may be started by the system on IPv4 and IPv6
             // networks, the VPN must provide a link fulfilling the stricter of the two conditions
             // (at least that of the IPv6 MTU).
-            if (mtu < IPV6_MIN_MTU) {
-                throw new IllegalArgumentException("Max MTU must be at least " + IPV6_MIN_MTU);
+            if (mtu < LinkProperties.MIN_MTU_V6) {
+                throw new IllegalArgumentException(
+                        "Max MTU must be at least " + LinkProperties.MIN_MTU_V6);
             }
             mMaxMtu = mtu;
             return this;

@@ -24,6 +24,7 @@ import android.annotation.SystemService;
 import android.annotation.TestApi;
 import android.content.Context;
 import android.content.IntentSender;
+import android.content.pm.PackageInstaller;
 import android.content.pm.ParceledListSlice;
 import android.content.pm.VersionedPackage;
 import android.os.RemoteException;
@@ -42,7 +43,7 @@ import java.util.List;
  * @see PackageInstaller.SessionParams#setEnableRollback(boolean)
  * @hide
  */
-@SystemApi
+@SystemApi @TestApi
 @SystemService(Context.ROLLBACK_SERVICE)
 public final class RollbackManager {
     private final String mCallerPackageName;

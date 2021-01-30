@@ -18,7 +18,6 @@ package com.android.server.locksettings;
 
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
-import android.security.keystore2.AndroidKeyStoreProvider;
 import android.util.Slog;
 
 import java.io.ByteArrayOutputStream;
@@ -126,7 +125,7 @@ public class SyntheticPasswordCrypto {
 
     public static byte[] decryptBlobV1(String keyAlias, byte[] blob, byte[] applicationId) {
         try {
-            KeyStore keyStore = KeyStore.getInstance(androidKeystoreProviderName());
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
 
             SecretKey decryptionKey = (SecretKey) keyStore.getKey(keyAlias, null);
@@ -141,24 +140,9 @@ public class SyntheticPasswordCrypto {
         }
     }
 
-    /**
-     * TODO This function redirects keystore access to the legacy keystore during a transitional
-     *      phase during which not all calling code has been adjusted to use Keystore 2.0.
-     *      This can be reverted to a constant of "AndroidKeyStore" when b/171305684 is complete.
-     *      The specific bug for this component is b/171305115.
-     */
-    static String androidKeystoreProviderName() {
-        if (AndroidKeyStoreProvider.isInstalled()) {
-            return "AndroidKeyStoreLegacy";
-        } else {
-            return "AndroidKeystore";
-        }
-
-    }
-
     public static byte[] decryptBlob(String keyAlias, byte[] blob, byte[] applicationId) {
         try {
-            KeyStore keyStore = KeyStore.getInstance(androidKeystoreProviderName());
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
 
             SecretKey decryptionKey = (SecretKey) keyStore.getKey(keyAlias, null);
@@ -182,7 +166,7 @@ public class SyntheticPasswordCrypto {
             KeyGenerator keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES);
             keyGenerator.init(AES_KEY_LENGTH * 8, new SecureRandom());
             SecretKey secretKey = keyGenerator.generateKey();
-            KeyStore keyStore = KeyStore.getInstance(androidKeystoreProviderName());
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
             KeyProtection.Builder builder = new KeyProtection.Builder(KeyProperties.PURPOSE_DECRYPT)
                     .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
@@ -212,7 +196,7 @@ public class SyntheticPasswordCrypto {
     public static void destroyBlobKey(String keyAlias) {
         KeyStore keyStore;
         try {
-            keyStore = KeyStore.getInstance(androidKeystoreProviderName());
+            keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
             keyStore.deleteEntry(keyAlias);
             Slog.i(TAG, "SP key deleted: " + keyAlias);

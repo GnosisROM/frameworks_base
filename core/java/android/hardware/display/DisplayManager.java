@@ -29,7 +29,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Point;
 import android.media.projection.MediaProjection;
-import android.os.Build;
 import android.os.Handler;
 import android.util.Pair;
 import android.util.SparseArray;
@@ -65,7 +64,7 @@ public final class DisplayManager {
      * </p>
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String ACTION_WIFI_DISPLAY_STATUS_CHANGED =
             "android.hardware.display.action.WIFI_DISPLAY_STATUS_CHANGED";
 
@@ -73,7 +72,7 @@ public final class DisplayManager {
      * Contains a {@link WifiDisplayStatus} object.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String EXTRA_WIFI_DISPLAY_STATUS =
             "android.hardware.display.extra.WIFI_DISPLAY_STATUS";
 
@@ -692,6 +691,7 @@ public final class DisplayManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     public Point getStableDisplaySize() {
         return mGlobal.getStableDisplaySize();
     }
@@ -701,6 +701,7 @@ public final class DisplayManager {
      * @hide until we make it a system api.
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(Manifest.permission.BRIGHTNESS_SLIDER_USAGE)
     public List<BrightnessChangeEvent> getBrightnessEvents() {
         return mGlobal.getBrightnessEvents(mContext.getOpPackageName());
@@ -712,6 +713,7 @@ public final class DisplayManager {
      * @hide until we make it a system api
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(Manifest.permission.ACCESS_AMBIENT_LIGHT_STATS)
     public List<AmbientBrightnessDayStats> getAmbientBrightnessStats() {
         return mGlobal.getAmbientBrightnessStats();
@@ -723,6 +725,7 @@ public final class DisplayManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)
     public void setBrightnessConfiguration(BrightnessConfiguration c) {
         setBrightnessConfigurationForUser(c, mContext.getUserId(), mContext.getPackageName());
@@ -747,6 +750,7 @@ public final class DisplayManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)
     public BrightnessConfiguration getBrightnessConfiguration() {
         return getBrightnessConfigurationForUser(mContext.getUserId());
@@ -772,6 +776,7 @@ public final class DisplayManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS)
     @Nullable
     public BrightnessConfiguration getDefaultBrightnessConfiguration() {

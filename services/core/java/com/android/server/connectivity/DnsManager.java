@@ -34,6 +34,7 @@ import android.content.Intent;
 import android.net.IDnsResolver;
 import android.net.LinkProperties;
 import android.net.Network;
+import android.net.NetworkUtils;
 import android.net.ResolverOptionsParcel;
 import android.net.ResolverParamsParcel;
 import android.net.Uri;
@@ -44,8 +45,8 @@ import android.os.ServiceSpecificException;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Pair;
+import android.util.Slog;
 
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -58,6 +59,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
 
 /**
  * Encapsulate the management of DNS settings for networks.
@@ -236,21 +238,24 @@ public class DnsManager {
     private final Context mContext;
     private final ContentResolver mContentResolver;
     private final IDnsResolver mDnsResolver;
+    private final MockableSystemProperties mSystemProperties;
     private final ConcurrentHashMap<Integer, PrivateDnsConfig> mPrivateDnsMap;
     // TODO: Replace the Map with SparseArrays.
     private final Map<Integer, PrivateDnsValidationStatuses> mPrivateDnsValidationMap;
     private final Map<Integer, LinkProperties> mLinkPropertiesMap;
     private final Map<Integer, int[]> mTransportsMap;
 
+    private int mNumDnsEntries;
     private int mSampleValidity;
     private int mSuccessThreshold;
     private int mMinSamples;
     private int mMaxSamples;
 
-    public DnsManager(Context ctx, IDnsResolver dnsResolver) {
+    public DnsManager(Context ctx, IDnsResolver dnsResolver, MockableSystemProperties sp) {
         mContext = ctx;
         mContentResolver = mContext.getContentResolver();
         mDnsResolver = dnsResolver;
+        mSystemProperties = sp;
         mPrivateDnsMap = new ConcurrentHashMap<>();
         mPrivateDnsValidationMap = new HashMap<>();
         mLinkPropertiesMap = new HashMap<>();
@@ -265,23 +270,23 @@ public class DnsManager {
     }
 
     public void removeNetwork(Network network) {
-        mPrivateDnsMap.remove(network.getNetId());
-        mPrivateDnsValidationMap.remove(network.getNetId());
-        mTransportsMap.remove(network.getNetId());
-        mLinkPropertiesMap.remove(network.getNetId());
+        mPrivateDnsMap.remove(network.netId);
+        mPrivateDnsValidationMap.remove(network.netId);
+        mTransportsMap.remove(network.netId);
+        mLinkPropertiesMap.remove(network.netId);
     }
 
     // This is exclusively called by ConnectivityService#dumpNetworkDiagnostics() which
     // is not on the ConnectivityService handler thread.
     public PrivateDnsConfig getPrivateDnsConfig(@NonNull Network network) {
-        return mPrivateDnsMap.getOrDefault(network.getNetId(), PRIVATE_DNS_OFF);
+        return mPrivateDnsMap.getOrDefault(network.netId, PRIVATE_DNS_OFF);
     }
 
     public PrivateDnsConfig updatePrivateDns(Network network, PrivateDnsConfig cfg) {
-        Log.w(TAG, "updatePrivateDns(" + network + ", " + cfg + ")");
+        Slog.w(TAG, "updatePrivateDns(" + network + ", " + cfg + ")");
         return (cfg != null)
-                ? mPrivateDnsMap.put(network.getNetId(), cfg)
-                : mPrivateDnsMap.remove(network.getNetId());
+                ? mPrivateDnsMap.put(network.netId, cfg)
+                : mPrivateDnsMap.remove(network.netId);
     }
 
     public void updatePrivateDnsStatus(int netId, LinkProperties lp) {
@@ -308,7 +313,8 @@ public class DnsManager {
     }
 
     public void updatePrivateDnsValidation(PrivateDnsValidationUpdate update) {
-        final PrivateDnsValidationStatuses statuses = mPrivateDnsValidationMap.get(update.netId);
+        final PrivateDnsValidationStatuses statuses =
+                mPrivateDnsValidationMap.get(update.netId);
         if (statuses == null) return;
         statuses.updateStatus(update);
     }
@@ -362,11 +368,12 @@ public class DnsManager {
         paramsParcel.successThreshold = mSuccessThreshold;
         paramsParcel.minSamples = mMinSamples;
         paramsParcel.maxSamples = mMaxSamples;
-        paramsParcel.servers = makeStrings(lp.getDnsServers());
+        paramsParcel.servers =
+                NetworkUtils.makeStrings(lp.getDnsServers());
         paramsParcel.domains = getDomainStrings(lp.getDomains());
         paramsParcel.tlsName = strictMode ? privateDnsCfg.hostname : "";
         paramsParcel.tlsServers =
-                strictMode ? makeStrings(
+                strictMode ? NetworkUtils.makeStrings(
                         Arrays.stream(privateDnsCfg.ips)
                               .filter((ip) -> lp.isReachable(ip))
                               .collect(Collectors.toList()))
@@ -386,7 +393,7 @@ public class DnsManager {
             mPrivateDnsValidationMap.remove(netId);
         }
 
-        Log.d(TAG, String.format("sendDnsConfigurationForNetwork(%d, %s, %s, %d, %d, %d, %d, "
+        Slog.d(TAG, String.format("sendDnsConfigurationForNetwork(%d, %s, %s, %d, %d, %d, %d, "
                 + "%d, %d, %s, %s)", paramsParcel.netId, Arrays.toString(paramsParcel.servers),
                 Arrays.toString(paramsParcel.domains), paramsParcel.sampleValiditySeconds,
                 paramsParcel.successThreshold, paramsParcel.minSamples,
@@ -397,9 +404,21 @@ public class DnsManager {
         try {
             mDnsResolver.setResolverConfiguration(paramsParcel);
         } catch (RemoteException | ServiceSpecificException e) {
-            Log.e(TAG, "Error setting DNS configuration: " + e);
+            Slog.e(TAG, "Error setting DNS configuration: " + e);
             return;
         }
+    }
+
+    public void setDefaultDnsSystemProperties(Collection<InetAddress> dnses) {
+        int last = 0;
+        for (InetAddress dns : dnses) {
+            ++last;
+            setNetDnsProperty(last, dns.getHostAddress());
+        }
+        for (int i = last + 1; i <= mNumDnsEntries; ++i) {
+            setNetDnsProperty(i, "");
+        }
+        mNumDnsEntries = last;
     }
 
     /**
@@ -428,8 +447,8 @@ public class DnsManager {
                 DNS_RESOLVER_SAMPLE_VALIDITY_SECONDS,
                 DNS_RESOLVER_DEFAULT_SAMPLE_VALIDITY_SECONDS);
         if (mSampleValidity < 0 || mSampleValidity > 65535) {
-            Log.w(TAG, "Invalid sampleValidity=" + mSampleValidity + ", using default="
-                    + DNS_RESOLVER_DEFAULT_SAMPLE_VALIDITY_SECONDS);
+            Slog.w(TAG, "Invalid sampleValidity=" + mSampleValidity + ", using default=" +
+                    DNS_RESOLVER_DEFAULT_SAMPLE_VALIDITY_SECONDS);
             mSampleValidity = DNS_RESOLVER_DEFAULT_SAMPLE_VALIDITY_SECONDS;
         }
 
@@ -437,17 +456,17 @@ public class DnsManager {
                 DNS_RESOLVER_SUCCESS_THRESHOLD_PERCENT,
                 DNS_RESOLVER_DEFAULT_SUCCESS_THRESHOLD_PERCENT);
         if (mSuccessThreshold < 0 || mSuccessThreshold > 100) {
-            Log.w(TAG, "Invalid successThreshold=" + mSuccessThreshold + ", using default="
-                    + DNS_RESOLVER_DEFAULT_SUCCESS_THRESHOLD_PERCENT);
+            Slog.w(TAG, "Invalid successThreshold=" + mSuccessThreshold + ", using default=" +
+                    DNS_RESOLVER_DEFAULT_SUCCESS_THRESHOLD_PERCENT);
             mSuccessThreshold = DNS_RESOLVER_DEFAULT_SUCCESS_THRESHOLD_PERCENT;
         }
 
         mMinSamples = getIntSetting(DNS_RESOLVER_MIN_SAMPLES, DNS_RESOLVER_DEFAULT_MIN_SAMPLES);
         mMaxSamples = getIntSetting(DNS_RESOLVER_MAX_SAMPLES, DNS_RESOLVER_DEFAULT_MAX_SAMPLES);
         if (mMinSamples < 0 || mMinSamples > mMaxSamples || mMaxSamples > 64) {
-            Log.w(TAG, "Invalid sample count (min, max)=(" + mMinSamples + ", " + mMaxSamples
-                    + "), using default=(" + DNS_RESOLVER_DEFAULT_MIN_SAMPLES + ", "
-                    + DNS_RESOLVER_DEFAULT_MAX_SAMPLES + ")");
+            Slog.w(TAG, "Invalid sample count (min, max)=(" + mMinSamples + ", " + mMaxSamples +
+                    "), using default=(" + DNS_RESOLVER_DEFAULT_MIN_SAMPLES + ", " +
+                    DNS_RESOLVER_DEFAULT_MAX_SAMPLES + ")");
             mMinSamples = DNS_RESOLVER_DEFAULT_MIN_SAMPLES;
             mMaxSamples = DNS_RESOLVER_DEFAULT_MAX_SAMPLES;
         }
@@ -457,19 +476,14 @@ public class DnsManager {
         return Settings.Global.getInt(mContentResolver, which, dflt);
     }
 
-    /**
-     * Create a string array of host addresses from a collection of InetAddresses
-     *
-     * @param addrs a Collection of InetAddresses
-     * @return an array of Strings containing their host addresses
-     */
-    private String[] makeStrings(Collection<InetAddress> addrs) {
-        String[] result = new String[addrs.size()];
-        int i = 0;
-        for (InetAddress addr : addrs) {
-            result[i++] = addr.getHostAddress();
+    private void setNetDnsProperty(int which, String value) {
+        final String key = "net.dns" + which;
+        // Log and forget errors setting unsupported properties.
+        try {
+            mSystemProperties.set(key, value);
+        } catch (Exception e) {
+            Slog.e(TAG, "Error setting unsupported net.dns property: ", e);
         }
-        return result;
     }
 
     private static String getPrivateDnsMode(ContentResolver cr) {

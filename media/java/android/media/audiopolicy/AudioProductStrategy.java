@@ -19,6 +19,7 @@ package android.media.audiopolicy;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.media.AudioAttributes;
 import android.media.AudioSystem;
 import android.media.MediaRecorder;
@@ -107,6 +108,7 @@ public final class AudioProductStrategy implements Parcelable {
      * @param id the ID for the invalid strategy, always use a different one than in use
      * @return an invalid instance that cannot successfully be used for volume groups or routing
      */
+    @TestApi
     @SystemApi
     public static @NonNull AudioProductStrategy createInvalidAudioProductStrategy(int id) {
         return new AudioProductStrategy("dummy strategy", id, new AudioAttributesGroup[0]);

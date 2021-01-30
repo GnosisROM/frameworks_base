@@ -953,12 +953,12 @@ public class Notification implements Parcelable
     public ArraySet<PendingIntent> allPendingIntents;
 
     /**
-     * Token identifying the notification that is applying doze/bgcheck allowlisting to the
+     * Token identifying the notification that is applying doze/bgcheck whitelisting to the
      * pending intents inside of it, so only those will get the behavior.
      *
      * @hide
      */
-    private IBinder mAllowlistToken;
+    private IBinder mWhitelistToken;
 
     /**
      * Must be set by a process to start associating tokens with Notification objects
@@ -966,7 +966,7 @@ public class Notification implements Parcelable
      *
      * @hide
      */
-    static public IBinder processAllowlistToken;
+    static public IBinder processWhitelistToken;
 
     /**
      * {@link #extras} key: this is the title of the notification,
@@ -2245,12 +2245,12 @@ public class Notification implements Parcelable
     {
         int version = parcel.readInt();
 
-        mAllowlistToken = parcel.readStrongBinder();
-        if (mAllowlistToken == null) {
-            mAllowlistToken = processAllowlistToken;
+        mWhitelistToken = parcel.readStrongBinder();
+        if (mWhitelistToken == null) {
+            mWhitelistToken = processWhitelistToken;
         }
         // Propagate this token to all pending intents that are unmarshalled from the parcel.
-        parcel.setClassCookie(PendingIntent.class, mAllowlistToken);
+        parcel.setClassCookie(PendingIntent.class, mWhitelistToken);
 
         when = parcel.readLong();
         creationTime = parcel.readLong();
@@ -2368,7 +2368,7 @@ public class Notification implements Parcelable
      * @hide
      */
     public void cloneInto(Notification that, boolean heavy) {
-        that.mAllowlistToken = this.mAllowlistToken;
+        that.mWhitelistToken = this.mWhitelistToken;
         that.when = this.when;
         that.creationTime = this.creationTime;
         that.mSmallIcon = this.mSmallIcon;
@@ -2678,7 +2678,7 @@ public class Notification implements Parcelable
     private void writeToParcelImpl(Parcel parcel, int flags) {
         parcel.writeInt(1);
 
-        parcel.writeStrongBinder(mAllowlistToken);
+        parcel.writeStrongBinder(mWhitelistToken);
         parcel.writeLong(when);
         parcel.writeLong(creationTime);
         if (mSmallIcon == null && icon != 0) {
@@ -5232,7 +5232,7 @@ public class Notification implements Parcelable
         /**
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public String loadHeaderAppName() {
             CharSequence name = null;
             final PackageManager pm = mContext.getPackageManager();

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2018 The Android Open Source Project
+ * Copyright (c) 2018, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,10 @@ import android.os.Handler;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.util.Log;
+import android.util.Slog;
 
 import com.android.internal.annotations.GuardedBy;
-import com.android.net.module.util.ProxyUtils;
 
-import java.util.Collections;
 import java.util.Objects;
 
 /**
@@ -67,7 +65,7 @@ public class ProxyTracker {
     // is not set. Individual networks have their own settings that override this. This member
     // is set through setDefaultProxy, which is called when the default network changes proxies
     // in its LinkProperties, or when ConnectivityService switches to a new default network, or
-    // when PacProxyInstaller resolves the proxy.
+    // when PacManager resolves the proxy.
     @Nullable
     @GuardedBy("mProxyLock")
     private volatile ProxyInfo mDefaultProxy = null;
@@ -75,18 +73,14 @@ public class ProxyTracker {
     @GuardedBy("mProxyLock")
     private boolean mDefaultProxyEnabled = true;
 
-    private final Handler mConnectivityServiceHandler;
-
     // The object responsible for Proxy Auto Configuration (PAC).
     @NonNull
-    private final PacProxyInstaller mPacProxyInstaller;
+    private final PacManager mPacManager;
 
     public ProxyTracker(@NonNull final Context context,
             @NonNull final Handler connectivityServiceInternalHandler, final int pacChangedEvent) {
         mContext = context;
-        mConnectivityServiceHandler = connectivityServiceInternalHandler;
-        mPacProxyInstaller = new PacProxyInstaller(
-                context, connectivityServiceInternalHandler, pacChangedEvent);
+        mPacManager = new PacManager(context, connectivityServiceInternalHandler, pacChangedEvent);
     }
 
     // Convert empty ProxyInfo's to null as null-checks are used to determine if proxies are present
@@ -155,9 +149,6 @@ public class ProxyTracker {
      * Read the global proxy settings and cache them in memory.
      */
     public void loadGlobalProxy() {
-        if (loadDeprecatedGlobalHttpProxy()) {
-            return;
-        }
         ContentResolver res = mContext.getContentResolver();
         String host = Settings.Global.getString(res, GLOBAL_HTTP_PROXY_HOST);
         int port = Settings.Global.getInt(res, GLOBAL_HTTP_PROXY_PORT, 0);
@@ -166,37 +157,32 @@ public class ProxyTracker {
         if (!TextUtils.isEmpty(host) || !TextUtils.isEmpty(pacFileUrl)) {
             ProxyInfo proxyProperties;
             if (!TextUtils.isEmpty(pacFileUrl)) {
-                proxyProperties = ProxyInfo.buildPacProxy(Uri.parse(pacFileUrl));
+                proxyProperties = new ProxyInfo(pacFileUrl);
             } else {
-                proxyProperties = ProxyInfo.buildDirectProxy(host, port,
-                        ProxyUtils.exclusionStringAsList(exclList));
+                proxyProperties = new ProxyInfo(host, port, exclList);
             }
             if (!proxyProperties.isValid()) {
-                if (DBG) Log.d(TAG, "Invalid proxy properties, ignoring: " + proxyProperties);
+                if (DBG) Slog.d(TAG, "Invalid proxy properties, ignoring: " + proxyProperties);
                 return;
             }
 
             synchronized (mProxyLock) {
                 mGlobalProxy = proxyProperties;
             }
-
-            if (!TextUtils.isEmpty(pacFileUrl)) {
-                mConnectivityServiceHandler.post(
-                        () -> mPacProxyInstaller.setCurrentProxyScriptUrl(proxyProperties));
-            }
         }
+        loadDeprecatedGlobalHttpProxy();
+        // TODO : shouldn't this function call mPacManager.setCurrentProxyScriptUrl ?
     }
 
     /**
      * Read the global proxy from the deprecated Settings.Global.HTTP_PROXY setting and apply it.
-     * Returns {@code true} when global proxy was set successfully from deprecated setting.
      */
-    public boolean loadDeprecatedGlobalHttpProxy() {
+    public void loadDeprecatedGlobalHttpProxy() {
         final String proxy = Settings.Global.getString(mContext.getContentResolver(), HTTP_PROXY);
         if (!TextUtils.isEmpty(proxy)) {
             String data[] = proxy.split(":");
             if (data.length == 0) {
-                return false;
+                return;
             }
 
             final String proxyHost = data[0];
@@ -205,15 +191,12 @@ public class ProxyTracker {
                 try {
                     proxyPort = Integer.parseInt(data[1]);
                 } catch (NumberFormatException e) {
-                    return false;
+                    return;
                 }
             }
-            final ProxyInfo p = ProxyInfo.buildDirectProxy(proxyHost, proxyPort,
-                    Collections.emptyList());
+            final ProxyInfo p = new ProxyInfo(proxyHost, proxyPort, "");
             setGlobalProxy(p);
-            return true;
         }
-        return false;
     }
 
     /**
@@ -224,14 +207,11 @@ public class ProxyTracker {
      */
     public void sendProxyBroadcast() {
         final ProxyInfo defaultProxy = getDefaultProxy();
-        final ProxyInfo proxyInfo = null != defaultProxy ?
-                defaultProxy : ProxyInfo.buildDirectProxy("", 0, Collections.emptyList());
-        mPacProxyInstaller.setCurrentProxyScriptUrl(proxyInfo);
-
-        if (!shouldSendBroadcast(proxyInfo)) {
+        final ProxyInfo proxyInfo = null != defaultProxy ? defaultProxy : new ProxyInfo("", 0, "");
+        if (mPacManager.setCurrentProxyScriptUrl(proxyInfo) == PacManager.DONT_SEND_BROADCAST) {
             return;
         }
-        if (DBG) Log.d(TAG, "sending Proxy Broadcast for " + proxyInfo);
+        if (DBG) Slog.d(TAG, "sending Proxy Broadcast for " + proxyInfo);
         Intent intent = new Intent(Proxy.PROXY_CHANGE_ACTION);
         intent.addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING |
                 Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
@@ -242,13 +222,6 @@ public class ProxyTracker {
         } finally {
             Binder.restoreCallingIdentity(ident);
         }
-    }
-
-    private boolean shouldSendBroadcast(ProxyInfo proxy) {
-        if (Uri.EMPTY.equals(proxy.getPacFileUrl())) return false;
-        if (proxy.getPacFileUrl().equals(proxy.getPacFileUrl())
-                && (proxy.getPort() > 0)) return true;
-        return true;
     }
 
     /**
@@ -270,13 +243,13 @@ public class ProxyTracker {
             if (proxyInfo != null && (!TextUtils.isEmpty(proxyInfo.getHost()) ||
                     !Uri.EMPTY.equals(proxyInfo.getPacFileUrl()))) {
                 if (!proxyInfo.isValid()) {
-                    if (DBG) Log.d(TAG, "Invalid proxy properties, ignoring: " + proxyInfo);
+                    if (DBG) Slog.d(TAG, "Invalid proxy properties, ignoring: " + proxyInfo);
                     return;
                 }
                 mGlobalProxy = new ProxyInfo(proxyInfo);
                 host = mGlobalProxy.getHost();
                 port = mGlobalProxy.getPort();
-                exclList = ProxyUtils.exclusionListAsString(mGlobalProxy.getExclusionList());
+                exclList = mGlobalProxy.getExclusionListAsString();
                 pacFileUrl = Uri.EMPTY.equals(proxyInfo.getPacFileUrl())
                         ? "" : proxyInfo.getPacFileUrl().toString();
             } else {
@@ -311,14 +284,14 @@ public class ProxyTracker {
         synchronized (mProxyLock) {
             if (Objects.equals(mDefaultProxy, proxyInfo)) return;
             if (proxyInfo != null &&  !proxyInfo.isValid()) {
-                if (DBG) Log.d(TAG, "Invalid proxy properties, ignoring: " + proxyInfo);
+                if (DBG) Slog.d(TAG, "Invalid proxy properties, ignoring: " + proxyInfo);
                 return;
             }
 
-            // This call could be coming from the PacProxyInstaller, containing the port of the
-            // local proxy. If this new proxy matches the global proxy then copy this proxy to the
+            // This call could be coming from the PacManager, containing the port of the local
+            // proxy. If this new proxy matches the global proxy then copy this proxy to the
             // global (to get the correct local port), and send a broadcast.
-            // TODO: Switch PacProxyInstaller to have its own message to send back rather than
+            // TODO: Switch PacManager to have its own message to send back rather than
             // reusing EVENT_HAS_CHANGED_PROXY and this call to handleApplyDefaultProxy.
             if ((mGlobalProxy != null) && (proxyInfo != null)
                     && (!Uri.EMPTY.equals(proxyInfo.getPacFileUrl()))

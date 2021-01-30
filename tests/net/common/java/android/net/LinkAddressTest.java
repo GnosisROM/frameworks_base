@@ -27,10 +27,10 @@ import static android.system.OsConstants.RT_SCOPE_LINK;
 import static android.system.OsConstants.RT_SCOPE_SITE;
 import static android.system.OsConstants.RT_SCOPE_UNIVERSE;
 
-import static com.android.testutils.MiscAsserts.assertEqualBothWays;
-import static com.android.testutils.MiscAsserts.assertFieldCountEquals;
-import static com.android.testutils.MiscAsserts.assertNotEqualEitherWay;
-import static com.android.testutils.ParcelUtils.assertParcelingIsLossless;
+import static com.android.testutils.MiscAssertsKt.assertEqualBothWays;
+import static com.android.testutils.MiscAssertsKt.assertFieldCountEquals;
+import static com.android.testutils.MiscAssertsKt.assertNotEqualEitherWay;
+import static com.android.testutils.ParcelUtilsKt.assertParcelingIsLossless;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -68,8 +68,8 @@ public class LinkAddressTest {
 
     private static final String V4 = "192.0.2.1";
     private static final String V6 = "2001:db8::1";
-    private static final InetAddress V4_ADDRESS = InetAddresses.parseNumericAddress(V4);
-    private static final InetAddress V6_ADDRESS = InetAddresses.parseNumericAddress(V6);
+    private static final InetAddress V4_ADDRESS = NetworkUtils.numericToInetAddress(V4);
+    private static final InetAddress V6_ADDRESS = NetworkUtils.numericToInetAddress(V6);
 
     @Test
     public void testConstants() {
@@ -131,10 +131,10 @@ public class LinkAddressTest {
             ipv6Loopback = new LinkAddress(addrs.get(0));
         }
 
-        assertEquals(InetAddresses.parseNumericAddress("127.0.0.1"), ipv4Loopback.getAddress());
+        assertEquals(NetworkUtils.numericToInetAddress("127.0.0.1"), ipv4Loopback.getAddress());
         assertEquals(8, ipv4Loopback.getPrefixLength());
 
-        assertEquals(InetAddresses.parseNumericAddress("::1"), ipv6Loopback.getAddress());
+        assertEquals(NetworkUtils.numericToInetAddress("::1"), ipv6Loopback.getAddress());
         assertEquals(128, ipv6Loopback.getPrefixLength());
 
         // Null addresses are rejected.

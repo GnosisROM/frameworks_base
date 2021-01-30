@@ -18,6 +18,7 @@ package android.telephony.ims.feature;
 
 import android.annotation.NonNull;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.telephony.ims.stub.ImsRegistrationImplBase;
@@ -28,11 +29,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Used by the framework to enable and disable MMTEL and RCS capabilities. See
- * MmTelFeature#changeEnabledCapabilities and RcsFeature#changeEnabledCapabilities.
+ * Request to send to IMS provider, which will try to enable/disable capabilities that are added to
+ * the request.
  * {@hide}
  */
 @SystemApi
+@TestApi
 public final class CapabilityChangeRequest implements Parcelable {
 
     /**

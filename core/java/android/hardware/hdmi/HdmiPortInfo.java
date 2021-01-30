@@ -18,6 +18,7 @@ package android.hardware.hdmi;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -28,6 +29,7 @@ import android.os.Parcelable;
  * @hide
  */
 @SystemApi
+@TestApi
 public final class HdmiPortInfo implements Parcelable {
     /** HDMI port type: Input */
     public static final int PORT_INPUT = 0;
@@ -192,7 +194,6 @@ public final class HdmiPortInfo implements Parcelable {
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(
-                mId, mType, mAddress, mCecSupported, mArcSupported, mMhlSupported);
+        return mId;
     }
 }

@@ -34,7 +34,6 @@ import android.os.UserManager;
 import android.provider.ContactsContract.PhoneLookup;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SubscriptionManager;
-import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
 import java.util.ArrayList;
@@ -482,8 +481,7 @@ public class CallerInfoAsyncQuery {
         cw.subId = subId;
 
         // check to see if these are recognized numbers, and use shortcuts if we can.
-        TelephonyManager tm = context.getSystemService(TelephonyManager.class);
-        if (tm.isEmergencyNumber(number)) {
+        if (PhoneNumberUtils.isLocalEmergencyNumber(context, number)) {
             cw.event = EVENT_EMERGENCY_NUMBER;
         } else if (PhoneNumberUtils.isVoiceMailNumber(context, subId, number)) {
             cw.event = EVENT_VOICEMAIL_NUMBER;

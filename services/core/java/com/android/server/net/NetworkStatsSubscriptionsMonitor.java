@@ -21,7 +21,6 @@ import static android.net.NetworkTemplate.getCollapsedRatType;
 
 import android.annotation.NonNull;
 import android.content.Context;
-import android.os.Looper;
 import android.telephony.Annotation;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PhoneStateListener;
@@ -30,7 +29,6 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.Pair;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.util.CollectionUtils;
@@ -79,9 +77,9 @@ public class NetworkStatsSubscriptionsMonitor extends
     @NonNull
     private final Executor mExecutor;
 
-    NetworkStatsSubscriptionsMonitor(@NonNull Context context, @NonNull Looper looper,
-            @NonNull Executor executor, @NonNull Delegate delegate) {
-        super(looper);
+    NetworkStatsSubscriptionsMonitor(@NonNull Context context, @NonNull Executor executor,
+            @NonNull Delegate delegate) {
+        super();
         mSubscriptionManager = (SubscriptionManager) context.getSystemService(
                 Context.TELEPHONY_SUBSCRIPTION_SERVICE);
         mTeleManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
@@ -95,41 +93,39 @@ public class NetworkStatsSubscriptionsMonitor extends
         // also needed to track CBRS.
         final List<Integer> newSubs = getActiveSubIdList(mSubscriptionManager);
 
-        // IMSI is needed for every newly added sub. Listener stores subscriberId into it to
-        // prevent binder call to telephony when querying RAT. Keep listener registration with empty
-        // IMSI is meaningless since the RAT type changed is ambiguous for multi-SIM if reported
-        // with empty IMSI. So filter the subs w/o a valid IMSI to prevent such registration.
-        final List<Pair<Integer, String>> filteredNewSubs =
-                CollectionUtils.mapNotNull(newSubs, subId -> {
-                    final String subscriberId = mTeleManager.getSubscriberId(subId);
-                    return TextUtils.isEmpty(subscriberId) ? null : new Pair(subId, subscriberId);
-                });
+        for (final int subId : newSubs) {
+            final RatTypeListener match = CollectionUtils.find(mRatListeners,
+                    it -> it.mSubId == subId);
+            if (match != null) continue;
 
-        for (final Pair<Integer, String> sub : filteredNewSubs) {
-            // Fully match listener with subId and IMSI, since in some rare cases, IMSI might be
-            // suddenly change regardless of subId, such as switch IMSI feature in modem side.
-            // If that happens, register new listener with new IMSI and remove old one later.
-            if (CollectionUtils.find(mRatListeners,
-                    it -> it.equalsKey(sub.first, sub.second)) != null) {
+            // Create listener for every newly added sub. Also store subscriberId into it to
+            // prevent binder call to telephony when querying RAT. If the subscriberId is empty
+            // for any reason, such as SIM PIN locked, skip registration.
+            // SubscriberId will be unavailable again if 1. modem crashed 2. reboot
+            // 3. re-insert SIM. If that happens, the listeners will be eventually synchronized
+            // with active sub list once all subscriberIds are ready.
+            final String subscriberId = mTeleManager.getSubscriberId(subId);
+            if (TextUtils.isEmpty(subscriberId)) {
+                Log.d(NetworkStatsService.TAG, "Empty subscriberId for newly added sub "
+                        + subId + ", skip listener registration");
                 continue;
             }
-
             final RatTypeListener listener =
-                    new RatTypeListener(mExecutor, this, sub.first, sub.second);
+                    new RatTypeListener(mExecutor, this, subId, subscriberId);
             mRatListeners.add(listener);
 
             // Register listener to the telephony manager that associated with specific sub.
-            mTeleManager.createForSubscriptionId(sub.first)
+            mTeleManager.createForSubscriptionId(subId)
                     .listen(listener, PhoneStateListener.LISTEN_SERVICE_STATE);
-            Log.d(NetworkStatsService.TAG, "RAT type listener registered for sub " + sub.first);
+            Log.d(NetworkStatsService.TAG, "RAT type listener registered for sub " + subId);
         }
 
         for (final RatTypeListener listener : new ArrayList<>(mRatListeners)) {
-            // If there is no subId and IMSI matched the listener, removes it.
-            if (CollectionUtils.find(filteredNewSubs,
-                    it -> listener.equalsKey(it.first, it.second)) == null) {
-                handleRemoveRatTypeListener(listener);
-            }
+            // If the new list contains the subId of the listener, keeps it.
+            final Integer match = CollectionUtils.find(newSubs, it -> it == listener.mSubId);
+            if (match != null) continue;
+
+            handleRemoveRatTypeListener(listener);
         }
     }
 
@@ -234,10 +230,6 @@ public class NetworkStatsSubscriptionsMonitor extends
         @VisibleForTesting
         public int getSubId() {
             return mSubId;
-        }
-
-        boolean equalsKey(int subId, @NonNull String subscriberId) {
-            return mSubId == subId && TextUtils.equals(mSubscriberId, subscriberId);
         }
     }
 }

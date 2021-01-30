@@ -21,6 +21,7 @@ import android.annotation.NonNull;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.annotation.TestApi;
 import android.content.Context;
 
 import java.lang.annotation.Retention;
@@ -34,6 +35,7 @@ import java.util.List;
  * @hide
  */
 @SystemApi
+@TestApi
 @SystemService(Context.POWER_WHITELIST_MANAGER)
 public class PowerWhitelistManager {
     private final Context mContext;

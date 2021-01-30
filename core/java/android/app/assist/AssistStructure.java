@@ -3,6 +3,7 @@ package android.app.assist;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -34,6 +35,8 @@ import android.view.WindowManager;
 import android.view.WindowManagerGlobal;
 import android.view.autofill.AutofillId;
 import android.view.autofill.AutofillValue;
+
+import com.android.internal.util.Preconditions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -721,6 +724,7 @@ public class AssistStructure implements Parcelable {
         // COntent Capture.
         /** @hide */
         @SystemApi
+        @TestApi
         public ViewNode() {
         }
 
@@ -2232,7 +2236,7 @@ public class AssistStructure implements Parcelable {
             ensureData();
         }
         Log.i(TAG, "Task id: " + mTaskId);
-        Log.i(TAG, "Activity: " + (mActivityComponent != null
+        Log.i(TAG, "Activity: " + (mActivityComponent != null 
                 ? mActivityComponent.flattenToShortString()
                 : null));
         Log.i(TAG, "Sanitize on write: " + mSanitizeOnWrite);

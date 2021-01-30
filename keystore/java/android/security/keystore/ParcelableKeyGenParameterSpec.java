@@ -100,7 +100,6 @@ public final class ParcelableKeyGenParameterSpec implements Parcelable {
         out.writeInt(mSpec.getUserAuthenticationType());
         out.writeBoolean(mSpec.isUserPresenceRequired());
         out.writeByteArray(mSpec.getAttestationChallenge());
-        out.writeBoolean(mSpec.isDevicePropertiesAttestationIncluded());
         out.writeBoolean(mSpec.isUniqueIdIncluded());
         out.writeBoolean(mSpec.isUserAuthenticationValidWhileOnBody());
         out.writeBoolean(mSpec.isInvalidatedByBiometricEnrollment());
@@ -158,7 +157,6 @@ public final class ParcelableKeyGenParameterSpec implements Parcelable {
         final int userAuthenticationTypes = in.readInt();
         final boolean userPresenceRequired = in.readBoolean();
         final byte[] attestationChallenge = in.createByteArray();
-        final boolean devicePropertiesAttestationIncluded = in.readBoolean();
         final boolean uniqueIdIncluded = in.readBoolean();
         final boolean userAuthenticationValidWhileOnBody = in.readBoolean();
         final boolean invalidatedByBiometricEnrollment = in.readBoolean();
@@ -192,7 +190,6 @@ public final class ParcelableKeyGenParameterSpec implements Parcelable {
                 userAuthenticationTypes,
                 userPresenceRequired,
                 attestationChallenge,
-                devicePropertiesAttestationIncluded,
                 uniqueIdIncluded,
                 userAuthenticationValidWhileOnBody,
                 invalidatedByBiometricEnrollment,

@@ -23,10 +23,7 @@ import android.telephony.CellLocation;
 
 /**
  * Represents the cell location on a GSM phone.
- *
- * @deprecated use {@link android.telephony.CellIdentity CellIdentity}.
  */
-@Deprecated
 public class GsmCellLocation extends CellLocation {
     private int mLac;
     private int mCid;

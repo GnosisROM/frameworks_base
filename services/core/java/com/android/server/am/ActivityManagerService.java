@@ -190,7 +190,6 @@ import android.app.usage.UsageEvents.Event;
 import android.app.usage.UsageStatsManager;
 import android.app.usage.UsageStatsManagerInternal;
 import android.appwidget.AppWidgetManager;
-import android.compat.Compatibility;
 import android.content.AutofillOptions;
 import android.content.BroadcastReceiver;
 import android.content.ComponentCallbacks2;
@@ -319,7 +318,6 @@ import com.android.internal.app.IAppOpsService;
 import com.android.internal.app.ProcessMap;
 import com.android.internal.app.SystemUserHomeActivity;
 import com.android.internal.app.procstats.ProcessStats;
-import com.android.internal.compat.CompatibilityChangeConfig;
 import com.android.internal.content.PackageHelper;
 import com.android.internal.messages.nano.SystemMessageProto.SystemMessage;
 import com.android.internal.notification.SystemNotificationChannels;
@@ -2466,7 +2464,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                             ? Collections.emptyList()
                             : Arrays.asList(exemptions.split(","));
                 }
-                if (!ZYGOTE_PROCESS.setApiDenylistExemptions(mExemptions)) {
+                if (!ZYGOTE_PROCESS.setApiBlacklistExemptions(mExemptions)) {
                   Slog.e(TAG, "Failed to set API blacklist exemptions!");
                   // leave mExemptionsStr as is, so we don't try to send the same list again.
                   mExemptions = Collections.emptyList();
@@ -5226,12 +5224,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                 }
             }
 
-            // We deprecated Build.SERIAL and it is not accessible to
-            // Instant Apps and target APIs higher than O MR1. Since access to the serial
-            // is now behind a permission we push down the value.
-            final String buildSerial = (!appInfo.isInstantApp()
-                    && appInfo.targetSdkVersion < Build.VERSION_CODES.P)
-                            ? sTheRealBuildSerial : Build.UNKNOWN;
+            final String buildSerial = Build.UNKNOWN;
 
             // Check if this is a secondary process that should be incorporated into some
             // currently active instrumentation.  (Note we do this AFTER all of the profiling
@@ -9483,7 +9476,6 @@ public class ActivityManagerService extends IActivityManager.Stub
         final long waitForNetworkTimeoutMs = Settings.Global.getLong(resolver,
                 NETWORK_ACCESS_TIMEOUT_MS, NETWORK_ACCESS_TIMEOUT_DEFAULT_MS);
         mHiddenApiBlacklist.registerObserver();
-        mPlatformCompat.registerContentObserver();
 
         final long pssDeferralMs = DeviceConfig.getLong(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
                 ACTIVITY_START_PSS_DEFER_CONFIG, 0L);
@@ -13728,10 +13720,10 @@ public class ActivityManagerService extends IActivityManager.Stub
             }
             long kernelUsed = memInfo.getKernelUsedSizeKb();
             final long ionHeap = Debug.getIonHeapsSizeKb();
-            final long ionPool = Debug.getIonPoolsSizeKb();
-            if (ionHeap >= 0 && ionPool >= 0) {
+            if (ionHeap > 0) {
                 final long ionMapped = Debug.getIonMappedSizeKb();
                 final long ionUnmapped = ionHeap - ionMapped;
+                final long ionPool = Debug.getIonPoolsSizeKb();
                 pw.print("      ION: ");
                         pw.print(stringifyKBSize(ionHeap + ionPool));
                         pw.print(" (");
@@ -13744,10 +13736,6 @@ public class ActivityManagerService extends IActivityManager.Stub
                 // Note: mapped ION memory is not accounted in PSS due to VM_PFNMAP flag being
                 // set on ION VMAs, therefore consider the entire ION heap as used kernel memory
                 kernelUsed += ionHeap;
-            }
-            final long gpuUsage = Debug.getGpuTotalUsageKb();
-            if (gpuUsage >= 0) {
-                pw.print("      GPU: "); pw.println(stringifyKBSize(gpuUsage));
             }
             final long lostRAM = memInfo.getTotalSizeKb() - (totalPss - totalSwapPss)
                     - memInfo.getFreeSizeKb() - memInfo.getCachedSizeKb()
@@ -14546,22 +14534,16 @@ public class ActivityManagerService extends IActivityManager.Stub
         memInfoBuilder.append("\n");
         long kernelUsed = memInfo.getKernelUsedSizeKb();
         final long ionHeap = Debug.getIonHeapsSizeKb();
-        final long ionPool = Debug.getIonPoolsSizeKb();
-        if (ionHeap >= 0 && ionPool >= 0) {
+        if (ionHeap > 0) {
             final long ionMapped = Debug.getIonMappedSizeKb();
             final long ionUnmapped = ionHeap - ionMapped;
+            final long ionPool = Debug.getIonPoolsSizeKb();
             memInfoBuilder.append("       ION: ");
             memInfoBuilder.append(stringifyKBSize(ionHeap + ionPool));
             memInfoBuilder.append("\n");
             // Note: mapped ION memory is not accounted in PSS due to VM_PFNMAP flag being
             // set on ION VMAs, therefore consider the entire ION heap as used kernel memory
             kernelUsed += ionHeap;
-        }
-        final long gpuUsage = Debug.getGpuTotalUsageKb();
-        if (gpuUsage >= 0) {
-            memInfoBuilder.append("       GPU: ");
-            memInfoBuilder.append(stringifyKBSize(gpuUsage));
-            memInfoBuilder.append("\n");
         }
         memInfoBuilder.append("  Used RAM: ");
         memInfoBuilder.append(stringifyKBSize(
@@ -16946,8 +16928,6 @@ public class ActivityManagerService extends IActivityManager.Stub
             if (disableHiddenApiChecks || disableTestApiChecks) {
                 enforceCallingPermission(android.Manifest.permission.DISABLE_HIDDEN_API_CHECKS,
                         "disable hidden API checks");
-
-                enableTestApiAccess(ii.packageName);
             }
 
             // TODO(b/158750470): remove
@@ -17087,25 +17067,6 @@ public class ActivityManagerService extends IActivityManager.Stub
 
         forceStopPackageLocked(app.info.packageName, -1, false, false, true, true, false, app.userId,
                 "finished inst");
-
-        disableTestApiAccess(app.info.packageName);
-    }
-
-    private void enableTestApiAccess(String packageName) {
-        if (mPlatformCompat != null) {
-            Compatibility.ChangeConfig config = new Compatibility.ChangeConfig(
-                    Collections.singleton(166236554L /* VMRuntime.ALLOW_TEST_API_ACCESS */),
-                    Collections.emptySet());
-            CompatibilityChangeConfig override = new CompatibilityChangeConfig(config);
-            mPlatformCompat.setOverridesForTest(override, packageName);
-        }
-    }
-
-    private void disableTestApiAccess(String packageName) {
-        if (mPlatformCompat != null) {
-            mPlatformCompat.clearOverrideForTest(166236554L /* VMRuntime.ALLOW_TEST_API_ACCESS */,
-                    packageName);
-        }
     }
 
     public void finishInstrumentation(IApplicationThread target,

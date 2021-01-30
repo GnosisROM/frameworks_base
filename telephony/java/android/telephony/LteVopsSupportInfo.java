@@ -20,6 +20,7 @@ import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -32,6 +33,7 @@ import java.util.Objects;
  * @hide
  */
 @SystemApi
+@TestApi
 public final class LteVopsSupportInfo implements Parcelable {
 
     /**@hide*/

@@ -107,7 +107,7 @@ public class BinderDeathDispatcherTest {
             if (!isAlive) {
                 return false;
             }
-            assertThat(mRecipient).isSameInstanceAs(recipient);
+            assertThat(mRecipient).isSameAs(recipient);
             mRecipient = null;
             return true;
         }

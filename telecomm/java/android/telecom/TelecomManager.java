@@ -25,6 +25,7 @@ import android.annotation.SuppressAutoDoc;
 import android.annotation.SuppressLint;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.annotation.TestApi;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.content.ComponentName;
 import android.content.Context;
@@ -32,7 +33,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.UserHandle;
@@ -266,68 +266,9 @@ public class TelecomManager {
     /**
      * Optional extra for {@link android.content.Intent#ACTION_CALL} containing a string call
      * subject which will be associated with an outgoing call.  Should only be specified if the
-     * {@link PhoneAccount} supports the capability {@link PhoneAccount#CAPABILITY_CALL_SUBJECT}
-     * or {@link PhoneAccount#CAPABILITY_CALL_COMPOSER}.
+     * {@link PhoneAccount} supports the capability {@link PhoneAccount#CAPABILITY_CALL_SUBJECT}.
      */
     public static final String EXTRA_CALL_SUBJECT = "android.telecom.extra.CALL_SUBJECT";
-
-    // Values for EXTRA_PRIORITY
-    /**
-     * Indicates the call composer call priority is normal.
-     *
-     * Reference: RCC.20 Section 2.4.4.2
-     */
-    public static final int PRIORITY_NORMAL = 0;
-
-    /**
-     * Indicates the call composer call priority is urgent.
-     *
-     * Reference: RCC.20 Section 2.4.4.2
-     */
-    public static final int PRIORITY_URGENT = 1;
-
-    /**
-     * Extra for the call composer call priority, either {@link #PRIORITY_NORMAL} or
-     * {@link #PRIORITY_URGENT}.
-     *
-     * Reference: RCC.20 Section 2.4.4.2
-     */
-    public static final String EXTRA_PRIORITY = "android.telecom.extra.PRIORITY";
-
-    /**
-     * Extra for the call composer call location, an {@link android.location.Location} parcelable
-     * class to represent the geolocation as a latitude and longitude pair.
-     *
-     * Reference: RCC.20 Section 2.4.3.2
-     */
-    public static final String EXTRA_LOCATION = "android.telecom.extra.LOCATION";
-
-    /**
-     * A boolean extra set on incoming calls to indicate that the call has a picture specified.
-     * Given that image download could take a (short) time, the EXTRA is set immediately upon
-     * adding the call to the Dialer app, this allows the Dialer app to reserve space for an image
-     * if one is expected. The EXTRA may be unset if the image download ends up failing for some
-     * reason.
-     */
-    public static final String EXTRA_HAS_PICTURE = "android.telecom.extra.HAS_PICTURE";
-
-    /**
-     * A URI representing the picture that was downloaded when a call is received.
-     * This is a content URI within the call log provider which can be used to open a file
-     * descriptor. This could be set a short time after a call is added to the Dialer app if the
-     * download is delayed for some reason. The Dialer app will receive a callback via
-     * {@link Call.Callback#onDetailsChanged} when this value has changed.
-     *
-     * Reference: RCC.20 Section 2.4.3.2
-     */
-    public static final String EXTRA_INCOMING_PICTURE = "android.telecom.extra.INCOMING_PICTURE";
-
-    // TODO(hallliu), This UUID is obtained from TelephonyManager#uploadCallComposerPicture.
-    /**
-     * A ParcelUuid used as a token to represent a picture that was uploaded prior to the call
-     * being placed.
-     */
-    public static final String EXTRA_OUTGOING_PICTURE = "android.telecom.extra.OUTGOING_PICTURE";
 
     /**
      * The extra used by a {@link ConnectionService} to provide the handle of the caller that
@@ -381,7 +322,6 @@ public class TelecomManager {
      * the remote handle of the new call.
      * @hide
      */
-    @SystemApi
     public static final String EXTRA_UNKNOWN_CALL_HANDLE =
             "android.telecom.extra.UNKNOWN_CALL_HANDLE";
 
@@ -452,7 +392,6 @@ public class TelecomManager {
      * </ul>
      * @hide
      */
-    @SystemApi
     public static final String EXTRA_CALL_TECHNOLOGY_TYPE =
             "android.telecom.extra.CALL_TECHNOLOGY_TYPE";
 
@@ -752,6 +691,7 @@ public class TelecomManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int TTY_MODE_OFF = 0;
 
@@ -761,6 +701,7 @@ public class TelecomManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int TTY_MODE_FULL = 1;
 
@@ -771,6 +712,7 @@ public class TelecomManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int TTY_MODE_HCO = 2;
 
@@ -781,25 +723,22 @@ public class TelecomManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     public static final int TTY_MODE_VCO = 3;
 
     /**
-     * Broadcast intent action indicating that the current TTY mode has changed.
+     * Broadcast intent action indicating that the current TTY mode has changed. An intent extra
+     * provides this state as an int.
      *
-     * This intent will contain {@link #EXTRA_CURRENT_TTY_MODE} as an intent extra, giving the new
-     * TTY mode.
+     * @see #EXTRA_CURRENT_TTY_MODE
      * @hide
      */
-    @SystemApi
     public static final String ACTION_CURRENT_TTY_MODE_CHANGED =
             "android.telecom.action.CURRENT_TTY_MODE_CHANGED";
 
     /**
-     * Integer extra key that indicates the current TTY mode.
-     *
-     * Used with {@link #ACTION_CURRENT_TTY_MODE_CHANGED}.
-     *
+     * The lookup key for an int that indicates the current TTY mode.
      * Valid modes are:
      * <ul>
      *     <li>{@link #TTY_MODE_OFF}</li>
@@ -807,42 +746,28 @@ public class TelecomManager {
      *     <li>{@link #TTY_MODE_HCO}</li>
      *     <li>{@link #TTY_MODE_VCO}</li>
      * </ul>
-     *
-     * This TTY mode is distinct from the one sent via {@link #ACTION_TTY_PREFERRED_MODE_CHANGED},
-     * since the current TTY mode will always be {@link #TTY_MODE_OFF}unless a TTY terminal is
-     * plugged into the device.
      * @hide
      */
-    @SystemApi
     public static final String EXTRA_CURRENT_TTY_MODE =
             "android.telecom.extra.CURRENT_TTY_MODE";
 
     /**
-     * Broadcast intent action indicating that the TTY preferred operating mode has changed.
+     * Broadcast intent action indicating that the TTY preferred operating mode has changed. An
+     * intent extra provides the new mode as an int.
      *
-     * This intent will contain {@link #EXTRA_TTY_PREFERRED_MODE} as an intent extra, giving the new
-     * preferred TTY mode.
+     * @see #EXTRA_TTY_PREFERRED_MODE
      * @hide
      */
-    @SystemApi
     public static final String ACTION_TTY_PREFERRED_MODE_CHANGED =
             "android.telecom.action.TTY_PREFERRED_MODE_CHANGED";
 
     /**
-     * Integer extra key that indicates the preferred TTY mode.
+     * The lookup key for an int that indicates preferred TTY mode. Valid modes are: -
+     * {@link #TTY_MODE_OFF} - {@link #TTY_MODE_FULL} - {@link #TTY_MODE_HCO} -
+     * {@link #TTY_MODE_VCO}
      *
-     * Used with {@link #ACTION_TTY_PREFERRED_MODE_CHANGED}.
-     *
-     * Valid modes are:
-     * <ul>
-     *     <li>{@link #TTY_MODE_OFF}</li>
-     *     <li>{@link #TTY_MODE_FULL}</li>
-     *     <li>{@link #TTY_MODE_HCO}</li>
-     *     <li>{@link #TTY_MODE_VCO}</li>
-     * </ul>
      * @hide
      */
-    @SystemApi
     public static final String EXTRA_TTY_PREFERRED_MODE =
             "android.telecom.extra.TTY_PREFERRED_MODE";
 
@@ -918,10 +843,8 @@ public class TelecomManager {
      * {@link TelecomManager#CALL_SOURCE_EMERGENCY_DIALPAD},
      * {@link TelecomManager#CALL_SOURCE_EMERGENCY_SHORTCUT}.
      *
-     * Intended for use with the platform emergency dialer only.
      * @hide
      */
-    @SystemApi
     public static final String EXTRA_CALL_SOURCE = "android.telecom.extra.CALL_SOURCE";
 
     /**
@@ -929,7 +852,6 @@ public class TelecomManager {
      *
      * @hide
      */
-    @SystemApi
     public static final int CALL_SOURCE_EMERGENCY_SHORTCUT = 2;
 
     /**
@@ -937,7 +859,6 @@ public class TelecomManager {
      *
      * @hide
      */
-    @SystemApi
     public static final int CALL_SOURCE_EMERGENCY_DIALPAD = 1;
 
     /**
@@ -945,7 +866,6 @@ public class TelecomManager {
      *
      * @hide
      */
-    @SystemApi
     public static final int CALL_SOURCE_UNSPECIFIED = 0;
 
     /**
@@ -1043,6 +963,8 @@ public class TelecomManager {
      * <p>
      * If no {@link PhoneAccount} fits the criteria above, this method will return {@code null}.
      *
+     * Requires permission: {@link android.Manifest.permission#READ_PHONE_STATE}
+     *
      * @param uriScheme The URI scheme.
      * @return The {@link PhoneAccountHandle} corresponding to the account to be used.
      */
@@ -1094,6 +1016,7 @@ public class TelecomManager {
      * @hide
      */
     @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE)
+    @TestApi
     @SystemApi
     public void setUserSelectedOutgoingPhoneAccount(@Nullable PhoneAccountHandle accountHandle) {
         try {
@@ -1219,6 +1142,8 @@ public class TelecomManager {
      * calls. The returned list includes only those accounts which have been explicitly enabled
      * by the user.
      *
+     * Requires permission: {@link android.Manifest.permission#READ_PHONE_STATE}
+     *
      * @see #EXTRA_PHONE_ACCOUNT_HANDLE
      * @return A list of {@code PhoneAccountHandle} objects.
      */
@@ -1265,6 +1190,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(READ_PRIVILEGED_PHONE_STATE)
     public @NonNull List<PhoneAccountHandle> getCallCapablePhoneAccounts(
             boolean includeDisabledAccounts) {
@@ -1287,7 +1213,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public List<PhoneAccountHandle> getPhoneAccountsForPackage() {
         try {
             if (isServiceConnected()) {
@@ -1415,7 +1341,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public void clearPhoneAccounts() {
         clearAccounts();
     }
@@ -1425,7 +1351,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public void clearAccounts() {
         try {
             if (isServiceConnected()) {
@@ -1457,7 +1383,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public ComponentName getDefaultPhoneApp() {
         try {
             if (isServiceConnected()) {
@@ -1495,6 +1421,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(READ_PRIVILEGED_PHONE_STATE)
     public @Nullable String getDefaultDialerPackage(@NonNull UserHandle userHandle) {
         try {
@@ -1517,6 +1444,9 @@ public class TelecomManager {
      * @result {@code true} if the default dialer was successfully changed, {@code false} if
      *         the specified package does not correspond to an installed dialer, or is already
      *         the default dialer.
+     *
+     * Requires permission: {@link android.Manifest.permission#MODIFY_PHONE_STATE}
+     * Requires permission: {@link android.Manifest.permission#WRITE_SECURE_SETTINGS}
      *
      * @hide
      * @deprecated Use
@@ -1561,6 +1491,8 @@ public class TelecomManager {
      * Return whether a given phone number is the configured voicemail number for a
      * particular phone account.
      *
+     * Requires permission: {@link android.Manifest.permission#READ_PHONE_STATE}
+     *
      * @param accountHandle The handle for the account to check the voicemail number against
      * @param number The number to look up.
      */
@@ -1579,6 +1511,8 @@ public class TelecomManager {
 
     /**
      * Return the voicemail number for a given phone account.
+     *
+     * Requires permission: {@link android.Manifest.permission#READ_PHONE_STATE}
      *
      * @param accountHandle The handle for the phone account.
      * @return The voicemail number for the phone account, and {@code null} if one has not been
@@ -1631,6 +1565,8 @@ public class TelecomManager {
     /**
      * Returns whether there is an ongoing phone call (can be in dialing, ringing, active or holding
      * states) originating from either a manager or self-managed {@link ConnectionService}.
+     * <p>
+     * Requires permission: {@link android.Manifest.permission#READ_PHONE_STATE}
      *
      * @return {@code true} if there is an ongoing call in either a managed or self-managed
      *      {@link ConnectionService}, {@code false} otherwise.
@@ -1649,36 +1585,14 @@ public class TelecomManager {
     }
 
     /**
-     * Returns whether the caller has {@link InCallService} access for companion apps.
-     *
-     * A companion app is an app associated with a physical wearable device via the
-     * {@link android.companion.CompanionDeviceManager} API.
-     *
-     * @return {@code true} if the caller has {@link InCallService} access for
-     *      companion app; {@code false} otherwise.
-     */
-    public boolean hasCompanionInCallServiceAccess() {
-        try {
-            if (isServiceConnected()) {
-                return getTelecomService().hasCompanionInCallServiceAccess(
-                        mContext.getOpPackageName());
-            }
-        } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException calling hasCompanionInCallServiceAccess().", e);
-            if (!isSystemProcess()) {
-                e.rethrowAsRuntimeException();
-            }
-        }
-        return false;
-    }
-
-    /**
      * Returns whether there is an ongoing call originating from a managed
      * {@link ConnectionService}.  An ongoing call can be in dialing, ringing, active or holding
      * states.
      * <p>
      * If you also need to know if there are ongoing self-managed calls, use {@link #isInCall()}
      * instead.
+     * <p>
+     * Requires permission: {@link android.Manifest.permission#READ_PHONE_STATE}
      *
      * @return {@code true} if there is an ongoing call in a managed {@link ConnectionService},
      *      {@code false} otherwise.
@@ -1752,6 +1666,8 @@ public class TelecomManager {
      * If there is a ringing call, calling this method rejects the ringing call.  Otherwise the
      * foreground call is ended.
      * <p>
+     * Requires permission {@link android.Manifest.permission#ANSWER_PHONE_CALLS}.
+     * <p>
      * Note: this method CANNOT be used to end ongoing emergency calls and will return {@code false}
      * if an attempt is made to end an emergency call.
      *
@@ -1781,6 +1697,9 @@ public class TelecomManager {
      * the incoming call requests.  This means, for example, that an incoming call requesting
      * {@link VideoProfile#STATE_BIDIRECTIONAL} will be answered, accepting that state.
      *
+     * Requires permission: {@link android.Manifest.permission#MODIFY_PHONE_STATE} or
+     * {@link android.Manifest.permission#ANSWER_PHONE_CALLS}
+     *
      * @deprecated Companion apps for wearable devices should use the {@link InCallService} API
      * instead.
      */
@@ -1802,6 +1721,9 @@ public class TelecomManager {
     /**
      * If there is a ringing incoming call, this method accepts the call on behalf of the user,
      * with the specified video state.
+     *
+     * Requires permission: {@link android.Manifest.permission#MODIFY_PHONE_STATE} or
+     * {@link android.Manifest.permission#ANSWER_PHONE_CALLS}
      *
      * @param videoState The desired video state to answer the call with.
      * @deprecated Companion apps for wearable devices should use the {@link InCallService} API
@@ -1880,6 +1802,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(READ_PRIVILEGED_PHONE_STATE)
     public @TtyMode int getCurrentTtyMode() {
         try {
@@ -1943,13 +1866,11 @@ public class TelecomManager {
 
     /**
      * Registers a new incoming conference. A {@link ConnectionService} should invoke this method
-     * when it has an incoming conference. An incoming {@link Conference} is an adhoc conference
-     * call initiated on another device which the user is being invited to join in. For managed
-     * {@link ConnectionService}s, the specified {@link PhoneAccountHandle} must have been
-     * registered with {@link #registerPhoneAccount} and the user must have enabled the
-     * corresponding {@link PhoneAccount}.  This can be checked using
-     * {@link #getPhoneAccount(PhoneAccountHandle)}. Self-managed {@link ConnectionService}s must
-     * have {@link android.Manifest.permission#MANAGE_OWN_CALLS} to add a new incoming call.
+     * when it has an incoming conference. For managed {@link ConnectionService}s, the specified
+     * {@link PhoneAccountHandle} must have been registered with {@link #registerPhoneAccount} and
+     * the user must have enabled the corresponding {@link PhoneAccount}.  This can be checked using
+     * {@link #getPhoneAccount}. Self-managed {@link ConnectionService}s must have
+     * {@link android.Manifest.permission#MANAGE_OWN_CALLS} to add a new incoming call.
      * <p>
      * The incoming conference you are adding is assumed to have a video state of
      * {@link VideoProfile#STATE_AUDIO_ONLY}, unless the extra value
@@ -1957,9 +1878,8 @@ public class TelecomManager {
      * <p>
      * Once invoked, this method will cause the system to bind to the {@link ConnectionService}
      * associated with the {@link PhoneAccountHandle} and request additional information about the
-     * call (See
-     * {@link ConnectionService#onCreateIncomingConference(PhoneAccountHandle, ConnectionRequest)})
-     * before starting the incoming call UI.
+     * call (See {@link ConnectionService#onCreateIncomingConference}) before starting the incoming
+     * call UI.
      * <p>
      * For a managed {@link ConnectionService}, a {@link SecurityException} will be thrown if either
      * the {@link PhoneAccountHandle} does not correspond to a registered {@link PhoneAccount} or
@@ -1969,6 +1889,7 @@ public class TelecomManager {
      *            {@link #registerPhoneAccount}.
      * @param extras A bundle that will be passed through to
      *            {@link ConnectionService#onCreateIncomingConference}.
+     * @hide
      */
     public void addNewIncomingConference(@NonNull PhoneAccountHandle phoneAccount,
             @NonNull Bundle extras) {
@@ -2014,6 +1935,8 @@ public class TelecomManager {
      * Requires that the method-caller be set as the system dialer app.
      * </p>
      *
+     * Requires permission: {@link android.Manifest.permission#MODIFY_PHONE_STATE}
+     *
      * @param dialString The digits to dial.
      * @return True if the digits were processed as an MMI code, false otherwise.
      */
@@ -2038,6 +1961,8 @@ public class TelecomManager {
      * Requires that the method-caller be set as the system dialer app.
      * </p>
      *
+     * Requires permission: {@link android.Manifest.permission#MODIFY_PHONE_STATE}
+     *
      * @param accountHandle The handle for the account the MMI code should apply to.
      * @param dialString The digits to dial.
      * @return True if the digits were processed as an MMI code, false otherwise.
@@ -2057,8 +1982,8 @@ public class TelecomManager {
     }
 
     /**
-     * Returns a URI (with the content:// scheme) specific to the specified {@link PhoneAccount}
-     * for ADN content retrieval.
+     * Requires permission: {@link android.Manifest.permission#MODIFY_PHONE_STATE}
+     *
      * @param accountHandle The handle for the account to derive an adn query URI for or
      * {@code null} to return a URI which will use the default account.
      * @return The URI (with the content:// scheme) specific to the specified {@link PhoneAccount}
@@ -2082,6 +2007,8 @@ public class TelecomManager {
      * <p>
      * Requires that the method-caller be set as the system dialer app.
      * </p>
+     *
+     * Requires permission: {@link android.Manifest.permission#MODIFY_PHONE_STATE}
      */
     @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE)
     public void cancelMissedCallsNotification() {
@@ -2183,8 +2110,8 @@ public class TelecomManager {
 
 
     /**
-     * Place a new adhoc conference call with the provided participants using the system telecom
-     * service. This method doesn't support placing of emergency calls.
+     * Place a new conference call with the provided participants using the system telecom service
+     * This method doesn't support placing of emergency calls.
      *
      * An adhoc conference call is established by providing a list of addresses to
      * {@code TelecomManager#startConference(List<Uri>, int videoState)} where the
@@ -2202,6 +2129,7 @@ public class TelecomManager {
      *
      * @param participants List of participants to start conference with
      * @param extras Bundle of extras to use with the call
+     * @hide
      */
     @RequiresPermission(android.Manifest.permission.CALL_PHONE)
     public void startConference(@NonNull List<Uri> participants,
@@ -2287,6 +2215,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @NonNull
     public Intent createLaunchEmergencyDialerIntent(@Nullable String number) {
         ITelecomService service = getTelecomService();
@@ -2439,6 +2368,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE)
     public boolean isInEmergencyCall() {
         try {
@@ -2466,10 +2396,6 @@ public class TelecomManager {
         } catch (RemoteException e) {
             Log.e(TAG, "RemoteException handleCallIntent: " + e);
         }
-    }
-
-    private boolean isSystemProcess() {
-        return Process.myUid() == Process.SYSTEM_UID;
     }
 
     private ITelecomService getTelecomService() {

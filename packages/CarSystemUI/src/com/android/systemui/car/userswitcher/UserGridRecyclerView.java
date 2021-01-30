@@ -567,9 +567,6 @@ public class UserGridRecyclerView extends RecyclerView {
                         Log.e(TAG, "Failed to switch to new user: " + user.id);
                     }
                 }
-                if (mAddUserView != null) {
-                    mAddUserView.setEnabled(true);
-                }
             }
         }
 

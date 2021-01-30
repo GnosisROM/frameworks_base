@@ -29,6 +29,7 @@ import android.annotation.SdkConstant.SdkConstantType;
 import android.annotation.SuppressLint;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.annotation.TestApi;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Binder;
@@ -57,6 +58,7 @@ import java.util.concurrent.Executor;
  * @hide
  */
 @SystemApi
+@TestApi
 @SystemService(Context.HDMI_CONTROL_SERVICE)
 @RequiresFeature(PackageManager.FEATURE_HDMI_CEC)
 public final class HdmiControlManager {
@@ -407,7 +409,7 @@ public final class HdmiControlManager {
      */
     @Nullable
     @SystemApi
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public HdmiClient getClient(int type) {
         if (mService == null) {
             return null;
@@ -440,7 +442,7 @@ public final class HdmiControlManager {
      */
     @Nullable
     @SystemApi
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public HdmiPlaybackClient getPlaybackClient() {
         return (HdmiPlaybackClient) getClient(HdmiDeviceInfo.DEVICE_PLAYBACK);
     }
@@ -458,7 +460,7 @@ public final class HdmiControlManager {
      */
     @Nullable
     @SystemApi
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public HdmiTvClient getTvClient() {
         return (HdmiTvClient) getClient(HdmiDeviceInfo.DEVICE_TV);
     }
@@ -476,7 +478,7 @@ public final class HdmiControlManager {
      * @hide
      */
     @Nullable
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public HdmiAudioSystemClient getAudioSystemClient() {
         return (HdmiAudioSystemClient) getClient(HdmiDeviceInfo.DEVICE_AUDIO_SYSTEM);
     }
@@ -491,7 +493,7 @@ public final class HdmiControlManager {
      * @return {@link HdmiSwitchClient} instance. {@code null} on failure.
      */
     @Nullable
-    @SuppressLint("RequiresPermission")
+    @SuppressLint("Doclava125")
     public HdmiSwitchClient getSwitchClient() {
         return (HdmiSwitchClient) getClient(HdmiDeviceInfo.DEVICE_PURE_CEC_SWITCH);
     }

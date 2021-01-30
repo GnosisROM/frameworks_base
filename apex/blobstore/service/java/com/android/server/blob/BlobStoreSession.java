@@ -332,10 +332,10 @@ class BlobStoreSession extends IBlobStoreSession.Stub {
                 throw new IllegalStateException("Not allowed to change access type in state: "
                         + stateToString(mState));
             }
-            if (mBlobAccessMode.getAllowedPackagesCount() >= getMaxPermittedPackages()) {
+            if (mBlobAccessMode.getNumWhitelistedPackages() >= getMaxPermittedPackages()) {
                 throw new ParcelableException(new LimitExceededException(
                         "Too many packages permitted to access the blob: "
-                                + mBlobAccessMode.getAllowedPackagesCount()));
+                                + mBlobAccessMode.getNumWhitelistedPackages()));
             }
             mBlobAccessMode.allowPackageAccess(packageName, certificate);
         }

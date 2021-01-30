@@ -45,6 +45,7 @@ import java.util.List;
  * @hide
  */
 @SystemApi
+@TestApi
 @SystemService(Context.LIGHTS_SERVICE)
 public final class LightsManager {
     private static final String TAG = "LightsManager";

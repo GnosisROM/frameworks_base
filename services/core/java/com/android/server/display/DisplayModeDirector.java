@@ -120,6 +120,7 @@ public class DisplayModeDirector {
     public void start(SensorManager sensorManager) {
         mSettingsObserver.observe();
         mDisplayObserver.observe();
+        mSettingsObserver.observe();
         mBrightnessObserver.observe(sensorManager);
         synchronized (mLock) {
             // We may have a listener already registered before the call to start, so go ahead and
@@ -699,7 +700,7 @@ public class DisplayModeDirector {
         // Application can specify preferred refresh rate with below attrs.
         // @see android.view.WindowManager.LayoutParams#preferredRefreshRate
         // @see android.view.WindowManager.LayoutParams#preferredDisplayModeId
-        // System also forces some apps like denylisted app to run at a lower refresh rate.
+        // System also forces some apps like blacklisted app to run at a lower refresh rate.
         // @see android.R.array#config_highRefreshRateBlacklist
         public static final int PRIORITY_APP_REQUEST_REFRESH_RATE = 3;
         public static final int PRIORITY_APP_REQUEST_SIZE = 4;

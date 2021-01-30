@@ -73,7 +73,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.Provider;
 import java.security.Security;
-import java.util.Optional;
 
 /**
  * Startup class for the zygote process.
@@ -87,9 +86,8 @@ import java.util.Optional;
  */
 public class ZygoteInit {
 
+    // TODO (chriswailes): Change this so it is set with Zygote or ZygoteSecondary as appropriate
     private static final String TAG = "Zygote";
-
-    private static final boolean LOGGING_DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
     private static final String PROPERTY_DISABLE_GRAPHICS_DRIVER_PRELOADING =
             "ro.zygote.disable_gl_preload";
@@ -226,17 +224,7 @@ public class ZygoteInit {
         // AndroidKeyStoreProvider.install() manipulates the list of JCA providers to insert
         // preferred providers. Note this is not done via security.properties as the JCA providers
         // are not on the classpath in the case of, for example, raw dalvikvm runtimes.
-        // TODO b/171305684 This code is used to conditionally enable the installation of the
-        //      Keystore 2.0 provider to enable teams adjusting to Keystore 2.0 at their own
-        //      pace. This code will be removed when all calling code was adjusted to
-        //      Keystore 2.0.
-        Optional<Boolean> keystore2_enabled =
-                android.sysprop.Keystore2Properties.keystore2_enabled();
-        if (keystore2_enabled.isPresent() && keystore2_enabled.get()) {
-            android.security.keystore2.AndroidKeyStoreProvider.install();
-        } else {
-            AndroidKeyStoreProvider.install();
-        }
+        AndroidKeyStoreProvider.install();
         Log.i(TAG, "Installed AndroidKeyStoreProvider in "
                 + (SystemClock.uptimeMillis() - startTime) + "ms.");
         Trace.traceEnd(Trace.TRACE_TAG_DALVIK);
@@ -296,7 +284,6 @@ public class ZygoteInit {
                     new BufferedReader(new InputStreamReader(is), Zygote.SOCKET_BUFFER_SIZE);
 
             int count = 0;
-            int missingLambdaCount = 0;
             String line;
             while ((line = br.readLine()) != null) {
                 // Skip comments and blank lines.
@@ -315,33 +302,24 @@ public class ZygoteInit {
                     Class.forName(line, true, null);
                     count++;
                 } catch (ClassNotFoundException e) {
-                    if (line.contains("$$Lambda$")) {
-                        if (LOGGING_DEBUG) {
-                            missingLambdaCount++;
-                        }
-                    } else {
-                        Log.w(TAG, "Class not found for preloading: " + line);
-                    }
+                    Log.w(TAG, "Class not found for preloading: " + line);
                 } catch (UnsatisfiedLinkError e) {
                     Log.w(TAG, "Problem preloading " + line + ": " + e);
                 } catch (Throwable t) {
                     Log.e(TAG, "Error preloading " + line + ".", t);
                     if (t instanceof Error) {
                         throw (Error) t;
-                    } else if (t instanceof RuntimeException) {
-                        throw (RuntimeException) t;
-                    } else {
-                        throw new RuntimeException(t);
                     }
+                    if (t instanceof RuntimeException) {
+                        throw (RuntimeException) t;
+                    }
+                    throw new RuntimeException(t);
                 }
                 Trace.traceEnd(Trace.TRACE_TAG_DALVIK);
             }
 
             Log.i(TAG, "...preloaded " + count + " classes in "
                     + (SystemClock.uptimeMillis() - startTime) + "ms.");
-            if (LOGGING_DEBUG && missingLambdaCount != 0) {
-                Log.i(TAG, "Unresolved lambda preloads: " + missingLambdaCount);
-            }
         } catch (IOException e) {
             Log.e(TAG, "Error reading " + PRELOADED_CLASSES + ".", e);
         } finally {
@@ -396,6 +374,7 @@ public class ZygoteInit {
                 "/system/framework/android.hidl.manager-V1.0-java.jar", null /*packageName*/,
                 null /*codePaths*/, null /*name*/, 0 /*version*/, SharedLibraryInfo.TYPE_BUILTIN,
                 null /*declaringPackage*/, null /*dependentPackages*/, null /*dependencies*/);
+        hidlManager.addDependency(hidlBase);
 
         SharedLibraryInfo androidTestBase = new SharedLibraryInfo(
                 "/system/framework/android.test.base.jar", null /*packageName*/,
@@ -610,10 +589,7 @@ public class ZygoteInit {
         VMRuntime.registerAppInfo(profilePath, codePaths);
     }
 
-    /**
-     * Sets the list of classes/methods for the hidden API
-     */
-    public static void setApiDenylistExemptions(String[] exemptions) {
+    public static void setApiBlacklistExemptions(String[] exemptions) {
         VMRuntime.getRuntime().setHiddenApiExemptions(exemptions);
     }
 
@@ -631,11 +607,8 @@ public class ZygoteInit {
 
     /**
      * Creates a PathClassLoader for the given class path that is associated with a shared
-     * namespace, i.e., this classloader can access platform-private native libraries.
-     *
-     * The classloader will add java.library.path to the native library path for the classloader
-     * namespace. Since it includes platform locations like /system/lib, this is only appropriate
-     * for platform code that don't need linker namespace isolation (as opposed to APEXes and apps).
+     * namespace, i.e., this classloader can access platform-private native libraries. The
+     * classloader will use java.library.path as the native library path.
      */
     static ClassLoader createPathClassLoader(String classPath, int targetSdkVersion) {
         String libraryPath = System.getProperty("java.library.path");
@@ -790,11 +763,7 @@ public class ZygoteInit {
             Zygote.applyDebuggerSystemProperty(parsedArgs);
             Zygote.applyInvokeWithSystemProperty(parsedArgs);
 
-            if (Zygote.nativeSupportsMemoryTagging()) {
-                /* The system server is more privileged than regular app processes, so it has async
-                 * tag checks enabled on hardware that supports memory tagging. */
-                parsedArgs.mRuntimeFlags |= Zygote.MEMORY_TAG_LEVEL_ASYNC;
-            } else if (Zygote.nativeSupportsTaggedPointers()) {
+            if (Zygote.nativeSupportsTaggedPointers()) {
                 /* Enable pointer tagging in the system server. Hardware support for this is present
                  * in all ARMv8 CPUs. */
                 parsedArgs.mRuntimeFlags |= Zygote.MEMORY_TAG_LEVEL_TBI;

@@ -24,5 +24,4 @@ cc_test_library {
         "-Wall",
         "-Werror",
     ],
-    header_libs: ["jni_headers"]
 }

@@ -18,7 +18,6 @@ package com.android.server.timedetector;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
-import android.app.timedetector.GnssTimeSuggestion;
 import android.app.timedetector.ITimeDetectorService;
 import android.app.timedetector.ManualTimeSuggestion;
 import android.app.timedetector.NetworkTimeSuggestion;
@@ -26,7 +25,6 @@ import android.app.timedetector.TelephonyTimeSuggestion;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.ContentObserver;
-import android.os.Binder;
 import android.os.Handler;
 import android.provider.Settings;
 
@@ -66,8 +64,9 @@ public final class TimeDetectorService extends ITimeDetectorService.Stub {
     @NonNull private final TimeDetectorStrategy mTimeDetectorStrategy;
 
     private static TimeDetectorService create(@NonNull Context context) {
-        TimeDetectorStrategyImpl.Callback callback = new TimeDetectorStrategyCallbackImpl(context);
-        TimeDetectorStrategy timeDetectorStrategy = new TimeDetectorStrategyImpl(callback);
+        TimeDetectorStrategy timeDetectorStrategy = new TimeDetectorStrategyImpl();
+        TimeDetectorStrategyCallbackImpl callback = new TimeDetectorStrategyCallbackImpl(context);
+        timeDetectorStrategy.initialize(callback);
 
         Handler handler = FgThread.getHandler();
         TimeDetectorService timeDetectorService =
@@ -103,16 +102,11 @@ public final class TimeDetectorService extends ITimeDetectorService.Stub {
     }
 
     @Override
-    public boolean suggestManualTime(@NonNull ManualTimeSuggestion timeSignal) {
+    public void suggestManualTime(@NonNull ManualTimeSuggestion timeSignal) {
         enforceSuggestManualTimePermission();
         Objects.requireNonNull(timeSignal);
 
-        long token = Binder.clearCallingIdentity();
-        try {
-            return mTimeDetectorStrategy.suggestManualTime(timeSignal);
-        } finally {
-            Binder.restoreCallingIdentity(token);
-        }
+        mHandler.post(() -> mTimeDetectorStrategy.suggestManualTime(timeSignal));
     }
 
     @Override
@@ -123,18 +117,10 @@ public final class TimeDetectorService extends ITimeDetectorService.Stub {
         mHandler.post(() -> mTimeDetectorStrategy.suggestNetworkTime(timeSignal));
     }
 
-    @Override
-    public void suggestGnssTime(@NonNull GnssTimeSuggestion timeSignal) {
-        enforceSuggestGnssTimePermission();
-        Objects.requireNonNull(timeSignal);
-
-        mHandler.post(() -> mTimeDetectorStrategy.suggestGnssTime(timeSignal));
-    }
-
     /** Internal method for handling the auto time setting being changed. */
     @VisibleForTesting
     public void handleAutoTimeDetectionChanged() {
-        mHandler.post(mTimeDetectorStrategy::handleAutoTimeConfigChanged);
+        mHandler.post(mTimeDetectorStrategy::handleAutoTimeDetectionChanged);
     }
 
     @Override
@@ -161,11 +147,5 @@ public final class TimeDetectorService extends ITimeDetectorService.Stub {
         mContext.enforceCallingOrSelfPermission(
                 android.Manifest.permission.SET_TIME,
                 "set time");
-    }
-
-    private void enforceSuggestGnssTimePermission() {
-        mContext.enforceCallingOrSelfPermission(
-                android.Manifest.permission.SET_TIME,
-                "suggest gnss time");
     }
 }

@@ -58,6 +58,7 @@ import java.util.Objects;
  * @hide
  * AudioPolicy provides access to the management of audio routing and audio focus.
  */
+@TestApi
 @SystemApi
 public class AudioPolicy {
 
@@ -417,6 +418,7 @@ public class AudioPolicy {
      * @param devices list of devices to which the audio stream of the application may be routed.
      * @return true if the change was successful, false otherwise.
      */
+    @TestApi
     @SystemApi
     public boolean setUidDeviceAffinity(int uid, @NonNull List<AudioDeviceInfo> devices) {
         if (devices == null) {
@@ -458,6 +460,7 @@ public class AudioPolicy {
      * @param uid UID of the application affected.
      * @return true if the change was successful, false otherwise.
      */
+    @TestApi
     @SystemApi
     public boolean removeUidDeviceAffinity(int uid) {
         synchronized (mLock) {
@@ -483,6 +486,7 @@ public class AudioPolicy {
      * {@link UserHandle#getIdentifier}. Not to be confused with application uid.
      * @return true if the change was successful, false otherwise.
      */
+    @TestApi
     @SystemApi
     public boolean removeUserIdDeviceAffinity(@UserIdInt int userId) {
         synchronized (mLock) {
@@ -515,6 +519,7 @@ public class AudioPolicy {
      * @param devices list of devices to which the audio stream of the application may be routed.
      * @return true if the change was successful, false otherwise.
      */
+    @TestApi
     @SystemApi
     public boolean setUserIdDeviceAffinity(@UserIdInt int userId,
             @NonNull List<AudioDeviceInfo> devices) {

@@ -88,7 +88,7 @@ public final class Debug
     // set/cleared by waitForDebugger()
     private static volatile boolean mWaiting = false;
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private Debug() {}
 
     /*
@@ -120,7 +120,7 @@ public final class Debug
         @UnsupportedAppUsage
         public int dalvikSwappablePss;
         /** @hide The resident set size for dalvik heap.  (Without other Dalvik overhead.) */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public int dalvikRss;
         /** The private dirty pages used by dalvik heap. */
         public int dalvikPrivateDirty;
@@ -140,7 +140,7 @@ public final class Debug
         public int dalvikSwappedOut;
         /** The dirty dalvik pages that have been swapped out, proportional. */
         /** @hide We may want to expose this, eventually. */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public int dalvikSwappedOutPss;
 
         /** The proportional set size for the native heap. */
@@ -150,7 +150,7 @@ public final class Debug
         @UnsupportedAppUsage
         public int nativeSwappablePss;
         /** @hide The resident set size for the native heap. */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public int nativeRss;
         /** The private dirty pages used by the native heap. */
         public int nativePrivateDirty;
@@ -170,7 +170,7 @@ public final class Debug
         public int nativeSwappedOut;
         /** The dirty native pages that have been swapped out, proportional. */
         /** @hide We may want to expose this, eventually. */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public int nativeSwappedOutPss;
 
         /** The proportional set size for everything else. */
@@ -180,7 +180,7 @@ public final class Debug
         @UnsupportedAppUsage
         public int otherSwappablePss;
         /** @hide The resident set size for everything else. */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public int otherRss;
         /** The private dirty pages used by everything else. */
         public int otherPrivateDirty;
@@ -200,12 +200,12 @@ public final class Debug
         public int otherSwappedOut;
         /** The dirty pages used by anyting else that have been swapped out, proportional. */
         /** @hide We may want to expose this, eventually. */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public int otherSwappedOutPss;
 
         /** Whether the kernel reports proportional swap usage */
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public boolean hasSwappedOutPss;
 
         /** @hide */
@@ -1115,6 +1115,8 @@ public final class Debug
             if (outStream != null)
                 outStream.close();
         }
+
+        VMDebug.startEmulatorTracing();
     }
 
     /**
@@ -1128,6 +1130,8 @@ public final class Debug
      * region of code.</p>
      */
     public static void stopNativeTracing() {
+        VMDebug.stopEmulatorTracing();
+
         // Open the sysfs file for writing and write "0" to it.
         PrintWriter outStream = null;
         try {
@@ -1156,7 +1160,7 @@ public final class Debug
      * To temporarily enable tracing, use {@link #startNativeTracing()}.
      */
     public static void enableEmulatorTraceOutput() {
-        Log.w(TAG, "Unimplemented");
+        VMDebug.startEmulatorTracing();
     }
 
     /**
@@ -2042,7 +2046,7 @@ public final class Debug
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static native void dumpNativeHeap(FileDescriptor fd);
 
     /**
@@ -2091,6 +2095,25 @@ public final class Debug
      * exist in the current process.
      */
     public static final native int getBinderDeathObjectCount();
+
+    /**
+     * Primes the register map cache.
+     *
+     * Only works for classes in the bootstrap class loader.  Does not
+     * cause classes to be loaded if they're not already present.
+     *
+     * The classAndMethodDesc argument is a concatentation of the VM-internal
+     * class descriptor, method name, and method descriptor.  Examples:
+     *     Landroid/os/Looper;.loop:()V
+     *     Landroid/app/ActivityThread;.main:([Ljava/lang/String;)V
+     *
+     * @param classAndMethodDesc the method to prepare
+     *
+     * @hide
+     */
+    public static final boolean cacheRegisterMap(String classAndMethodDesc) {
+        return VMDebug.cacheRegisterMap(classAndMethodDesc);
+    }
 
     /**
      * Dumps the contents of VM reference tables (e.g. JNI locals and
@@ -2551,16 +2574,14 @@ public final class Debug
     public static native long getZramFreeKb();
 
     /**
-     * Return memory size in kilobytes allocated for ION heaps or -1 if
-     * /sys/kernel/ion/total_heaps_kb could not be read.
+     * Return memory size in kilobytes allocated for ION heaps.
      *
      * @hide
      */
     public static native long getIonHeapsSizeKb();
 
     /**
-     * Return memory size in kilobytes allocated for ION pools or -1 if
-     * /sys/kernel/ion/total_pools_kb could not be read.
+     * Return memory size in kilobytes allocated for ION pools.
      *
      * @hide
      */
@@ -2574,13 +2595,6 @@ public final class Debug
      * @hide
      */
     public static native long getIonMappedSizeKb();
-
-    /**
-     * Return memory size in kilobytes used by GPU.
-     *
-     * @hide
-     */
-    public static native long getGpuTotalUsageKb();
 
     /**
      * Return whether virtually-mapped kernel stacks are enabled (CONFIG_VMAP_STACK).

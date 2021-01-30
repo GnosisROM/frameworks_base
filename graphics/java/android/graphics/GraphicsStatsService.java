@@ -16,6 +16,7 @@
 
 package android.graphics;
 
+import android.annotation.SystemApi;
 import android.app.AlarmManager;
 import android.app.AppOpsManager;
 import android.content.Context;
@@ -99,6 +100,7 @@ public class GraphicsStatsService extends IGraphicsStats.Stub {
     private Handler mWriteOutHandler;
     private boolean mRotateIsScheduled = false;
 
+    @SystemApi
     public GraphicsStatsService(Context context) {
         mContext = context;
         mAppOps = context.getSystemService(AppOpsManager.class);

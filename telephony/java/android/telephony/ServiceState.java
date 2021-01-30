@@ -956,7 +956,7 @@ public class ServiceState implements Parcelable {
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static String rilRadioTechnologyToString(int rt) {
         String rtString;
 
@@ -1102,8 +1102,7 @@ public class ServiceState implements Parcelable {
                     .append(", isUsingCarrierAggregation=").append(isUsingCarrierAggregation())
                     .append(", mLteEarfcnRsrpBoost=").append(mLteEarfcnRsrpBoost)
                     .append(", mNetworkRegistrationInfos=").append(mNetworkRegistrationInfos)
-                    .append(", mNrFrequencyRange=").append(Build.IS_DEBUGGABLE
-                            ? mNrFrequencyRange : FREQUENCY_RANGE_UNKNOWN)
+                    .append(", mNrFrequencyRange=").append(mNrFrequencyRange)
                     .append(", mOperatorAlphaLongRaw=").append(mOperatorAlphaLongRaw)
                     .append(", mOperatorAlphaShortRaw=").append(mOperatorAlphaShortRaw)
                     .append(", mIsDataRoamingFromRegistration=")
@@ -1168,7 +1167,7 @@ public class ServiceState implements Parcelable {
     }
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void setVoiceRegState(int state) {
         mVoiceRegState = state;
         if (DBG) Rlog.d(LOG_TAG, "[ServiceState] setVoiceRegState=" + mVoiceRegState);
@@ -1199,7 +1198,7 @@ public class ServiceState implements Parcelable {
     }
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void setVoiceRoaming(boolean roaming) {
         setVoiceRoamingType(roaming ? ROAMING_TYPE_UNKNOWN : ROAMING_TYPE_NOT_ROAMING);
     }
@@ -1220,7 +1219,7 @@ public class ServiceState implements Parcelable {
     }
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void setDataRoaming(boolean dataRoaming) {
         setDataRoamingType(dataRoaming ? ROAMING_TYPE_UNKNOWN : ROAMING_TYPE_NOT_ROAMING);
     }
@@ -1292,7 +1291,7 @@ public class ServiceState implements Parcelable {
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void setOperatorAlphaLong(@Nullable String longName) {
         mOperatorAlphaLong = longName;
     }
@@ -1413,14 +1412,29 @@ public class ServiceState implements Parcelable {
 
     /** @hide */
     public boolean isUsingCarrierAggregation() {
-        if (getCellBandwidths().length > 1) return true;
-
-        synchronized (mNetworkRegistrationInfos) {
-            for (NetworkRegistrationInfo nri : mNetworkRegistrationInfos) {
-                if (nri.isUsingCarrierAggregation()) return true;
+        boolean isUsingCa = false;
+        NetworkRegistrationInfo nri = getNetworkRegistrationInfo(
+                NetworkRegistrationInfo.DOMAIN_PS, AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+        if (nri != null) {
+            DataSpecificRegistrationInfo dsri = nri.getDataSpecificInfo();
+            if (dsri != null) {
+                isUsingCa = dsri.isUsingCarrierAggregation();
             }
         }
-        return false;
+        return isUsingCa || getCellBandwidths().length > 1;
+    }
+
+    /** @hide */
+    public void setIsUsingCarrierAggregation(boolean ca) {
+        NetworkRegistrationInfo nri = getNetworkRegistrationInfo(
+                NetworkRegistrationInfo.DOMAIN_PS, AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+        if (nri != null) {
+            DataSpecificRegistrationInfo dsri = nri.getDataSpecificInfo();
+            if (dsri != null) {
+                dsri.setIsUsingCarrierAggregation(ca);
+                addNetworkRegistrationInfo(nri);
+            }
+        }
     }
 
     /**
@@ -1477,7 +1491,7 @@ public class ServiceState implements Parcelable {
     }
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public int getRilVoiceRadioTechnology() {
         NetworkRegistrationInfo wwanRegInfo = getNetworkRegistrationInfo(
                 NetworkRegistrationInfo.DOMAIN_CS, AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
@@ -1487,7 +1501,7 @@ public class ServiceState implements Parcelable {
         return RIL_RADIO_TECHNOLOGY_UNKNOWN;
     }
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public int getRilDataRadioTechnology() {
         return networkTypeToRilRadioTechnology(getDataNetworkType());
     }
@@ -1764,7 +1778,7 @@ public class ServiceState implements Parcelable {
     }
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static boolean bitmaskHasTech(int bearerBitmask, int radioTech) {
         if (bearerBitmask == 0) {
             return true;
@@ -1850,7 +1864,7 @@ public class ServiceState implements Parcelable {
      * voice SS. The voice SS is only used if it is IN_SERVICE (otherwise the base SS is returned).
      * @hide
      * */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static ServiceState mergeServiceStates(ServiceState baseSs, ServiceState voiceSs) {
         if (voiceSs.mVoiceRegState != STATE_IN_SERVICE) {
             return baseSs;
@@ -2110,24 +2124,5 @@ public class ServiceState implements Parcelable {
             return true;
         }
         return false;
-    }
-
-    /**
-     * The frequency range is valid or not.
-     *
-     * @param frequencyRange The frequency range {@link FrequencyRange}.
-     * @return {@code true} if valid, {@code false} otherwise.
-     *
-     * @hide
-     */
-    public static boolean isFrequencyRangeValid(int frequencyRange) {
-        if (frequencyRange == FREQUENCY_RANGE_LOW
-                || frequencyRange == FREQUENCY_RANGE_MID
-                || frequencyRange == FREQUENCY_RANGE_HIGH
-                || frequencyRange == FREQUENCY_RANGE_MMWAVE) {
-            return true;
-        } else {
-            return false;
-        }
     }
 }

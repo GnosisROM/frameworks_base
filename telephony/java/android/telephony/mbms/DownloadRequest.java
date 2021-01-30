@@ -19,6 +19,7 @@ package android.telephony.mbms;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Parcel;
@@ -185,6 +186,7 @@ public final class DownloadRequest implements Parcelable {
          * @hide
          */
         @SystemApi
+        @TestApi
         public Builder setServiceId(String serviceId) {
             fileServiceId = serviceId;
             return this;

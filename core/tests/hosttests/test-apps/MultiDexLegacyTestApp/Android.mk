@@ -29,8 +29,6 @@ LOCAL_PACKAGE_NAME := MultiDexLegacyTestApp
 
 LOCAL_DEX_PREOPT := false
 
-LOCAL_EMMA_INSTRUMENT := false
-
 mainDexList:= \
 	$(call intermediates-dir-for,APPS,$(LOCAL_PACKAGE_NAME),$(LOCAL_IS_HOST_MODULE),common)/maindex.list
 
@@ -61,8 +59,6 @@ LOCAL_SDK_VERSION := 8
 LOCAL_PACKAGE_NAME := MultiDexLegacyTestApp2
 
 LOCAL_DEX_PREOPT := false
-
-LOCAL_EMMA_INSTRUMENT := false
 
 mainDexList2:= \
 	$(call intermediates-dir-for,APPS,$(LOCAL_PACKAGE_NAME),$(LOCAL_IS_HOST_MODULE),common)/maindex.list

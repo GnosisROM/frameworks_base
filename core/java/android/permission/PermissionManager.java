@@ -24,6 +24,7 @@ import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.annotation.TestApi;
 import android.app.ActivityManager;
 import android.app.ActivityThread;
 import android.app.IActivityManager;
@@ -55,6 +56,7 @@ import java.util.function.Consumer;
  *
  * @hide
  */
+@TestApi
 @SystemApi
 @SystemService(Context.PERMISSION_SERVICE)
 public final class PermissionManager {
@@ -112,6 +114,7 @@ public final class PermissionManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     @RequiresPermission(anyOf = {
             Manifest.permission.ADJUST_RUNTIME_PERMISSIONS_POLICY,
@@ -132,6 +135,7 @@ public final class PermissionManager {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     @RequiresPermission(anyOf = {
             Manifest.permission.ADJUST_RUNTIME_PERMISSIONS_POLICY,
@@ -149,7 +153,7 @@ public final class PermissionManager {
      * Get set of permissions that have been split into more granular or dependent permissions.
      *
      * <p>E.g. before {@link android.os.Build.VERSION_CODES#Q} an app that was granted
-     * {@link Manifest.permission#ACCESS_COARSE_LOCATION} could access the location while it was in
+     * {@link Manifest.permission#ACCESS_COARSE_LOCATION} could access he location while it was in
      * foreground and background. On platforms after {@link android.os.Build.VERSION_CODES#Q}
      * the location permission only grants location access while the app is in foreground. This
      * would break apps that target before {@link android.os.Build.VERSION_CODES#Q}. Hence whenever

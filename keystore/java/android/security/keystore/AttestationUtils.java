@@ -20,6 +20,7 @@ import android.Manifest;
 import android.annotation.NonNull;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
@@ -45,6 +46,7 @@ import java.util.Set;
  * @hide
  */
 @SystemApi
+@TestApi
 public abstract class AttestationUtils {
     private AttestationUtils() {
     }

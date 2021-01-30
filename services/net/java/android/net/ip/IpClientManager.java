@@ -21,7 +21,6 @@ import android.annotation.NonNull;
 import android.net.NattKeepalivePacketData;
 import android.net.ProxyInfo;
 import android.net.TcpKeepalivePacketData;
-import android.net.TcpKeepalivePacketDataParcelable;
 import android.net.shared.Layer2Information;
 import android.net.shared.ProvisioningConfiguration;
 import android.net.util.KeepalivePacketDataUtil;
@@ -216,20 +215,9 @@ public class IpClientManager {
      * Add a TCP keepalive packet filter before setting up keepalive offload.
      */
     public boolean addKeepalivePacketFilter(int slot, TcpKeepalivePacketData pkt) {
-        return addKeepalivePacketFilter(slot, KeepalivePacketDataUtil.toStableParcelable(pkt));
-    }
-
-    /**
-     * Add a TCP keepalive packet filter before setting up keepalive offload.
-     * @deprecated This method is for use on pre-S platforms where TcpKeepalivePacketData is not
-     *             system API. On newer platforms use
-     *             addKeepalivePacketFilter(int, TcpKeepalivePacketData) instead.
-     */
-    @Deprecated
-    public boolean addKeepalivePacketFilter(int slot, TcpKeepalivePacketDataParcelable pkt) {
         final long token = Binder.clearCallingIdentity();
         try {
-            mIpClient.addKeepalivePacketFilter(slot, pkt);
+            mIpClient.addKeepalivePacketFilter(slot, pkt.toStableParcelable());
             return true;
         } catch (RemoteException e) {
             log("Error adding Keepalive Packet Filter ", e);

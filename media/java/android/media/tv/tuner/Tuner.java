@@ -60,7 +60,6 @@ import com.android.internal.util.FrameworkStatsLog;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -211,7 +210,6 @@ public class Tuner implements AutoCloseable  {
     @Nullable
     private FrontendInfo mFrontendInfo;
     private Integer mFrontendHandle;
-    private Boolean mIsSharedFrontend = false;
     private int mFrontendType = FrontendSettings.TYPE_UNDEFINED;
     private int mUserId;
     private Lnb mLnb;
@@ -230,8 +228,8 @@ public class Tuner implements AutoCloseable  {
     private Executor mOnResourceLostListenerExecutor;
 
     private Integer mDemuxHandle;
-    private Map<Integer, WeakReference<Descrambler>> mDescramblers = new HashMap<>();
-    private List<WeakReference<Filter>> mFilters = new ArrayList<WeakReference<Filter>>();
+    private Map<Integer, Descrambler> mDescramblers = new HashMap<>();
+    private List<Filter> mFilters = new ArrayList<>();
 
     private final TunerResourceManager.ResourcesReclaimListener mResourceListener =
             new TunerResourceManager.ResourcesReclaimListener() {
@@ -242,7 +240,6 @@ public class Tuner implements AutoCloseable  {
                                 .write(FrameworkStatsLog.TV_TUNER_STATE_CHANGED, mUserId,
                                     FrameworkStatsLog.TV_TUNER_STATE_CHANGED__STATE__UNKNOWN);
                     }
-                    releaseAll();
                     mHandler.sendMessage(mHandler.obtainMessage(MSG_RESOURCE_LOST));
                 }
             };
@@ -339,11 +336,8 @@ public class Tuner implements AutoCloseable  {
      */
     public void shareFrontendFromTuner(@NonNull Tuner tuner) {
         mTunerResourceManager.shareFrontend(mClientId, tuner.mClientId);
-        synchronized (mIsSharedFrontend) {
-            mFrontendHandle = tuner.mFrontendHandle;
-            mFrontend = tuner.mFrontend;
-            mIsSharedFrontend = true;
-        }
+        mFrontendHandle = tuner.mFrontendHandle;
+        mFrontend = nativeOpenFrontendByHandle(mFrontendHandle);
     }
 
     /**
@@ -368,53 +362,33 @@ public class Tuner implements AutoCloseable  {
      */
     @Override
     public void close() {
-        releaseAll();
-        TunerUtils.throwExceptionForResult(nativeClose(), "failed to close tuner");
-    }
-
-    private void releaseAll() {
         if (mFrontendHandle != null) {
-            synchronized (mIsSharedFrontend) {
-                if (!mIsSharedFrontend) {
-                    int res = nativeCloseFrontend(mFrontendHandle);
-                    if (res != Tuner.RESULT_SUCCESS) {
-                        TunerUtils.throwExceptionForResult(res, "failed to close frontend");
-                    }
-                }
-                mIsSharedFrontend = false;
+            int res = nativeCloseFrontend(mFrontendHandle);
+            if (res != Tuner.RESULT_SUCCESS) {
+                TunerUtils.throwExceptionForResult(res, "failed to close frontend");
             }
             mTunerResourceManager.releaseFrontend(mFrontendHandle, mClientId);
             FrameworkStatsLog
                     .write(FrameworkStatsLog.TV_TUNER_STATE_CHANGED, mUserId,
-                    FrameworkStatsLog.TV_TUNER_STATE_CHANGED__STATE__UNKNOWN);
+                        FrameworkStatsLog.TV_TUNER_STATE_CHANGED__STATE__UNKNOWN);
             mFrontendHandle = null;
             mFrontend = null;
         }
         if (mLnb != null) {
             mLnb.close();
         }
-        synchronized (mDescramblers) {
-            if (!mDescramblers.isEmpty()) {
-                for (Map.Entry<Integer, WeakReference<Descrambler>> d : mDescramblers.entrySet()) {
-                    Descrambler descrambler = d.getValue().get();
-                    if (descrambler != null) {
-                        descrambler.close();
-                    }
-                    mTunerResourceManager.releaseDescrambler(d.getKey(), mClientId);
-                }
-                mDescramblers.clear();
+        if (!mDescramblers.isEmpty()) {
+            for (Map.Entry<Integer, Descrambler> d : mDescramblers.entrySet()) {
+                d.getValue().close();
+                mTunerResourceManager.releaseDescrambler(d.getKey(), mClientId);
             }
+            mDescramblers.clear();
         }
-        synchronized (mFilters) {
-            if (!mFilters.isEmpty()) {
-                for (WeakReference<Filter> weakFilter : mFilters) {
-                    Filter filter = weakFilter.get();
-                    if (filter != null) {
-                        filter.close();
-                    }
-                }
-                mFilters.clear();
+        if (!mFilters.isEmpty()) {
+            for (Filter f : mFilters) {
+                f.close();
             }
+            mFilters.clear();
         }
         if (mDemuxHandle != null) {
             int res = nativeCloseDemux(mDemuxHandle);
@@ -422,9 +396,9 @@ public class Tuner implements AutoCloseable  {
                 TunerUtils.throwExceptionForResult(res, "failed to close demux");
             }
             mTunerResourceManager.releaseDemux(mDemuxHandle, mClientId);
-            mDemuxHandle = null;
+            mFrontendHandle = null;
         }
-
+        TunerUtils.throwExceptionForResult(nativeClose(), "failed to close tuner");
     }
 
     /**
@@ -636,14 +610,10 @@ public class Tuner implements AutoCloseable  {
     @Result
     public int scan(@NonNull FrontendSettings settings, @ScanType int scanType,
             @NonNull @CallbackExecutor Executor executor, @NonNull ScanCallback scanCallback) {
-        /**
-         * Scan can be called again for blink scan if scanCallback and executor are same as before.
-         */
-        if (((mScanCallback != null) && (mScanCallback != scanCallback))
-                || ((mScanCallbackExecutor != null) && (mScanCallbackExecutor != executor))) {
+        if (mScanCallback != null || mScanCallbackExecutor != null) {
             throw new IllegalStateException(
-                    "Different Scan session already in progress.  stopScan must be called "
-                        + "before a new scan session can be " + "started.");
+                    "Scan already in progress.  stopScan must be called before a new scan can be "
+                            + "started.");
         }
         mFrontendType = settings.getType();
         if (checkResource(TunerResourceManager.TUNER_RESOURCE_TYPE_FRONTEND)) {
@@ -974,10 +944,7 @@ public class Tuner implements AutoCloseable  {
             if (mHandler == null) {
                 mHandler = createEventHandler();
             }
-            synchronized (mFilters) {
-                WeakReference<Filter> weakFilter = new WeakReference<Filter>(filter);
-                mFilters.add(weakFilter);
-            }
+            mFilters.add(filter);
         }
         return filter;
     }
@@ -1145,10 +1112,7 @@ public class Tuner implements AutoCloseable  {
         int handle = descramblerHandle[0];
         Descrambler descrambler = nativeOpenDescramblerByHandle(handle);
         if (descrambler != null) {
-            synchronized (mDescramblers) {
-                WeakReference weakDescrambler = new WeakReference<Descrambler>(descrambler);
-                mDescramblers.put(handle, weakDescrambler);
-            }
+            mDescramblers.put(handle, descrambler);
         } else {
             mTunerResourceManager.releaseDescrambler(handle, mClientId);
         }

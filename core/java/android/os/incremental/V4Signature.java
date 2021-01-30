@@ -31,7 +31,7 @@ import java.nio.ByteOrder;
 
 /**
  * V4 signature fields.
- * Keep in sync with APKSig authoritative copy.
+ * Keep in sync with APKSig master copy.
  * @hide
  */
 public class V4Signature {

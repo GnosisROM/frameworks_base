@@ -35,7 +35,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.UserInfo;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -695,13 +694,13 @@ public class LockPatternUtils {
         }
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void setOwnerInfo(String info, int userId) {
         setString(LOCK_SCREEN_OWNER_INFO, info, userId);
         updateCryptoUserInfo(userId);
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void setOwnerInfoEnabled(boolean enabled, int userId) {
         setBoolean(LOCK_SCREEN_OWNER_INFO_ENABLED, enabled, userId);
         updateCryptoUserInfo(userId);
@@ -1079,7 +1078,7 @@ public class LockPatternUtils {
         return type != CREDENTIAL_TYPE_NONE;
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public boolean isLockPasswordEnabled(int userId) {
         int type = getCredentialTypeForUser(userId);
         return type == CREDENTIAL_TYPE_PASSWORD || type == CREDENTIAL_TYPE_PIN;
@@ -1177,7 +1176,7 @@ public class LockPatternUtils {
     }
 
     /**
-     * Set and store the lockout deadline, meaning the user can't attempt their unlock
+     * Set and store the lockout deadline, meaning the user can't attempt his/her unlock
      * pattern until the deadline has passed.
      * @return the chosen deadline.
      */
@@ -1195,7 +1194,7 @@ public class LockPatternUtils {
 
     /**
      * @return The elapsed time in millis in the future when the user is allowed to
-     *   attempt to enter their lock pattern, or 0 if the user is welcome to
+     *   attempt to enter his/her lock pattern, or 0 if the user is welcome to
      *   enter a pattern.
      */
     public long getLockoutAttemptDeadline(int userId) {
@@ -1481,7 +1480,7 @@ public class LockPatternUtils {
      * Create an escrow token for the current user, which can later be used to unlock FBE
      * or change user password.
      *
-     * After adding, if the user currently has lockscreen password, they will need to perform a
+     * After adding, if the user currently has lockscreen password, he will need to perform a
      * confirm credential operation in order to activate the token for future use. If the user
      * has no secure lockscreen, then the token is activated immediately.
      *
@@ -1558,7 +1557,7 @@ public class LockPatternUtils {
 
     /**
      * Unlock the specified user by an pre-activated escrow token. This should have the same effect
-     * on device encryption as the user entering their lockscreen credentials for the first time after
+     * on device encryption as the user entering his lockscreen credentials for the first time after
      * boot, this includes unlocking the user's credential-encrypted storage as well as the keystore
      *
      * <p>This method is only available to code running in the system server process itself.

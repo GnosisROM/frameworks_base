@@ -77,6 +77,7 @@ import java.util.function.Consumer;
  *
  * @hide
  */
+@TestApi
 @SystemApi
 @SystemService(Context.PERMISSION_CONTROLLER_SERVICE)
 public final class PermissionControllerManager {

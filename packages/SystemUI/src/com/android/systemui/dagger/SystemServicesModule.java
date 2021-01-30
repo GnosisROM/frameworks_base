@@ -318,7 +318,6 @@ public class SystemServicesModule {
 
     @Provides
     @Singleton
-    @Nullable
     static WifiManager provideWifiManager(Context context) {
         return context.getSystemService(WifiManager.class);
     }

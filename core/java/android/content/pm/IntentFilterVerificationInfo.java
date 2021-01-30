@@ -56,19 +56,19 @@ public final class IntentFilterVerificationInfo implements Parcelable {
 
     private ArraySet<String> mDomains = new ArraySet<>();
     private String mPackageName;
-    private int mStatus;
+    private int mMainStatus;
 
     /** @hide */
     public IntentFilterVerificationInfo() {
         mPackageName = null;
-        mStatus = INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_UNDEFINED;
+        mMainStatus = INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_UNDEFINED;
     }
 
     /** @hide */
     public IntentFilterVerificationInfo(String packageName, ArraySet<String> domains) {
         mPackageName = packageName;
         mDomains = domains;
-        mStatus = INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_UNDEFINED;
+        mMainStatus = INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_UNDEFINED;
     }
 
     /** @hide */
@@ -87,14 +87,14 @@ public final class IntentFilterVerificationInfo implements Parcelable {
     }
 
     public int getStatus() {
-        return mStatus;
+        return mMainStatus;
     }
 
     /** @hide */
     public void setStatus(int s) {
         if (s >= INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_UNDEFINED &&
                 s <= INTENT_FILTER_DOMAIN_VERIFICATION_STATUS_NEVER) {
-            mStatus = s;
+            mMainStatus = s;
         } else {
             Log.w(TAG, "Trying to set a non supported status: " + s);
         }
@@ -156,7 +156,7 @@ public final class IntentFilterVerificationInfo implements Parcelable {
         if (status == -1) {
             Log.e(TAG, "Unknown status value: " + status);
         }
-        mStatus = status;
+        mMainStatus = status;
 
         int outerDepth = parser.getDepth();
         int type;
@@ -184,7 +184,7 @@ public final class IntentFilterVerificationInfo implements Parcelable {
     /** @hide */
     public void writeToXml(XmlSerializer serializer) throws IOException {
         serializer.attribute(null, ATTR_PACKAGE_NAME, mPackageName);
-        serializer.attribute(null, ATTR_STATUS, String.valueOf(mStatus));
+        serializer.attribute(null, ATTR_STATUS, String.valueOf(mMainStatus));
         for (String str : mDomains) {
             serializer.startTag(null, TAG_DOMAIN);
             serializer.attribute(null, ATTR_DOMAIN_NAME, str);
@@ -194,7 +194,7 @@ public final class IntentFilterVerificationInfo implements Parcelable {
 
     /** @hide */
     public String getStatusString() {
-        return getStatusStringFromValue(((long) mStatus) << 32);
+        return getStatusStringFromValue(((long)mMainStatus) << 32);
     }
 
     /** @hide */
@@ -233,7 +233,7 @@ public final class IntentFilterVerificationInfo implements Parcelable {
 
     private void readFromParcel(Parcel source) {
         mPackageName = source.readString();
-        mStatus = source.readInt();
+        mMainStatus = source.readInt();
         ArrayList<String> list = new ArrayList<>();
         source.readStringList(list);
         mDomains.addAll(list);
@@ -242,7 +242,7 @@ public final class IntentFilterVerificationInfo implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(mPackageName);
-        dest.writeInt(mStatus);
+        dest.writeInt(mMainStatus);
         dest.writeStringList(new ArrayList<>(mDomains));
     }
 

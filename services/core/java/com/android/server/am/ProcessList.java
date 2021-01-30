@@ -124,6 +124,7 @@ import com.android.server.pm.parsing.pkg.AndroidPackage;
 import com.android.server.wm.ActivityServiceConnectionsHolder;
 import com.android.server.wm.WindowManagerService;
 
+import dalvik.annotation.compat.VersionCodes;
 import dalvik.system.VMRuntime;
 
 import java.io.File;
@@ -344,27 +345,8 @@ public final class ProcessList {
      * Pointers</a>
      */
     @ChangeId
-    @EnabledAfter(targetSdkVersion = Build.VERSION_CODES.Q)
+    @EnabledAfter(targetSdkVersion = VersionCodes.Q)
     private static final long NATIVE_HEAP_POINTER_TAGGING = 135754954; // This is a bug id.
-
-    /**
-     * Enable asynchronous (ASYNC) memory tag checking in this process. This
-     * flag will only have an effect on hardware supporting the ARM Memory
-     * Tagging Extension (MTE).
-     */
-    @ChangeId
-    @Disabled
-    private static final long NATIVE_MEMTAG_ASYNC = 135772972; // This is a bug id.
-
-    /**
-     * Enable synchronous (SYNC) memory tag checking in this process. This flag
-     * will only have an effect on hardware supporting the ARM Memory Tagging
-     * Extension (MTE). If both NATIVE_MEMTAG_ASYNC and this option is selected,
-     * this option takes preference and MTE is enabled in SYNC mode.
-     */
-    @ChangeId
-    @Disabled
-    private static final long NATIVE_MEMTAG_SYNC = 177438394; // This is a bug id.
 
     /**
      * Enable sampled memory bug detection in the app.
@@ -379,7 +361,7 @@ public final class ProcessList {
      * app has made them world-readable.
      */
     @ChangeId
-    @EnabledAfter(targetSdkVersion = Build.VERSION_CODES.Q)
+    @EnabledAfter(targetSdkVersion = VersionCodes.Q)
     private static final long APP_DATA_DIRECTORY_ISOLATION = 143937733; // See b/143937733
 
     ActivityManagerService mService = null;
@@ -1687,25 +1669,6 @@ public final class ProcessList {
         return gidArray;
     }
 
-    // Returns the memory tagging level to be enabled. If memory tagging isn't
-    // requested, returns zero.
-    private int getMemtagLevel(ProcessRecord app) {
-        // Ensure the hardware + kernel actually supports MTE.
-        if (!Zygote.nativeSupportsMemoryTagging()) {
-            return 0;
-        }
-
-        if (mPlatformCompat.isChangeEnabled(NATIVE_MEMTAG_SYNC, app.info)) {
-            return Zygote.MEMORY_TAG_LEVEL_SYNC;
-        }
-
-        if (mPlatformCompat.isChangeEnabled(NATIVE_MEMTAG_ASYNC, app.info)) {
-            return Zygote.MEMORY_TAG_LEVEL_ASYNC;
-        }
-
-        return 0;
-    }
-
     private boolean shouldEnableTaggedPointers(ProcessRecord app) {
         // Ensure we have platform + kernel support for TBI.
         if (!Zygote.nativeSupportsTaggedPointers()) {
@@ -1726,12 +1689,6 @@ public final class ProcessList {
     }
 
     private int decideTaggingLevel(ProcessRecord app) {
-        // Check MTE support first, as it should take precedence over TBI.
-        int memtagLevel = getMemtagLevel(app);
-        if (memtagLevel != 0) {
-            return memtagLevel;
-        }
-
         if (shouldEnableTaggedPointers(app)) {
             return Zygote.MEMORY_TAG_LEVEL_TBI;
         }
@@ -1960,13 +1917,13 @@ public final class ProcessList {
             // If instructionSet is non-null, this indicates that the system_server is spawning a
             // process with an ISA that may be different from its own. System (kernel and hardware)
             // compatililty for these features is checked in the decideTaggingLevel in the
-            // system_server process (not the child process). As both MTE and TBI are only supported
-            // in aarch64, we can simply ensure that the new process is also aarch64. This prevents
-            // the mismatch where a 64-bit system server spawns a 32-bit child that thinks it should
-            // enable some tagging variant. Theoretically, a 32-bit system server could exist that
-            // spawns 64-bit processes, in which case the new process won't get any tagging. This is
-            // fine as we haven't seen this configuration in practice, and we can reasonable assume
-            // that if tagging is desired, the system server will be 64-bit.
+            // system_server process (not the child process). As TBI is only supported in aarch64,
+            // we can simply ensure that the new process is also aarch64. This prevents the mismatch
+            // where a 64-bit system server spawns a 32-bit child that thinks it should enable some
+            // tagging variant. Theoretically, a 32-bit system server could exist that spawns 64-bit
+            // processes, in which case the new process won't get any tagging. This is fine as we
+            // haven't seen this configuration in practice, and we can reasonable assume that if
+            // tagging is desired, the system server will be 64-bit.
             if (instructionSet == null || instructionSet.equals("arm64")) {
                 runtimeFlags |= decideTaggingLevel(app);
             }

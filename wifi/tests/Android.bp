@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Make test APK
+// ============================================================
+
 android_test {
-    name: "FrameworksWifiNonUpdatableApiTests",
+    name: "FrameworksWifiApiTests",
 
     defaults: ["framework-wifi-test-defaults"],
 
-    srcs: ["src/**/*.java"],
+    srcs: ["**/*.java"],
 
     jacoco: {
         include_filter: ["android.net.wifi.*"],
@@ -27,9 +30,11 @@ android_test {
 
     static_libs: [
         "androidx.test.rules",
-        "frameworks-base-testutils",
+        "core-test-rules",
         "guava",
         "mockito-target-minus-junit4",
+        "net-tests-utils",
+        "frameworks-base-testutils",
         "truth-prebuilt",
     ],
 
@@ -39,6 +44,7 @@ android_test {
     ],
 
     test_suites: [
-        "general-tests",
+        "device-tests",
+        "mts",
     ],
 }

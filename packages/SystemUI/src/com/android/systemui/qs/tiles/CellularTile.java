@@ -23,7 +23,6 @@ import android.app.AlertDialog.Builder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.telephony.SubscriptionManager;
@@ -48,6 +47,7 @@ import com.android.systemui.qs.QSHost;
 import com.android.systemui.qs.SignalTileView;
 import com.android.systemui.qs.tileimpl.QSTileImpl;
 import com.android.systemui.statusbar.phone.SystemUIDialog;
+import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.statusbar.policy.NetworkController;
 import com.android.systemui.statusbar.policy.NetworkController.IconState;
 import com.android.systemui.statusbar.policy.NetworkController.SignalCallback;
@@ -65,15 +65,26 @@ public class CellularTile extends QSTileImpl<SignalState> {
     private final CellSignalCallback mSignalCallback = new CellSignalCallback();
     private final ActivityStarter mActivityStarter;
 
+    private final KeyguardStateController mKeyguard;
+
     @Inject
     public CellularTile(QSHost host, NetworkController networkController,
-            ActivityStarter activityStarter) {
+            ActivityStarter activityStarter, KeyguardStateController keyguardStateController) {
         super(host);
         mController = networkController;
         mActivityStarter = activityStarter;
         mDataController = mController.getMobileDataController();
         mDetailAdapter = new CellularDetailAdapter();
         mController.observe(getLifecycle(), mSignalCallback);
+
+        mKeyguard = keyguardStateController;
+        final KeyguardStateController.Callback callback = new KeyguardStateController.Callback() {
+            @Override
+            public void onKeyguardShowingChanged() {
+                refreshState();
+            }
+        };
+        mKeyguard.observe(this, callback);
     }
 
     @Override
@@ -99,16 +110,27 @@ public class CellularTile extends QSTileImpl<SignalState> {
         return getCellularSettingIntent();
     }
 
-    @Override
-    protected void handleClick() {
-        if (getState().state == Tile.STATE_UNAVAILABLE) {
-            return;
-        }
+    private void handleClickInner() {
         if (mDataController.isMobileDataEnabled()) {
             maybeShowDisableDialog();
         } else {
             mDataController.setMobileDataEnabled(true);
         }
+    }
+
+    @Override
+    protected void handleClick() {
+        if (getState().state == Tile.STATE_UNAVAILABLE) {
+            return;
+        }
+        if (mKeyguard.isMethodSecure() && mKeyguard.isShowing()) {
+            mActivityStarter.postQSRunnableDismissingKeyguard(() -> {
+                mHost.openPanels();
+                handleClickInner();
+            });
+            return;
+        }
+        handleClickInner();
     }
 
     private void maybeShowDisableDialog() {
@@ -143,6 +165,13 @@ public class CellularTile extends QSTileImpl<SignalState> {
     @Override
     protected void handleSecondaryClick() {
         if (mDataController.isMobileDataSupported()) {
+            if (mKeyguard.isMethodSecure() && mKeyguard.isShowing()) {
+                mActivityStarter.postQSRunnableDismissingKeyguard(() -> {
+                    mHost.openPanels();
+                    showDetail(true);
+                });
+                return;
+            }
             showDetail(true);
         } else {
             mActivityStarter
@@ -232,8 +261,7 @@ public class CellularTile extends QSTileImpl<SignalState> {
 
     @Override
     public boolean isAvailable() {
-        return mController.hasMobileDataFeature()
-            && mHost.getUserContext().getUserId() == UserHandle.USER_SYSTEM;
+        return mController.hasMobileDataFeature();
     }
 
     private static final class CallbackInfo {

@@ -17,6 +17,7 @@
 #define LOG_TAG "BatteryStatsService"
 //#define LOG_NDEBUG 0
 
+#include <climits>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -27,7 +28,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <climits>
 #include <unordered_map>
 #include <utility>
 
@@ -46,18 +46,15 @@
 #include <utils/misc.h>
 #include <utils/Log.h>
 
-#include <android-base/strings.h>
-
-using android::hardware::hidl_vec;
 using android::hardware::Return;
 using android::hardware::Void;
-using android::hardware::power::stats::V1_0::IPowerStats;
+using android::system::suspend::BnSuspendCallback;
 using android::hardware::power::V1_0::PowerStatePlatformSleepState;
 using android::hardware::power::V1_0::PowerStateVoter;
 using android::hardware::power::V1_0::Status;
 using android::hardware::power::V1_1::PowerStateSubsystem;
 using android::hardware::power::V1_1::PowerStateSubsystemSleepState;
-using android::system::suspend::BnSuspendCallback;
+using android::hardware::hidl_vec;
 using android::system::suspend::ISuspendControlService;
 using IPowerV1_1 = android::hardware::power::V1_1::IPower;
 using IPowerV1_0 = android::hardware::power::V1_0::IPower;
@@ -65,9 +62,10 @@ using IPowerV1_0 = android::hardware::power::V1_0::IPower;
 namespace android
 {
 
+#define LAST_RESUME_REASON "/sys/kernel/wakeup_reasons/last_resume_reason"
+#define MAX_REASON_SIZE 512
+
 static bool wakeup_init = false;
-static std::mutex mReasonsMutex;
-static std::vector<std::string> mWakeupReasons;
 static sem_t wakeup_sem;
 extern sp<IPowerV1_0> getPowerHalHidlV1_0();
 extern sp<IPowerV1_1> getPowerHalHidlV1_1();
@@ -86,8 +84,7 @@ std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::string>>
     gPowerStatsHalStateNames = {};
 std::vector<uint32_t> gPowerStatsHalPlatformIds = {};
 std::vector<uint32_t> gPowerStatsHalSubsystemIds = {};
-sp<IPowerStats> gPowerStatsHalV1_0 = nullptr;
-
+sp<android::hardware::power::stats::V1_0::IPowerStats> gPowerStatsHalV1_0 = nullptr;
 std::function<void(JNIEnv*, jobject)> gGetLowPowerStatsImpl = {};
 std::function<jint(JNIEnv*, jobject)> gGetPlatformLowPowerStatsImpl = {};
 std::function<jint(JNIEnv*, jobject)> gGetSubsystemLowPowerStatsImpl = {};
@@ -118,25 +115,9 @@ struct PowerHalDeathRecipient : virtual public hardware::hidl_death_recipient {
 sp<PowerHalDeathRecipient> gDeathRecipient = new PowerHalDeathRecipient();
 
 class WakeupCallback : public BnSuspendCallback {
-public:
-    binder::Status notifyWakeup(bool success,
-                                const std::vector<std::string>& wakeupReasons) override {
+   public:
+    binder::Status notifyWakeup(bool success) override {
         ALOGI("In wakeup_callback: %s", success ? "resumed from suspend" : "suspend aborted");
-        bool reasonsCaptured = false;
-        {
-            std::unique_lock<std::mutex> reasonsLock(mReasonsMutex, std::defer_lock);
-            if (reasonsLock.try_lock() && mWakeupReasons.empty()) {
-                mWakeupReasons = wakeupReasons;
-                reasonsCaptured = true;
-            }
-        }
-        if (!reasonsCaptured) {
-            ALOGE("Failed to write wakeup reasons. Reasons dropped:");
-            for (auto wakeupReason : wakeupReasons) {
-                ALOGE("\t%s", wakeupReason.c_str());
-            }
-        }
-
         int ret = sem_post(&wakeup_sem);
         if (ret < 0) {
             char buf[80];
@@ -176,6 +157,8 @@ static jint nativeWaitWakeup(JNIEnv *env, jobject clazz, jobject outBuf)
 
     // Wait for wakeup.
     ALOGV("Waiting for wakeup...");
+    // TODO(b/116747600): device can suspend and wakeup after sem_wait() finishes and before wakeup
+    // reason is recorded, i.e. BatteryStats might occasionally miss wakeup events.
     int ret = sem_wait(&wakeup_sem);
     if (ret < 0) {
         char buf[80];
@@ -185,30 +168,81 @@ static jint nativeWaitWakeup(JNIEnv *env, jobject clazz, jobject outBuf)
         return 0;
     }
 
+    FILE *fp = fopen(LAST_RESUME_REASON, "r");
+    if (fp == NULL) {
+        ALOGE("Failed to open %s", LAST_RESUME_REASON);
+        return -1;
+    }
+
     char* mergedreason = (char*)env->GetDirectBufferAddress(outBuf);
     int remainreasonlen = (int)env->GetDirectBufferCapacity(outBuf);
 
     ALOGV("Reading wakeup reasons");
-    std::vector<std::string> wakeupReasons;
-    {
-        std::unique_lock<std::mutex> reasonsLock(mReasonsMutex, std::defer_lock);
-        if (reasonsLock.try_lock() && !mWakeupReasons.empty()) {
-            wakeupReasons = std::move(mWakeupReasons);
-            mWakeupReasons.clear();
+    char* mergedreasonpos = mergedreason;
+    char reasonline[128];
+    int i = 0;
+    while (fgets(reasonline, sizeof(reasonline), fp) != NULL) {
+        char* pos = reasonline;
+        char* endPos;
+        int len;
+        // First field is the index or 'Abort'.
+        int irq = (int)strtol(pos, &endPos, 10);
+        if (pos != endPos) {
+            // Write the irq number to the merged reason string.
+            len = snprintf(mergedreasonpos, remainreasonlen, i == 0 ? "%d" : ":%d", irq);
+        } else {
+            // The first field is not an irq, it may be the word Abort.
+            const size_t abortPrefixLen = strlen("Abort:");
+            if (strncmp(pos, "Abort:", abortPrefixLen) != 0) {
+                // Ooops.
+                ALOGE("Bad reason line: %s", reasonline);
+                continue;
+            }
+
+            // Write 'Abort' to the merged reason string.
+            len = snprintf(mergedreasonpos, remainreasonlen, i == 0 ? "Abort" : ":Abort");
+            endPos = pos + abortPrefixLen;
         }
+        pos = endPos;
+
+        if (len >= 0 && len < remainreasonlen) {
+            mergedreasonpos += len;
+            remainreasonlen -= len;
+        }
+
+        // Skip whitespace; rest of the buffer is the reason string.
+        while (*pos == ' ') {
+            pos++;
+        }
+
+        // Chop newline at end.
+        char* endpos = pos;
+        while (*endpos != 0) {
+            if (*endpos == '\n') {
+                *endpos = 0;
+                break;
+            }
+            endpos++;
+        }
+
+        len = snprintf(mergedreasonpos, remainreasonlen, ":%s", pos);
+        if (len >= 0 && len < remainreasonlen) {
+            mergedreasonpos += len;
+            remainreasonlen -= len;
+        }
+        i++;
     }
 
-    if (wakeupReasons.empty()) {
-        return 0;
+    ALOGV("Got %d reasons", i);
+    if (i > 0) {
+        *mergedreasonpos = 0;
     }
 
-    std::string mergedReasonStr = ::android::base::Join(wakeupReasons, ":");
-    strncpy(mergedreason, mergedReasonStr.c_str(), remainreasonlen);
-    mergedreason[remainreasonlen - 1] = '\0';
-
-    ALOGV("Got %d reasons", (int)wakeupReasons.size());
-
-    return strlen(mergedreason);
+    if (fclose(fp) != 0) {
+        ALOGE("Failed to close %s", LAST_RESUME_REASON);
+        return -1;
+    }
+    return mergedreasonpos - mergedreason;
 }
 
 // The caller must be holding gPowerHalMutex.
@@ -306,7 +340,7 @@ static bool initializePowerStats() {
 // The caller must be holding gPowerHalMutex.
 static bool getPowerStatsHalLocked() {
     if (gPowerStatsHalV1_0 == nullptr) {
-        gPowerStatsHalV1_0 = IPowerStats::getService();
+        gPowerStatsHalV1_0 = android::hardware::power::stats::V1_0::IPowerStats::getService();
         if (gPowerStatsHalV1_0 == nullptr) {
             ALOGE("Unable to get power.stats HAL service.");
             return false;
@@ -799,7 +833,7 @@ static jint getPowerHalSubsystemData(JNIEnv* env, jobject outBuf) {
 static void setUpPowerStatsLocked() {
     // First see if power.stats HAL is available. Fall back to power HAL if
     // power.stats HAL is unavailable.
-    if (IPowerStats::getService() != nullptr) {
+    if (android::hardware::power::stats::V1_0::IPowerStats::getService() != nullptr) {
         ALOGI("Using power.stats HAL");
         gGetLowPowerStatsImpl = getPowerStatsHalLowPowerData;
         gGetPlatformLowPowerStatsImpl = getPowerStatsHalPlatformData;

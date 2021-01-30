@@ -19,12 +19,14 @@ package android.os;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.compat.annotation.UnsupportedAppUsage;
 
 /**
  * @hide
  */
 @SystemApi
+@TestApi
 public final class RemoteCallback implements Parcelable {
 
     public interface OnResultListener {

@@ -30,7 +30,7 @@
 #include <private/media/VideoFrame.h>
 
 #include "jni.h"
-#include <nativehelper/JNIPlatformHelp.h>
+#include <nativehelper/JNIHelp.h>
 #include "android_runtime/AndroidRuntime.h"
 #include "android_media_MediaDataSource.h"
 #include "android_media_Streams.h"

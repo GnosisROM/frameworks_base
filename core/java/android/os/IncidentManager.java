@@ -23,6 +23,7 @@ import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.annotation.TestApi;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Slog;
@@ -44,6 +45,7 @@ import java.util.concurrent.Executor;
  * @hide
  */
 @SystemApi
+@TestApi
 @SystemService(Context.INCIDENT_SERVICE)
 public class IncidentManager {
     private static final String TAG = "IncidentManager";
@@ -157,6 +159,7 @@ public class IncidentManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static class PendingReport {
         /**
          * Encoded data.
@@ -274,6 +277,7 @@ public class IncidentManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static class IncidentReport implements Parcelable, Closeable {
         private final long mTimestampNs;
         private final int mPrivacyPolicy;

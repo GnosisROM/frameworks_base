@@ -195,5 +195,4 @@ interface IStorageManager {
     void abortChanges(in String message, boolean retry) = 87;
     void clearUserKeyAuth(int userId, int serialNumber, in byte[] token, in byte[] secret) = 88;
     void fixupAppDir(in String path) = 89;
-    void disableAppDataIsolation(in String pkgName, int pid, int userId) = 90;
 }

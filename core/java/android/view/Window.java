@@ -161,7 +161,7 @@ public abstract class Window {
      * Max value used as a feature ID
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final int FEATURE_MAX = FEATURE_ACTIVITY_TRANSITIONS;
 
     /**
@@ -788,7 +788,7 @@ public abstract class Window {
     }
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public final boolean isDestroyed() {
         return mDestroyed;
     }
@@ -1134,7 +1134,7 @@ public abstract class Window {
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void addPrivateFlags(int flags) {
         setPrivateFlags(flags, flags);
     }
@@ -1384,7 +1384,6 @@ public abstract class Window {
     }
 
     /** @hide */
-    @SuppressWarnings("HiddenAbstractMethod")
     @UnsupportedAppUsage
     public abstract void alwaysReadCloseOnTouchAttr();
 
@@ -1565,7 +1564,6 @@ public abstract class Window {
      *
      * @hide
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract void clearContentView();
 
     /**
@@ -2634,21 +2632,18 @@ public abstract class Window {
      * Called when the activity changes from fullscreen mode to multi-window mode and visa-versa.
      * @hide
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract void onMultiWindowModeChanged();
 
     /**
      * Called when the activity changes to/from picture-in-picture mode.
      * @hide
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract void onPictureInPictureModeChanged(boolean isInPictureInPictureMode);
 
     /**
      * Called when the activity just relaunched.
      * @hide
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract void reportActivityRelaunched();
 
     /**

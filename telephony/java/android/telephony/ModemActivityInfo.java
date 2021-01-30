@@ -234,7 +234,7 @@ public final class ModemActivityInfo implements Parcelable {
     }
 
     /**
-     * Indicates if the modem has reported valid {@link ModemActivityInfo}.
+     * Indicate if the ModemActivityInfo is invalid due to modem's invalid reporting.
      *
      * @return {@code true} if this {@link ModemActivityInfo} record is valid,
      * {@code false} otherwise.

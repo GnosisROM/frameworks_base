@@ -26,7 +26,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.database.DataSetObservable;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Xml;
@@ -379,7 +378,7 @@ public class ActivityChooserModel extends DataSetObservable {
      *
      * @param intent The intent.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void setIntent(Intent intent) {
         synchronized (mInstanceLock) {
             if (mIntent == intent) {
@@ -514,7 +513,7 @@ public class ActivityChooserModel extends DataSetObservable {
      *
      * @param listener The listener.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void setOnChooseActivityListener(OnChooseActivityListener listener) {
         synchronized (mInstanceLock) {
             mActivityChoserModelPolicy = listener;

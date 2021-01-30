@@ -18,16 +18,13 @@ package com.android.server.compat;
 
 import android.annotation.Nullable;
 import android.compat.annotation.ChangeId;
-import android.compat.annotation.EnabledSince;
+import android.compat.annotation.EnabledAfter;
 import android.content.pm.ApplicationInfo;
 
 import com.android.internal.compat.CompatibilityChangeInfo;
 import com.android.server.compat.config.Change;
-import com.android.server.compat.overrides.ChangeOverrides;
-import com.android.server.compat.overrides.OverrideValue;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,8 +43,8 @@ public final class CompatChange extends CompatibilityChangeInfo {
      * A change ID to be used only in the CTS test for this SystemApi
      */
     @ChangeId
-    @EnabledSince(targetSdkVersion = 1235) // Needs to be > test APK targetSdkVersion.
-    static final long CTS_SYSTEM_API_CHANGEID = 149391281; // This is a bug id.
+    @EnabledAfter(targetSdkVersion = 1234) // Needs to be > test APK targetSdkVersion.
+    private static final long CTS_SYSTEM_API_CHANGEID = 149391281; // This is a bug id.
 
     /**
      * Callback listener for when compat changes are updated for a package.
@@ -64,10 +61,9 @@ public final class CompatChange extends CompatibilityChangeInfo {
     ChangeListener mListener = null;
 
     private Map<String, Boolean> mPackageOverrides;
-    private Map<String, Boolean> mDeferredOverrides;
 
     public CompatChange(long changeId) {
-        this(changeId, null, -1, -1, false, false, null, false);
+        this(changeId, null, -1, false, false, null);
     }
 
     /**
@@ -75,15 +71,11 @@ public final class CompatChange extends CompatibilityChangeInfo {
      * @param name Short descriptive name.
      * @param enableAfterTargetSdk {@code targetSdkVersion} restriction. See {@link EnabledAfter};
      *                             -1 if the change is always enabled.
-     * @param enableSinceTargetSdk {@code targetSdkVersion} restriction. See {@link EnabledSince};
-     *                             -1 if the change is always enabled.
      * @param disabled If {@code true}, overrides any {@code enableAfterTargetSdk} set.
      */
     public CompatChange(long changeId, @Nullable String name, int enableAfterTargetSdk,
-            int enableSinceTargetSdk, boolean disabled, boolean loggingOnly, String description,
-            boolean overridable) {
-        super(changeId, name, enableAfterTargetSdk, enableSinceTargetSdk, disabled, loggingOnly,
-              description, overridable);
+            boolean disabled, boolean loggingOnly, String description) {
+        super(changeId, name, enableAfterTargetSdk, disabled, loggingOnly, description);
     }
 
     /**
@@ -91,8 +83,7 @@ public final class CompatChange extends CompatibilityChangeInfo {
      */
     public CompatChange(Change change) {
         super(change.getId(), change.getName(), change.getEnableAfterTargetSdk(),
-                change.getEnableSinceTargetSdk(), change.getDisabled(), change.getLoggingOnly(),
-                change.getDescription(), change.getOverridable());
+                change.getDisabled(), change.getLoggingOnly(), change.getDescription());
     }
 
     void registerListener(ChangeListener listener) {
@@ -126,56 +117,6 @@ public final class CompatChange extends CompatibilityChangeInfo {
     }
 
     /**
-     * Tentatively set the state of this change for a given package name.
-     * The override will only take effect after that package is installed, if applicable.
-     *
-     * <p>Note, this method is not thread safe so callers must ensure thread safety.
-     *
-     * @param packageName Package name to tentatively enable the change for.
-     * @param enabled Whether or not to enable the change.
-     */
-    void addPackageDeferredOverride(String packageName, boolean enabled) {
-        if (getLoggingOnly()) {
-            throw new IllegalArgumentException(
-                    "Can't add overrides for a logging only change " + toString());
-        }
-        if (mDeferredOverrides == null) {
-            mDeferredOverrides = new HashMap<>();
-        }
-        mDeferredOverrides.put(packageName, enabled);
-    }
-
-    /**
-     * Rechecks an existing (and possibly deferred) override.
-     *
-     * <p>For deferred overrides, check if they can be promoted to a regular override. For regular
-     * overrides, check if they need to be demoted to deferred.</p>
-     *
-     * @param packageName Package name to apply deferred overrides for.
-     * @param allowed Whether the override is allowed.
-     *
-     * @return {@code true} if the recheck yielded a result that requires invalidating caches
-     *         (a deferred override was consolidated or a regular override was removed).
-     */
-    boolean recheckOverride(String packageName, boolean allowed) {
-        // A deferred override now is allowed by the policy, so promote it to a regular override.
-        if (hasDeferredOverride(packageName) && allowed) {
-            boolean overrideValue = mDeferredOverrides.remove(packageName);
-            addPackageOverride(packageName, overrideValue);
-            return true;
-        }
-        // A previously set override is no longer allowed by the policy, so make it deferred.
-        if (hasOverride(packageName) && !allowed) {
-            boolean overrideValue = mPackageOverrides.remove(packageName);
-            addPackageDeferredOverride(packageName, overrideValue);
-            // Notify because the override was removed.
-            notifyListener(packageName);
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * Remove any package override for the given package name, restoring the default behaviour.
      *
      * <p>Note, this method is not thread safe so callers must ensure thread safety.
@@ -188,9 +129,6 @@ public final class CompatChange extends CompatibilityChangeInfo {
                 notifyListener(pname);
             }
         }
-        if (mDeferredOverrides != null) {
-            mDeferredOverrides.remove(pname);
-        }
     }
 
     /**
@@ -201,41 +139,16 @@ public final class CompatChange extends CompatibilityChangeInfo {
      * @return {@code true} if the change should be enabled for the package.
      */
     boolean isEnabled(ApplicationInfo app) {
-        if (app == null) {
-            return defaultValue();
-        }
         if (mPackageOverrides != null && mPackageOverrides.containsKey(app.packageName)) {
             return mPackageOverrides.get(app.packageName);
         }
         if (getDisabled()) {
             return false;
         }
-        if (getEnableSinceTargetSdk() != -1) {
-            return app.targetSdkVersion >= getEnableSinceTargetSdk();
+        if (getEnableAfterTargetSdk() != -1) {
+            return app.targetSdkVersion > getEnableAfterTargetSdk();
         }
         return true;
-    }
-
-    /**
-     * Find if this change will be enabled for the given package after installation.
-     *
-     * @param packageName The package name in question
-     * @return {@code true} if the change should be enabled for the package.
-     */
-    boolean willBeEnabled(String packageName) {
-        if (hasDeferredOverride(packageName)) {
-            return mDeferredOverrides.get(packageName);
-        }
-        return defaultValue();
-    }
-
-    /**
-     * Returns the default value for the change id, assuming there are no overrides.
-     *
-     * @return {@code false} if it's a default disabled change, {@code true} otherwise.
-     */
-    boolean defaultValue() {
-        return !getDisabled();
     }
 
     /**
@@ -247,80 +160,6 @@ public final class CompatChange extends CompatibilityChangeInfo {
         return mPackageOverrides != null && mPackageOverrides.containsKey(packageName);
     }
 
-    /**
-     * Checks whether a change has a deferred override for a package.
-     * @param packageName name of the package
-     * @return true if there is such a deferred override
-     */
-    boolean hasDeferredOverride(String packageName) {
-        return mDeferredOverrides != null && mDeferredOverrides.containsKey(packageName);
-    }
-
-    /**
-     * Checks whether a change has any package overrides.
-     * @return true if the change has at least one deferred override
-     */
-    boolean hasAnyPackageOverride() {
-        return mDeferredOverrides != null && !mDeferredOverrides.isEmpty();
-    }
-
-    /**
-     * Checks whether a change has any deferred overrides.
-     * @return true if the change has at least one deferred override
-     */
-    boolean hasAnyDeferredOverride() {
-        return mPackageOverrides != null && !mPackageOverrides.isEmpty();
-    }
-
-    void loadOverrides(ChangeOverrides changeOverrides) {
-        if (mDeferredOverrides == null) {
-            mDeferredOverrides = new HashMap<>();
-        }
-        mDeferredOverrides.clear();
-        for (OverrideValue override : changeOverrides.getDeferred().getOverrideValue()) {
-            mDeferredOverrides.put(override.getPackageName(), override.getEnabled());
-        }
-
-        if (mPackageOverrides == null) {
-            mPackageOverrides = new HashMap<>();
-        }
-        mPackageOverrides.clear();
-        for (OverrideValue override : changeOverrides.getValidated().getOverrideValue()) {
-            mPackageOverrides.put(override.getPackageName(), override.getEnabled());
-        }
-    }
-
-    ChangeOverrides saveOverrides() {
-        if (!hasAnyDeferredOverride() && !hasAnyPackageOverride()) {
-            return null;
-        }
-        ChangeOverrides changeOverrides = new ChangeOverrides();
-        changeOverrides.setChangeId(getId());
-        ChangeOverrides.Deferred deferredOverrides = new ChangeOverrides.Deferred();
-        List<OverrideValue> deferredList = deferredOverrides.getOverrideValue();
-        if (mDeferredOverrides != null) {
-            for (Map.Entry<String, Boolean> entry : mDeferredOverrides.entrySet()) {
-                OverrideValue override = new OverrideValue();
-                override.setPackageName(entry.getKey());
-                override.setEnabled(entry.getValue());
-                deferredList.add(override);
-            }
-        }
-        changeOverrides.setDeferred(deferredOverrides);
-        ChangeOverrides.Validated validatedOverrides = new ChangeOverrides.Validated();
-        List<OverrideValue> validatedList = validatedOverrides.getOverrideValue();
-        if (mPackageOverrides != null) {
-            for (Map.Entry<String, Boolean> entry : mPackageOverrides.entrySet()) {
-                OverrideValue override = new OverrideValue();
-                override.setPackageName(entry.getKey());
-                override.setEnabled(entry.getValue());
-                validatedList.add(override);
-            }
-        }
-        changeOverrides.setValidated(validatedOverrides);
-        return changeOverrides;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("ChangeId(")
@@ -328,8 +167,8 @@ public final class CompatChange extends CompatibilityChangeInfo {
         if (getName() != null) {
             sb.append("; name=").append(getName());
         }
-        if (getEnableSinceTargetSdk() != -1) {
-            sb.append("; enableSinceTargetSdk=").append(getEnableSinceTargetSdk());
+        if (getEnableAfterTargetSdk() != -1) {
+            sb.append("; enableAfterTargetSdk=").append(getEnableAfterTargetSdk());
         }
         if (getDisabled()) {
             sb.append("; disabled");
@@ -339,12 +178,6 @@ public final class CompatChange extends CompatibilityChangeInfo {
         }
         if (mPackageOverrides != null && mPackageOverrides.size() > 0) {
             sb.append("; packageOverrides=").append(mPackageOverrides);
-        }
-        if (mDeferredOverrides != null && mDeferredOverrides.size() > 0) {
-            sb.append("; deferredOverrides=").append(mDeferredOverrides);
-        }
-        if (getOverridable()) {
-            sb.append("; overridable");
         }
         return sb.append(")").toString();
     }

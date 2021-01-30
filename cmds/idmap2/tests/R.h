@@ -41,17 +41,16 @@ namespace R::target {
     constexpr ResourceId not_overlayable = 0x7f020003;
     constexpr ResourceId other = 0x7f020004;
     constexpr ResourceId policy_actor = 0x7f020005;
-    constexpr ResourceId policy_config_signature = 0x7f020006;
-    constexpr ResourceId policy_odm = 0x7f020007;
-    constexpr ResourceId policy_oem = 0x7f020008;
-    constexpr ResourceId policy_product = 0x7f020009;
-    constexpr ResourceId policy_public = 0x7f02000a;
-    constexpr ResourceId policy_signature = 0x7f02000b;
-    constexpr ResourceId policy_system = 0x7f02000c;
-    constexpr ResourceId policy_system_vendor = 0x7f02000d;
-    constexpr ResourceId str1 = 0x7f02000e;
-    constexpr ResourceId str3 = 0x7f020010;
-    constexpr ResourceId str4 = 0x7f020011;
+    constexpr ResourceId policy_odm = 0x7f020006;
+    constexpr ResourceId policy_oem = 0x7f020007;
+    constexpr ResourceId policy_product = 0x7f020008;
+    constexpr ResourceId policy_public = 0x7f020009;
+    constexpr ResourceId policy_signature = 0x7f02000a;
+    constexpr ResourceId policy_system = 0x7f02000b;
+    constexpr ResourceId policy_system_vendor = 0x7f02000c;
+    constexpr ResourceId str1 = 0x7f02000d;
+    constexpr ResourceId str3 = 0x7f02000f;
+    constexpr ResourceId str4 = 0x7f020010;
 
     namespace literal {
       inline const std::string str1 = hexify(R::target::string::str1);
@@ -93,15 +92,14 @@ namespace R::system_overlay_invalid::string {
   constexpr ResourceId not_overlayable = 0x7f010000;
   constexpr ResourceId other = 0x7f010001;
   constexpr ResourceId policy_actor = 0x7f010002;
-  constexpr ResourceId policy_config_signature = 0x7f010003;
-  constexpr ResourceId policy_odm = 0x7f010004;
-  constexpr ResourceId policy_oem = 0x7f010005;
-  constexpr ResourceId policy_product = 0x7f010006;
-  constexpr ResourceId policy_public = 0x7f010007;
-  constexpr ResourceId policy_signature = 0x7f010008;
-  constexpr ResourceId policy_system = 0x7f010009;
-  constexpr ResourceId policy_system_vendor = 0x7f01000a;
-}
+  constexpr ResourceId policy_odm = 0x7f010003;
+  constexpr ResourceId policy_oem = 0x7f010004;
+  constexpr ResourceId policy_product = 0x7f010005;
+  constexpr ResourceId policy_public = 0x7f010006;
+  constexpr ResourceId policy_signature = 0x7f010007;
+  constexpr ResourceId policy_system = 0x7f010008;
+  constexpr ResourceId policy_system_vendor = 0x7f010009;
+};
 // clang-format on
 
 }  // namespace android::idmap2

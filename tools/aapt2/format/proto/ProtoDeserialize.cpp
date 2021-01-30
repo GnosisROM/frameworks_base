@@ -404,9 +404,6 @@ bool DeserializeOverlayableItemFromPb(const pb::OverlayableItem& pb_overlayable,
       case pb::OverlayableItem::ACTOR:
         out_overlayable->policies |= PolicyFlags::ACTOR_SIGNATURE;
         break;
-      case pb::OverlayableItem::CONFIG_SIGNATURE:
-        out_overlayable->policies |= PolicyFlags::CONFIG_SIGNATURE;
-        break;
       default:
         *out_error = "unknown overlayable policy";
         return false;

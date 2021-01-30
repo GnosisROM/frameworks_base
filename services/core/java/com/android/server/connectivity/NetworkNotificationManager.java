@@ -21,7 +21,6 @@ import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
 import static android.net.NetworkCapabilities.TRANSPORT_VPN;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
 
-import android.annotation.NonNull;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -35,7 +34,7 @@ import android.os.UserHandle;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.Log;
+import android.util.Slog;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.widget.Toast;
@@ -43,6 +42,7 @@ import android.widget.Toast;
 import com.android.internal.R;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.messages.nano.SystemMessageProto.SystemMessage;
+import com.android.internal.notification.SystemNotificationChannels;
 
 public class NetworkNotificationManager {
 
@@ -73,29 +73,18 @@ public class NetworkNotificationManager {
 
     private static final String TAG = NetworkNotificationManager.class.getSimpleName();
     private static final boolean DBG = true;
+    private static final boolean VDBG = false;
 
-    // Notification channels used by ConnectivityService mainline module, it should be aligned with
-    // SystemNotificationChannels so the channels are the same as the ones used as the system
-    // server.
-    public static final String NOTIFICATION_CHANNEL_NETWORK_STATUS = "NETWORK_STATUS";
-    public static final String NOTIFICATION_CHANNEL_NETWORK_ALERTS = "NETWORK_ALERTS";
-    public static final String NOTIFICATION_CHANNEL_VPN = "VPN";
-
-    // The context is for the current user (system server)
     private final Context mContext;
     private final TelephonyManager mTelephonyManager;
-    // The notification manager is created from a context for User.ALL, so notifications
-    // will be sent to all users.
     private final NotificationManager mNotificationManager;
     // Tracks the types of notifications managed by this instance, from creation to cancellation.
     private final SparseIntArray mNotificationTypeMap;
 
-    public NetworkNotificationManager(@NonNull final Context c, @NonNull final TelephonyManager t) {
+    public NetworkNotificationManager(Context c, TelephonyManager t, NotificationManager n) {
         mContext = c;
         mTelephonyManager = t;
-        mNotificationManager =
-                (NotificationManager) c.createContextAsUser(UserHandle.ALL, 0 /* flags */)
-                        .getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager = n;
         mNotificationTypeMap = new SparseIntArray();
     }
 
@@ -175,7 +164,7 @@ public class NetworkNotificationManager {
         final int previousEventId = mNotificationTypeMap.get(id);
         final NotificationType previousNotifyType = NotificationType.getFromId(previousEventId);
         if (priority(previousNotifyType) > priority(notifyType)) {
-            Log.d(TAG, String.format(
+            Slog.d(TAG, String.format(
                     "ignoring notification %s for network %s with existing notification %s",
                     notifyType, id, previousNotifyType));
             return;
@@ -183,7 +172,7 @@ public class NetworkNotificationManager {
         clearNotification(id);
 
         if (DBG) {
-            Log.d(TAG, String.format(
+            Slog.d(TAG, String.format(
                     "showNotification tag=%s event=%s transport=%s name=%s highPriority=%s",
                     tag, nameOf(eventId), getTransportName(transportType), name, highPriority));
         }
@@ -253,7 +242,7 @@ public class NetworkNotificationManager {
             // are sent, but they are not implemented yet.
             return;
         } else {
-            Log.wtf(TAG, "Unknown notification type " + notifyType + " on network transport "
+            Slog.wtf(TAG, "Unknown notification type " + notifyType + " on network transport "
                     + getTransportName(transportType));
             return;
         }
@@ -264,7 +253,8 @@ public class NetworkNotificationManager {
         // the tag.
         final boolean hasPreviousNotification = previousNotifyType != null;
         final String channelId = (highPriority && !hasPreviousNotification)
-                ? NOTIFICATION_CHANNEL_NETWORK_ALERTS : NOTIFICATION_CHANNEL_NETWORK_STATUS;
+                ? SystemNotificationChannels.NETWORK_ALERTS
+                : SystemNotificationChannels.NETWORK_STATUS;
         Notification.Builder builder = new Notification.Builder(mContext, channelId)
                 .setWhen(System.currentTimeMillis())
                 .setShowWhen(notifyType == NotificationType.NETWORK_SWITCH)
@@ -292,9 +282,9 @@ public class NetworkNotificationManager {
 
         mNotificationTypeMap.put(id, eventId);
         try {
-            mNotificationManager.notify(tag, eventId, notification);
+            mNotificationManager.notifyAsUser(tag, eventId, notification, UserHandle.ALL);
         } catch (NullPointerException npe) {
-            Log.d(TAG, "setNotificationVisible: visible notificationManager error", npe);
+            Slog.d(TAG, "setNotificationVisible: visible notificationManager error", npe);
         }
     }
 
@@ -317,13 +307,13 @@ public class NetworkNotificationManager {
         final String tag = tagFor(id);
         final int eventId = mNotificationTypeMap.get(id);
         if (DBG) {
-            Log.d(TAG, String.format("clearing notification tag=%s event=%s", tag,
+            Slog.d(TAG, String.format("clearing notification tag=%s event=%s", tag,
                    nameOf(eventId)));
         }
         try {
-            mNotificationManager.cancel(tag, eventId);
+            mNotificationManager.cancelAsUser(tag, eventId, UserHandle.ALL);
         } catch (NullPointerException npe) {
-            Log.d(TAG, String.format(
+            Slog.d(TAG, String.format(
                     "failed to clear notification tag=%s event=%s", tag, nameOf(eventId)), npe);
         }
         mNotificationTypeMap.delete(id);
@@ -334,15 +324,8 @@ public class NetworkNotificationManager {
      */
     public void setProvNotificationVisible(boolean visible, int id, String action) {
         if (visible) {
-            // For legacy purposes, action is sent as the action + the phone ID from DcTracker.
-            // Split the string here and send the phone ID as an extra instead.
-            String[] splitAction = action.split(":");
-            Intent intent = new Intent(splitAction[0]);
-            try {
-                intent.putExtra("provision.phone.id", Integer.parseInt(splitAction[1]));
-            } catch (NumberFormatException ignored) { }
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                    mContext, 0 /* requestCode */, intent, PendingIntent.FLAG_IMMUTABLE);
+            Intent intent = new Intent(action);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(mContext, 0, intent, 0);
             showNotification(id, NotificationType.SIGN_IN, null, null, pendingIntent, false);
         } else {
             clearNotification(id);

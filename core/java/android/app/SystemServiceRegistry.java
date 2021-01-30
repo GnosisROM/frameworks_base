@@ -113,6 +113,7 @@ import android.media.tv.tunerresourcemanager.ITunerResourceManager;
 import android.media.tv.tunerresourcemanager.TunerResourceManager;
 import android.net.ConnectivityDiagnosticsManager;
 import android.net.ConnectivityManager;
+import android.net.ConnectivityThread;
 import android.net.EthernetManager;
 import android.net.IConnectivityManager;
 import android.net.IEthernetManager;
@@ -130,8 +131,6 @@ import android.net.lowpan.ILowpanManager;
 import android.net.lowpan.LowpanManager;
 import android.net.nsd.INsdManager;
 import android.net.nsd.NsdManager;
-import android.net.vcn.IVcnManagementService;
-import android.net.vcn.VcnManager;
 import android.net.wifi.WifiFrameworkInitializer;
 import android.net.wifi.nl80211.WifiNl80211Manager;
 import android.nfc.NfcManager;
@@ -188,7 +187,6 @@ import android.telephony.TelephonyRegistryManager;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.util.Slog;
-import android.uwb.UwbManager;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.WindowManager;
@@ -373,14 +371,6 @@ public final class SystemServiceRegistry {
                         ctx, () -> ServiceManager.getService(Context.TETHERING_SERVICE));
             }});
 
-        registerService(Context.VCN_MANAGEMENT_SERVICE, VcnManager.class,
-                new CachedServiceFetcher<VcnManager>() {
-            @Override
-            public VcnManager createService(ContextImpl ctx) throws ServiceNotFoundException {
-                IBinder b = ServiceManager.getService(Context.VCN_MANAGEMENT_SERVICE);
-                IVcnManagementService service = IVcnManagementService.Stub.asInterface(b);
-                return new VcnManager(ctx, service);
-            }});
 
         registerService(Context.IPSEC_SERVICE, IpSecManager.class,
                 new CachedServiceFetcher<IpSecManager>() {
@@ -719,14 +709,6 @@ public final class SystemServiceRegistry {
                 return new SerialManager(ctx, ISerialManager.Stub.asInterface(b));
             }});
 
-        registerService(Context.UWB_SERVICE, UwbManager.class,
-                new CachedServiceFetcher<UwbManager>() {
-                    @Override
-                    public UwbManager createService(ContextImpl ctx) {
-                        return UwbManager.getInstance();
-                    }
-                });
-
         registerService(Context.VIBRATOR_SERVICE, Vibrator.class,
                 new CachedServiceFetcher<Vibrator>() {
             @Override
@@ -767,7 +749,8 @@ public final class SystemServiceRegistry {
             public LowpanManager createService(ContextImpl ctx) throws ServiceNotFoundException {
                 IBinder b = ServiceManager.getServiceOrThrow(Context.LOWPAN_SERVICE);
                 ILowpanManager service = ILowpanManager.Stub.asInterface(b);
-                return new LowpanManager(ctx.getOuterContext(), service);
+                return new LowpanManager(ctx.getOuterContext(), service,
+                        ConnectivityThread.getInstanceLooper());
             }});
 
         registerService(Context.ETHERNET_SERVICE, EthernetManager.class,
@@ -1140,7 +1123,7 @@ public final class SystemServiceRegistry {
                 // Get the services without throwing as this is an optional feature
                 Context outerContext = ctx.getOuterContext();
                 ContentCaptureOptions options = outerContext.getContentCaptureOptions();
-                // Options is null when the service didn't allowlist the activity or package
+                // Options is null when the service didn't whitelist the activity or package
                 if (options != null && (options.lite || options.isWhitelisted(outerContext))) {
                     IBinder b = ServiceManager
                             .getService(Context.CONTENT_CAPTURE_MANAGER_SERVICE);
@@ -1150,7 +1133,7 @@ public final class SystemServiceRegistry {
                         return new ContentCaptureManager(outerContext, service, options);
                     }
                 }
-                // When feature is disabled or app / package not allowlisted, we return a null
+                // When feature is disabled or app / package not whitelisted, we return a null
                 // manager to apps so the performance impact is practically zero
                 return null;
             }});
@@ -1403,7 +1386,6 @@ public final class SystemServiceRegistry {
                 case Context.CONTENT_CAPTURE_MANAGER_SERVICE:
                 case Context.APP_PREDICTION_SERVICE:
                 case Context.INCREMENTAL_SERVICE:
-                case Context.ETHERNET_SERVICE:
                     return null;
             }
             Slog.wtf(TAG, "Manager wrapper not available: " + name);

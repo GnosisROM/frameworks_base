@@ -50,7 +50,7 @@ class ClassMember {
   // Writes the class member to the Printer. Subclasses should derive this method
   // to write their own data. Call this base method from the subclass to write out
   // this member's comments/annotations.
-  virtual void Print(bool final, text::Printer* printer, bool strip_api_annotations = false) const;
+  virtual void Print(bool final, text::Printer* printer) const;
 
  private:
   AnnotationProcessor processor_;
@@ -70,11 +70,10 @@ class PrimitiveMember : public ClassMember {
     return name_;
   }
 
-  void Print(bool final, text::Printer* printer, bool strip_api_annotations = false)
-      const override {
+  void Print(bool final, text::Printer* printer) const override {
     using std::to_string;
 
-    ClassMember::Print(final, printer, strip_api_annotations);
+    ClassMember::Print(final, printer);
 
     printer->Print("public static ");
     if (final) {
@@ -105,9 +104,8 @@ class PrimitiveMember<std::string> : public ClassMember {
     return name_;
   }
 
-  void Print(bool final, text::Printer* printer, bool strip_api_annotations = false)
-      const override {
-    ClassMember::Print(final, printer, strip_api_annotations);
+  void Print(bool final, text::Printer* printer) const override {
+    ClassMember::Print(final, printer);
 
     printer->Print("public static ");
     if (final) {
@@ -144,9 +142,8 @@ class PrimitiveArrayMember : public ClassMember {
     return name_;
   }
 
-  void Print(bool final, text::Printer* printer, bool strip_api_annotations = false)
-      const override {
-    ClassMember::Print(final, printer, strip_api_annotations);
+  void Print(bool final, text::Printer* printer) const override {
+    ClassMember::Print(final, printer);
 
     printer->Print("public static final int[] ").Print(name_).Print("={");
     printer->Indent();
@@ -198,7 +195,7 @@ class MethodDefinition : public ClassMember {
     return false;
   }
 
-  void Print(bool final, text::Printer* printer, bool strip_api_annotations = false) const override;
+  void Print(bool final, text::Printer* printer) const override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(MethodDefinition);
@@ -212,7 +209,7 @@ enum class ClassQualifier { kNone, kStatic };
 class ClassDefinition : public ClassMember {
  public:
   static void WriteJavaFile(const ClassDefinition* def, const android::StringPiece& package,
-                            bool final, bool strip_api_annotations, io::OutputStream* out);
+                            bool final, io::OutputStream* out);
 
   ClassDefinition(const android::StringPiece& name, ClassQualifier qualifier, bool createIfEmpty)
       : name_(name.to_string()), qualifier_(qualifier), create_if_empty_(createIfEmpty) {}
@@ -230,7 +227,7 @@ class ClassDefinition : public ClassMember {
     return name_;
   }
 
-  void Print(bool final, text::Printer* printer, bool strip_api_annotations = false) const override;
+  void Print(bool final, text::Printer* printer) const override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ClassDefinition);

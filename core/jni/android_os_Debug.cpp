@@ -40,7 +40,7 @@
 #include <utils/misc.h>
 #include <utils/String8.h>
 
-#include <nativehelper/JNIPlatformHelp.h>
+#include <nativehelper/JNIHelp.h>
 #include <nativehelper/ScopedUtfChars.h>
 #include "jni.h"
 #include <dmabufinfo/dmabufinfo.h>
@@ -792,7 +792,7 @@ static jlong android_os_Debug_getFreeZramKb(JNIEnv* env, jobject clazz) {
 }
 
 static jlong android_os_Debug_getIonHeapsSizeKb(JNIEnv* env, jobject clazz) {
-    jlong heapsSizeKb = -1;
+    jlong heapsSizeKb = 0;
     uint64_t size;
 
     if (meminfo::ReadIonHeapsSizeKb(&size)) {
@@ -803,7 +803,7 @@ static jlong android_os_Debug_getIonHeapsSizeKb(JNIEnv* env, jobject clazz) {
 }
 
 static jlong android_os_Debug_getIonPoolsSizeKb(JNIEnv* env, jobject clazz) {
-    jlong poolsSizeKb = -1;
+    jlong poolsSizeKb = 0;
     uint64_t size;
 
     if (meminfo::ReadIonPoolsSizeKb(&size)) {
@@ -844,17 +844,6 @@ static jlong android_os_Debug_getIonMappedSizeKb(JNIEnv* env, jobject clazz) {
     return ionPss;
 }
 
-static jlong android_os_Debug_getGpuTotalUsageKb(JNIEnv* env, jobject clazz) {
-    jlong sizeKb = -1;
-    uint64_t size;
-
-    if (meminfo::ReadGpuTotalUsageKb(&size)) {
-        sizeKb = size;
-    }
-
-    return sizeKb;
-}
-
 static jboolean android_os_Debug_isVmapStack(JNIEnv *env, jobject clazz)
 {
     static enum {
@@ -864,8 +853,9 @@ static jboolean android_os_Debug_isVmapStack(JNIEnv *env, jobject clazz)
     } cfg_state = CONFIG_UNKNOWN;
 
     if (cfg_state == CONFIG_UNKNOWN) {
-        auto runtime_info = vintf::VintfObject::GetInstance()->getRuntimeInfo(
-                vintf::RuntimeInfo::FetchFlag::CONFIG_GZ);
+        auto runtime_info = vintf::VintfObject::GetInstance()
+                                    ->getRuntimeInfo(false /* skip cache */,
+                                                     vintf::RuntimeInfo::FetchFlag::CONFIG_GZ);
         CHECK(runtime_info != nullptr) << "Kernel configs cannot be fetched. b/151092221";
         const std::map<std::string, std::string>& configs = runtime_info->kernelConfigs();
         std::map<std::string, std::string>::const_iterator it = configs.find("CONFIG_VMAP_STACK");
@@ -923,8 +913,6 @@ static const JNINativeMethod gMethods[] = {
             (void*)android_os_Debug_getIonPoolsSizeKb },
     { "getIonMappedSizeKb", "()J",
             (void*)android_os_Debug_getIonMappedSizeKb },
-    { "getGpuTotalUsageKb", "()J",
-            (void*)android_os_Debug_getGpuTotalUsageKb },
     { "isVmapStack", "()Z",
             (void*)android_os_Debug_isVmapStack },
 };
@@ -933,7 +921,7 @@ int register_android_os_Debug(JNIEnv *env)
 {
     jclass clazz = env->FindClass("android/os/Debug$MemoryInfo");
 
-    // Check the number of other statistics expected in Java matches here.
+    // Sanity check the number of other statistics expected in Java matches here.
     jfieldID numOtherStats_field = env->GetStaticFieldID(clazz, "NUM_OTHER_STATS", "I");
     jint numOtherStats = env->GetStaticIntField(clazz, numOtherStats_field);
     jfieldID numDvkStats_field = env->GetStaticFieldID(clazz, "NUM_DVK_STATS", "I");

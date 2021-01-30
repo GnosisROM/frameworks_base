@@ -623,41 +623,32 @@ public class ConnectivityDiagnosticsManager {
         /** @hide */
         @VisibleForTesting
         public void onConnectivityReportAvailable(@NonNull ConnectivityReport report) {
-            final long token = Binder.clearCallingIdentity();
-            try {
+            Binder.withCleanCallingIdentity(() -> {
                 mExecutor.execute(() -> {
                     mCb.onConnectivityReportAvailable(report);
                 });
-            } finally {
-                Binder.restoreCallingIdentity(token);
-            }
+            });
         }
 
         /** @hide */
         @VisibleForTesting
         public void onDataStallSuspected(@NonNull DataStallReport report) {
-            final long token = Binder.clearCallingIdentity();
-            try {
+            Binder.withCleanCallingIdentity(() -> {
                 mExecutor.execute(() -> {
                     mCb.onDataStallSuspected(report);
                 });
-            } finally {
-                Binder.restoreCallingIdentity(token);
-            }
+            });
         }
 
         /** @hide */
         @VisibleForTesting
         public void onNetworkConnectivityReported(
                 @NonNull Network network, boolean hasConnectivity) {
-            final long token = Binder.clearCallingIdentity();
-            try {
+            Binder.withCleanCallingIdentity(() -> {
                 mExecutor.execute(() -> {
                     mCb.onNetworkConnectivityReported(network, hasConnectivity);
                 });
-            } finally {
-                Binder.restoreCallingIdentity(token);
-            }
+            });
         }
     }
 

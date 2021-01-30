@@ -302,7 +302,6 @@
   <java-symbol type="string" name="config_wlan_network_service_package" />
   <java-symbol type="string" name="config_wwan_network_service_class" />
   <java-symbol type="string" name="config_wlan_network_service_class" />
-  <java-symbol type="bool" name="config_wlan_data_service_conn_persistence_on_restart" />
   <java-symbol type="string" name="config_wwan_data_service_package" />
   <java-symbol type="string" name="config_wlan_data_service_package" />
   <java-symbol type="string" name="config_wwan_data_service_class" />
@@ -312,7 +311,6 @@
   <java-symbol type="bool" name="config_networkSamplingWakesDevice" />
   <java-symbol type="bool" name="config_showMenuShortcutsWhenKeyboardPresent" />
   <java-symbol type="bool" name="config_sip_wifi_only" />
-  <java-symbol type="bool" name="config_sms_ask_every_time_support" />
   <java-symbol type="bool" name="config_sms_capable" />
   <java-symbol type="bool" name="config_sms_utf8_support" />
   <java-symbol type="bool" name="config_mobile_data_capable" />
@@ -684,7 +682,6 @@
   <java-symbol type="string" name="config_ethernet_iface_regex" />
   <java-symbol type="string" name="not_checked" />
   <java-symbol type="array" name="config_ethernet_interfaces" />
-  <java-symbol type="bool" name="config_vehicleInternalNetworkAlwaysRequested" />
   <java-symbol type="array" name="config_wakeonlan_supported_interfaces" />
   <java-symbol type="string" name="config_forceVoiceInteractionServicePackage" />
   <java-symbol type="string" name="config_mms_user_agent" />
@@ -1856,7 +1853,7 @@
   <java-symbol type="array" name="config_tether_upstream_types" />
   <java-symbol type="array" name="config_tether_usb_regexs" />
   <java-symbol type="array" name="config_tether_wifi_regexs" />
-  <java-symbol type="array" name="config_usbHostDenylist" />
+  <java-symbol type="array" name="config_usbHostBlacklist" />
   <java-symbol type="array" name="config_serialPorts" />
   <java-symbol type="array" name="radioAttributes" />
   <java-symbol type="array" name="config_oemUsbModeOverride" />
@@ -2162,7 +2159,6 @@
   <java-symbol type="string" name="config_defaultNetworkScorerPackageName" />
   <java-symbol type="string" name="config_persistentDataPackageName" />
   <java-symbol type="string" name="config_deviceConfiguratorPackageName" />
-  <java-symbol type="array" name="config_autoTimeSourcesPriority" />
 
   <java-symbol type="layout" name="resolver_list" />
   <java-symbol type="id" name="resolver_list" />
@@ -3188,9 +3184,6 @@
   <!-- Network Recommendation -->
   <java-symbol type="string" name="config_defaultNetworkRecommendationProviderPackage" />
 
-  <!-- Optional IPsec algorithms -->
-  <java-symbol type="array" name="config_optionalIpSecAlgorithms" />
-
   <!-- Whether allow 3rd party apps on internal storage. -->
   <java-symbol type="bool" name="config_allow3rdPartyAppOnInternal" />
 
@@ -3370,7 +3363,6 @@
   <java-symbol type="dimen" name="notification_media_image_max_width_low_ram"/>
   <java-symbol type="dimen" name="notification_media_image_max_height_low_ram"/>
   <java-symbol type="dimen" name="notification_right_icon_size_low_ram"/>
-  <java-symbol type="dimen" name="notification_grayscale_icon_max_size"/>
   <java-symbol type="dimen" name="notification_custom_view_max_image_height_low_ram"/>
   <java-symbol type="dimen" name="notification_custom_view_max_image_width_low_ram"/>
 
@@ -3832,6 +3824,7 @@
   <java-symbol type="color" name="decor_view_status_guard_light" />
 
   <java-symbol type="string" name="config_defaultSupervisionProfileOwnerComponent" />
+  <java-symbol type="bool" name="config_inflateSignalStrength" />
 
   <java-symbol type="drawable" name="android_logotype" />
   <java-symbol type="layout" name="platlogo_layout" />

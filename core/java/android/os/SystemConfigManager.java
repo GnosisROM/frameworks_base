@@ -20,6 +20,7 @@ import android.annotation.NonNull;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.annotation.TestApi;
 import android.content.Context;
 import android.util.ArraySet;
 import android.util.Log;
@@ -39,6 +40,7 @@ import java.util.Set;
  * @hide
  */
 @SystemApi
+@TestApi
 @SystemService(Context.SYSTEM_CONFIG_SERVICE)
 public class SystemConfigManager {
     private static final String TAG = SystemConfigManager.class.getSimpleName();

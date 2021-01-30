@@ -153,7 +153,6 @@ public final class RouteDiscoveryPreference implements Parcelable {
             return false;
         }
         RouteDiscoveryPreference other = (RouteDiscoveryPreference) o;
-        //TODO: Make this order-free
         return Objects.equals(mPreferredFeatures, other.mPreferredFeatures)
                 && mShouldPerformActiveScan == other.mShouldPerformActiveScan;
     }

@@ -217,9 +217,6 @@ public class WifiStatusTracker {
     }
 
     private void updateStatusLabel() {
-        if (mWifiManager == null) {
-            return;
-        }
         NetworkCapabilities networkCapabilities;
         isDefaultNetwork = false;
         if (mDefaultNetworkCapabilities != null) {

@@ -18,10 +18,8 @@ package com.android.server.net;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -34,7 +32,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.Context;
 import android.net.NetworkTemplate;
-import android.os.test.TestLooper;
+import android.os.Looper;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
@@ -42,6 +40,7 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import com.android.internal.util.CollectionUtils;
+import com.android.server.net.NetworkStatsSubscriptionsMonitor.Delegate;
 import com.android.server.net.NetworkStatsSubscriptionsMonitor.RatTypeListener;
 
 import org.junit.Before;
@@ -68,16 +67,19 @@ public final class NetworkStatsSubscriptionsMonitorTest {
     @Mock private Context mContext;
     @Mock private SubscriptionManager mSubscriptionManager;
     @Mock private TelephonyManager mTelephonyManager;
-    @Mock private NetworkStatsSubscriptionsMonitor.Delegate mDelegate;
+    @Mock private Delegate mDelegate;
     private final List<Integer> mTestSubList = new ArrayList<>();
 
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
     private NetworkStatsSubscriptionsMonitor mMonitor;
-    private TestLooper mTestLooper = new TestLooper();
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
+
+        if (Looper.myLooper() == null) {
+            Looper.prepare();
+        }
 
         when(mTelephonyManager.createForSubscriptionId(anyInt())).thenReturn(mTelephonyManager);
 
@@ -86,8 +88,7 @@ public final class NetworkStatsSubscriptionsMonitorTest {
         when(mContext.getSystemService(eq(Context.TELEPHONY_SERVICE)))
                 .thenReturn(mTelephonyManager);
 
-        mMonitor = new NetworkStatsSubscriptionsMonitor(mContext, mTestLooper.getLooper(),
-                mExecutor, mDelegate);
+        mMonitor = new NetworkStatsSubscriptionsMonitor(mContext, mExecutor, mDelegate);
     }
 
     @Test
@@ -119,18 +120,16 @@ public final class NetworkStatsSubscriptionsMonitorTest {
         when(serviceState.getDataNetworkType()).thenReturn(type);
         final RatTypeListener match = CollectionUtils
                 .find(listeners, it -> it.getSubId() == subId);
-        if (match == null) {
-            fail("Could not find listener with subId: " + subId);
+        if (match != null) {
+            match.onServiceStateChanged(serviceState);
         }
-        match.onServiceStateChanged(serviceState);
     }
 
     private void addTestSub(int subId, String subscriberId) {
         // add SubId to TestSubList.
-        if (mTestSubList.contains(subId)) fail("The subscriber list already contains this ID");
-
-        mTestSubList.add(subId);
-
+        if (!mTestSubList.contains(subId)) {
+            mTestSubList.add(subId);
+        }
         final int[] subList = convertArrayListToIntArray(mTestSubList);
         when(mSubscriptionManager.getCompleteActiveSubscriptionIdList()).thenReturn(subList);
         when(mTelephonyManager.getSubscriberId(subId)).thenReturn(subscriberId);
@@ -151,7 +150,7 @@ public final class NetworkStatsSubscriptionsMonitorTest {
     }
 
     private void assertRatTypeChangedForSub(String subscriberId, int ratType) {
-        assertEquals(ratType, mMonitor.getRatTypeForSubscriberId(subscriberId));
+        assertEquals(mMonitor.getRatTypeForSubscriberId(subscriberId), ratType);
         final ArgumentCaptor<Integer> typeCaptor = ArgumentCaptor.forClass(Integer.class);
         // Verify callback with the subscriberId and the RAT type should be as expected.
         // It will fail if get a callback with an unexpected RAT type.
@@ -303,84 +302,26 @@ public final class NetworkStatsSubscriptionsMonitorTest {
         reset(mDelegate);
 
         // Set IMSI to null again to simulate somehow IMSI is not available, such as
-        // modem crash. Verify service should unregister listener.
+        // modem crash. Verify service should not unregister listener.
         updateSubscriberIdForTestSub(TEST_SUBID1, null);
-        verify(mTelephonyManager, times(1)).listen(eq(ratTypeListenerCaptor.getValue()),
-                eq(PhoneStateListener.LISTEN_NONE));
-        assertRatTypeChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_UNKNOWN);
+        verify(mTelephonyManager, never()).listen(any(), anyInt());
+        assertRatTypeNotChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_UMTS);
         reset(mDelegate);
-        clearInvocations(mTelephonyManager);
 
-        // Simulate somehow IMSI is back. Verify service will register with
-        // another listener and fire callback accordingly.
-        final ArgumentCaptor<RatTypeListener> ratTypeListenerCaptor2 =
-                ArgumentCaptor.forClass(RatTypeListener.class);
-        updateSubscriberIdForTestSub(TEST_SUBID1, TEST_IMSI1);
-        verify(mTelephonyManager, times(1)).listen(ratTypeListenerCaptor2.capture(),
-                eq(PhoneStateListener.LISTEN_SERVICE_STATE));
-        assertRatTypeNotChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_UNKNOWN);
-        reset(mDelegate);
-        clearInvocations(mTelephonyManager);
-
-        // Set RAT type of sim1 to LTE. Verify RAT type of sim1 still works.
-        setRatTypeForSub(ratTypeListenerCaptor2.getAllValues(), TEST_SUBID1,
+        // Set RAT type of sim1 to LTE. Verify RAT type of sim1 is still changed even if the IMSI
+        // is not available. The monitor keeps the listener even if the IMSI disappears because
+        // the IMSI can never change for any given subId, therefore even if the IMSI is updated
+        // to null, the monitor should continue accepting updates of the RAT type. However,
+        // telephony is never actually supposed to do this, if the IMSI disappears there should
+        // not be updates, but it's still the right thing to do theoretically.
+        setRatTypeForSub(ratTypeListenerCaptor.getAllValues(), TEST_SUBID1,
                 TelephonyManager.NETWORK_TYPE_LTE);
         assertRatTypeChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_LTE);
         reset(mDelegate);
 
         mMonitor.stop();
-        verify(mTelephonyManager, times(1)).listen(eq(ratTypeListenerCaptor2.getValue()),
-                eq(PhoneStateListener.LISTEN_NONE));
-        assertRatTypeChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_UNKNOWN);
-    }
-
-    /**
-     * Verify that when IMSI suddenly changed for a given subId, the service will register a new
-     * listener and unregister the old one, and report changes on updated IMSI. This is for modem
-     * feature that may be enabled for certain carrier, which changes to use a different IMSI while
-     * roaming on certain networks for multi-IMSI SIM cards, but the subId stays the same.
-     */
-    @Test
-    public void testSubscriberIdChanged() {
-        mMonitor.start();
-        // Insert sim1, verify RAT type is NETWORK_TYPE_UNKNOWN, and never get any callback
-        // before changing RAT type.
-        addTestSub(TEST_SUBID1, TEST_IMSI1);
-        final ArgumentCaptor<RatTypeListener> ratTypeListenerCaptor =
-                ArgumentCaptor.forClass(RatTypeListener.class);
-        verify(mTelephonyManager, times(1)).listen(ratTypeListenerCaptor.capture(),
-                eq(PhoneStateListener.LISTEN_SERVICE_STATE));
-        assertRatTypeNotChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_UNKNOWN);
-
-        // Set RAT type of sim1 to UMTS.
-        // Verify RAT type of sim1 changes accordingly.
-        setRatTypeForSub(ratTypeListenerCaptor.getAllValues(), TEST_SUBID1,
-                TelephonyManager.NETWORK_TYPE_UMTS);
-        assertRatTypeChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_UMTS);
-        reset(mDelegate);
-        clearInvocations(mTelephonyManager);
-
-        // Simulate IMSI of sim1 changed to IMSI2. Verify the service will register with
-        // another listener and remove the old one. The RAT type of new IMSI stays at
-        // NETWORK_TYPE_UNKNOWN until received initial callback from telephony.
-        final ArgumentCaptor<RatTypeListener> ratTypeListenerCaptor2 =
-                ArgumentCaptor.forClass(RatTypeListener.class);
-        updateSubscriberIdForTestSub(TEST_SUBID1, TEST_IMSI2);
-        verify(mTelephonyManager, times(1)).listen(ratTypeListenerCaptor2.capture(),
-                eq(PhoneStateListener.LISTEN_SERVICE_STATE));
         verify(mTelephonyManager, times(1)).listen(eq(ratTypeListenerCaptor.getValue()),
                 eq(PhoneStateListener.LISTEN_NONE));
         assertRatTypeChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_UNKNOWN);
-        assertRatTypeNotChangedForSub(TEST_IMSI2, TelephonyManager.NETWORK_TYPE_UNKNOWN);
-        reset(mDelegate);
-
-        // Set RAT type of sim1 to UMTS for new listener to simulate the initial callback received
-        // from telephony after registration. Verify RAT type of sim1 changes with IMSI2
-        // accordingly.
-        setRatTypeForSub(ratTypeListenerCaptor2.getAllValues(), TEST_SUBID1,
-                TelephonyManager.NETWORK_TYPE_UMTS);
-        assertRatTypeNotChangedForSub(TEST_IMSI1, TelephonyManager.NETWORK_TYPE_UNKNOWN);
-        assertRatTypeChangedForSub(TEST_IMSI2, TelephonyManager.NETWORK_TYPE_UMTS);
-        reset(mDelegate);
     }
 }

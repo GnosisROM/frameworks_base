@@ -168,7 +168,6 @@ message OverlayableItem {
     ODM = 6;
     OEM = 7;
     ACTOR = 8;
-    CONFIG_SIGNATURE = 9;
   }
 
   // The location of the <item> declaration in source.

@@ -22,6 +22,7 @@ import android.gsi.AvbPublicKey;
 import android.gsi.GsiProgress;
 import android.gsi.IGsiService;
 import android.gsi.IGsiServiceCallback;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.os.ServiceManager;
@@ -29,7 +30,7 @@ import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.image.IDynamicSystemService;
 import android.os.storage.StorageManager;
-import android.os.storage.VolumeInfo;
+import android.os.storage.StorageVolume;
 import android.util.Slog;
 
 import java.io.File;
@@ -87,17 +88,16 @@ public class DynamicSystemService extends IDynamicSystemService.Stub {
         String path = SystemProperties.get("os.aot.path");
         if (path.isEmpty()) {
             final int userId = UserHandle.myUserId();
-            final StorageManager sm = mContext.getSystemService(StorageManager.class);
-            for (VolumeInfo volume : sm.getVolumes()) {
-                if (volume.getType() != volume.TYPE_PUBLIC) {
-                    continue;
-                }
-                if (!volume.isMountedWritable()) {
-                    continue;
-                }
-                File sd_internal = volume.getInternalPathForUser(userId);
-                if (sd_internal != null) {
-                    path = new File(sd_internal, dsuSlot).getPath();
+            final StorageVolume[] volumes =
+                    StorageManager.getVolumeList(userId, StorageManager.FLAG_FOR_WRITE);
+            for (StorageVolume volume : volumes) {
+                if (volume.isEmulated()) continue;
+                if (!volume.isRemovable()) continue;
+                if (!Environment.MEDIA_MOUNTED.equals(volume.getState())) continue;
+                File sdCard = volume.getPathFile();
+                if (sdCard.isDirectory()) {
+                    path = new File(sdCard, dsuSlot).getPath();
+                    break;
                 }
             }
             if (path.isEmpty()) {
@@ -120,16 +120,6 @@ public class DynamicSystemService extends IDynamicSystemService.Stub {
         IGsiService service = getGsiService();
         if (service.createPartition(name, size, readOnly) != 0) {
             Slog.i(TAG, "Failed to install " + name);
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public boolean closePartition() throws RemoteException {
-        IGsiService service = getGsiService();
-        if (service.closePartition() != 0) {
-            Slog.i(TAG, "Partition installation completes with error");
             return false;
         }
         return true;
@@ -235,10 +225,5 @@ public class DynamicSystemService extends IDynamicSystemService.Stub {
         } catch (RemoteException e) {
             throw new RuntimeException(e.toString());
         }
-    }
-
-    @Override
-    public long suggestScratchSize() throws RemoteException {
-        return getGsiService().suggestScratchSize();
     }
 }

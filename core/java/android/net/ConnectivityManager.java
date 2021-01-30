@@ -16,10 +16,6 @@
 package android.net;
 
 import static android.net.IpSecManager.INVALID_RESOURCE_ID;
-import static android.net.NetworkRequest.Type.LISTEN;
-import static android.net.NetworkRequest.Type.REQUEST;
-import static android.net.NetworkRequest.Type.TRACK_DEFAULT;
-import static android.net.QosCallback.QosCallbackRegistrationException;
 
 import android.annotation.CallbackExecutor;
 import android.annotation.IntDef;
@@ -30,6 +26,7 @@ import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
+import android.annotation.TestApi;
 import android.app.PendingIntent;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.content.Context;
@@ -62,26 +59,23 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.ArrayMap;
 import android.util.Log;
-import android.util.Range;
 import android.util.SparseIntArray;
 
-import com.android.connectivity.aidl.INetworkAgent;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.util.Preconditions;
 import com.android.internal.util.Protocol;
 
 import libcore.net.event.NetworkEventDispatcher;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -275,6 +269,7 @@ public class ConnectivityManager {
      * {@hide}
      */
     @SystemApi
+    @TestApi
     public static final String EXTRA_CAPTIVE_PORTAL_PROBE_SPEC =
             "android.net.extra.CAPTIVE_PORTAL_PROBE_SPEC";
 
@@ -283,6 +278,7 @@ public class ConnectivityManager {
      * {@hide}
      */
     @SystemApi
+    @TestApi
     public static final String EXTRA_CAPTIVE_PORTAL_USER_AGENT =
             "android.net.extra.CAPTIVE_PORTAL_USER_AGENT";
 
@@ -360,7 +356,7 @@ public class ConnectivityManager {
      * @hide
      */
     @SdkConstant(SdkConstantType.BROADCAST_INTENT_ACTION)
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String ACTION_TETHER_STATE_CHANGED =
             TetheringManager.ACTION_TETHER_STATE_CHANGED;
 
@@ -369,7 +365,7 @@ public class ConnectivityManager {
      * gives a String[] listing all the interfaces configured for
      * tethering and currently available for tethering.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String EXTRA_AVAILABLE_TETHER = TetheringManager.EXTRA_AVAILABLE_TETHER;
 
     /**
@@ -384,7 +380,7 @@ public class ConnectivityManager {
      * gives a String[] listing all the interfaces currently tethered
      * (ie, has DHCPv4 support and packets potentially forwarded/NATed)
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String EXTRA_ACTIVE_TETHER = TetheringManager.EXTRA_ACTIVE_TETHER;
 
     /**
@@ -393,7 +389,7 @@ public class ConnectivityManager {
      * failed.  Use {@link #getLastTetherError} to find the error code
      * for any interfaces listed here.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String EXTRA_ERRORED_TETHER = TetheringManager.EXTRA_ERRORED_TETHER;
 
     /**
@@ -612,7 +608,7 @@ public class ConnectivityManager {
     public static final int TYPE_BLUETOOTH   = 7;
 
     /**
-     * Fake data connection.  This should not be used on shipping devices.
+     * Dummy data connection.  This should not be used on shipping devices.
      * @deprecated This is not used any more.
      */
     @Deprecated
@@ -690,7 +686,7 @@ public class ConnectivityManager {
      * {@hide}
      */
     @Deprecated
-    @SystemApi
+    @UnsupportedAppUsage
     public static final int TYPE_PROXY = 16;
 
     /**
@@ -856,7 +852,7 @@ public class ConnectivityManager {
      * {@hide}
      */
     @Deprecated
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static String getNetworkTypeName(int type) {
         switch (type) {
           case TYPE_NONE:
@@ -899,18 +895,6 @@ public class ConnectivityManager {
                 return "VPN";
             default:
                 return Integer.toString(type);
-        }
-    }
-
-    /**
-     * @hide
-     * TODO: Expose for SystemServer when becomes a module.
-     */
-    public void systemReady() {
-        try {
-            mService.systemReady();
-        } catch (RemoteException e) {
-            throw e.rethrowFromSystemServer();
         }
     }
 
@@ -1100,9 +1084,9 @@ public class ConnectivityManager {
      *                   to remove an existing always-on VPN configuration.
      * @param lockdownEnabled {@code true} to disallow networking when the VPN is not connected or
      *        {@code false} otherwise.
-     * @param lockdownAllowlist The list of packages that are allowed to access network directly
+     * @param lockdownWhitelist The list of packages that are allowed to access network directly
      *         when VPN is in lockdown mode but is not running. Non-existent packages are ignored so
-     *         this method must be called when a package that should be allowed is installed or
+     *         this method must be called when a package that should be whitelisted is installed or
      *         uninstalled.
      * @return {@code true} if the package is set as always-on VPN controller;
      *         {@code false} otherwise.
@@ -1110,10 +1094,10 @@ public class ConnectivityManager {
      */
     @RequiresPermission(android.Manifest.permission.CONTROL_ALWAYS_ON_VPN)
     public boolean setAlwaysOnVpnPackageForUser(int userId, @Nullable String vpnPackage,
-            boolean lockdownEnabled, @Nullable List<String> lockdownAllowlist) {
+            boolean lockdownEnabled, @Nullable List<String> lockdownWhitelist) {
         try {
             return mService.setAlwaysOnVpnPackage(
-                    userId, vpnPackage, lockdownEnabled, lockdownAllowlist);
+                    userId, vpnPackage, lockdownEnabled, lockdownWhitelist);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
@@ -1168,55 +1152,6 @@ public class ConnectivityManager {
     }
 
     /**
-     * Adds or removes a requirement for given UID ranges to use the VPN.
-     *
-     * If set to {@code true}, informs the system that the UIDs in the specified ranges must not
-     * have any connectivity except if a VPN is connected and applies to the UIDs, or if the UIDs
-     * otherwise have permission to bypass the VPN (e.g., because they have the
-     * {@link android.Manifest.permission.CONNECTIVITY_USE_RESTRICTED_NETWORKS} permission, or when
-     * using a socket protected by a method such as {@link VpnService#protect(DatagramSocket)}. If
-     * set to {@code false}, a previously-added restriction is removed.
-     * <p>
-     * Each of the UID ranges specified by this method is added and removed as is, and no processing
-     * is performed on the ranges to de-duplicate, merge, split, or intersect them. In order to
-     * remove a previously-added range, the exact range must be removed as is.
-     * <p>
-     * The changes are applied asynchronously and may not have been applied by the time the method
-     * returns. Apps will be notified about any changes that apply to them via
-     * {@link NetworkCallback#onBlockedStatusChanged} callbacks called after the changes take
-     * effect.
-     * <p>
-     * This method should be called only by the VPN code.
-     *
-     * @param ranges the UID ranges to restrict
-     * @param requireVpn whether the specified UID ranges must use a VPN
-     *
-     * TODO: expose as @SystemApi.
-     * @hide
-     */
-    @RequiresPermission(anyOf = {
-            NetworkStack.PERMISSION_MAINLINE_NETWORK_STACK,
-            android.Manifest.permission.NETWORK_STACK})
-    public void setRequireVpnForUids(boolean requireVpn,
-            @NonNull Collection<Range<Integer>> ranges) {
-        Objects.requireNonNull(ranges);
-        // The Range class is not parcelable. Convert to UidRange, which is what is used internally.
-        // This method is not necessarily expected to be used outside the system server, so
-        // parceling may not be necessary, but it could be used out-of-process, e.g., by the network
-        // stack process, or by tests.
-        UidRange[] rangesArray = new UidRange[ranges.size()];
-        int index = 0;
-        for (Range<Integer> range : ranges) {
-            rangesArray[index++] = new UidRange(range.getLower(), range.getUpper());
-        }
-        try {
-            mService.setRequireVpnForUids(requireVpn, rangesArray);
-        } catch (RemoteException e) {
-            throw e.rethrowFromSystemServer();
-        }
-    }
-
-    /**
      * Returns details about the currently active default data network
      * for a given uid.  This is for internal use only to avoid spying
      * other apps.
@@ -1228,7 +1163,7 @@ public class ConnectivityManager {
      * {@hide}
      */
     @RequiresPermission(android.Manifest.permission.NETWORK_STACK)
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public NetworkInfo getActiveNetworkInfoForUid(int uid) {
         return getActiveNetworkInfoForUid(uid, false);
     }
@@ -1575,7 +1510,7 @@ public class ConnectivityManager {
         return 1;
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private NetworkCapabilities networkCapabilitiesForFeature(int networkType, String feature) {
         if (networkType == TYPE_MOBILE) {
             switch (feature) {
@@ -1661,7 +1596,7 @@ public class ConnectivityManager {
         };
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private static final HashMap<NetworkCapabilities, LegacyRequest> sLegacyRequests =
             new HashMap<>();
 
@@ -1690,7 +1625,7 @@ public class ConnectivityManager {
         Log.d(TAG, "expireRequest with " + ourSeqNum + ", " + sequenceNum);
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private NetworkRequest requestNetworkForFeatureLocked(NetworkCapabilities netCap) {
         int delay = -1;
         int type = legacyTypeForNetworkCapabilities(netCap);
@@ -1720,7 +1655,7 @@ public class ConnectivityManager {
         }
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private boolean removeRequestForFeature(NetworkCapabilities netCap) {
         final LegacyRequest l;
         synchronized (sLegacyRequests) {
@@ -1787,17 +1722,17 @@ public class ConnectivityManager {
 
     /** @hide */
     public static class PacketKeepaliveCallback {
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public PacketKeepaliveCallback() {
         }
         /** The requested keepalive was successfully started. */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public void onStarted() {}
         /** The keepalive was successfully stopped. */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public void onStopped() {}
         /** An error occurred. */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public void onError(int error) {}
     }
 
@@ -1861,7 +1796,7 @@ public class ConnectivityManager {
 
         private volatile Integer mSlot;
 
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public void stop() {
             try {
                 mExecutor.execute(() -> {
@@ -1887,42 +1822,30 @@ public class ConnectivityManager {
             mCallback = new ISocketKeepaliveCallback.Stub() {
                 @Override
                 public void onStarted(int slot) {
-                    final long token = Binder.clearCallingIdentity();
-                    try {
-                        mExecutor.execute(() -> {
-                            mSlot = slot;
-                            callback.onStarted();
-                        });
-                    } finally {
-                        Binder.restoreCallingIdentity(token);
-                    }
+                    Binder.withCleanCallingIdentity(() ->
+                            mExecutor.execute(() -> {
+                                mSlot = slot;
+                                callback.onStarted();
+                            }));
                 }
 
                 @Override
                 public void onStopped() {
-                    final long token = Binder.clearCallingIdentity();
-                    try {
-                        mExecutor.execute(() -> {
-                            mSlot = null;
-                            callback.onStopped();
-                        });
-                    } finally {
-                        Binder.restoreCallingIdentity(token);
-                    }
+                    Binder.withCleanCallingIdentity(() ->
+                            mExecutor.execute(() -> {
+                                mSlot = null;
+                                callback.onStopped();
+                            }));
                     mExecutor.shutdown();
                 }
 
                 @Override
                 public void onError(int error) {
-                    final long token = Binder.clearCallingIdentity();
-                    try {
-                        mExecutor.execute(() -> {
-                            mSlot = null;
-                            callback.onError(error);
-                        });
-                    } finally {
-                        Binder.restoreCallingIdentity(token);
-                    }
+                    Binder.withCleanCallingIdentity(() ->
+                            mExecutor.execute(() -> {
+                                mSlot = null;
+                                callback.onError(error);
+                            }));
                     mExecutor.shutdown();
                 }
 
@@ -1942,7 +1865,7 @@ public class ConnectivityManager {
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public PacketKeepalive startNattKeepalive(
             Network network, int intervalSeconds, PacketKeepaliveCallback callback,
             InetAddress srcAddr, int srcPort, InetAddress dstAddr) {
@@ -1955,12 +1878,6 @@ public class ConnectivityManager {
             throw e.rethrowFromSystemServer();
         }
         return k;
-    }
-
-    // Construct an invalid fd.
-    private ParcelFileDescriptor createInvalidFd() {
-        final int invalidFd = -1;
-        return ParcelFileDescriptor.adoptFd(invalidFd);
     }
 
     /**
@@ -1993,7 +1910,7 @@ public class ConnectivityManager {
         } catch (IOException ignored) {
             // Construct an invalid fd, so that if the user later calls start(), it will fail with
             // ERROR_INVALID_SOCKET.
-            dup = createInvalidFd();
+            dup = new ParcelFileDescriptor(new FileDescriptor());
         }
         return new NattSocketKeepalive(mService, network, dup, socket.getResourceId(), source,
                 destination, executor, callback);
@@ -2035,7 +1952,7 @@ public class ConnectivityManager {
         } catch (IOException ignored) {
             // Construct an invalid fd, so that if the user later calls start(), it will fail with
             // ERROR_INVALID_SOCKET.
-            dup = createInvalidFd();
+            dup = new ParcelFileDescriptor(new FileDescriptor());
         }
         return new NattSocketKeepalive(mService, network, dup,
                 INVALID_RESOURCE_ID /* Unused */, source, destination, executor, callback);
@@ -2072,7 +1989,7 @@ public class ConnectivityManager {
         } catch (UncheckedIOException ignored) {
             // Construct an invalid fd, so that if the user later calls start(), it will fail with
             // ERROR_INVALID_SOCKET.
-            dup = createInvalidFd();
+            dup = new ParcelFileDescriptor(new FileDescriptor());
         }
         return new TcpSocketKeepalive(mService, network, dup, executor, callback);
     }
@@ -2127,19 +2044,10 @@ public class ConnectivityManager {
     public boolean requestRouteToHostAddress(int networkType, InetAddress hostAddress) {
         checkLegacyRoutingApiAccess();
         try {
-            return mService.requestRouteToHostAddress(networkType, hostAddress.getAddress(),
-                    mContext.getOpPackageName(), getAttributionTag());
+            return mService.requestRouteToHostAddress(networkType, hostAddress.getAddress());
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
-    }
-
-    /**
-     * @return the context's attribution tag
-     */
-    // TODO: Remove method and replace with direct call once R code is pushed to AOSP
-    private @Nullable String getAttributionTag() {
-        return null;
     }
 
     /**
@@ -2179,6 +2087,17 @@ public class ConnectivityManager {
     @UnsupportedAppUsage
     public void setBackgroundDataSetting(boolean allowBackgroundData) {
         // ignored
+    }
+
+    /** {@hide} */
+    @Deprecated
+    @UnsupportedAppUsage
+    public NetworkQuotaInfo getActiveNetworkQuotaInfo() {
+        try {
+            return mService.getActiveNetworkQuotaInfo();
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
     }
 
     /**
@@ -2321,39 +2240,10 @@ public class ConnectivityManager {
      * services.jar, possibly in com.android.server.net. */
 
     /** {@hide} */
-    public static final void enforceChangePermission(Context context,
-            String callingPkg, String callingAttributionTag) {
+    public static final void enforceChangePermission(Context context) {
         int uid = Binder.getCallingUid();
-        checkAndNoteChangeNetworkStateOperation(context, uid, callingPkg,
-                callingAttributionTag, true /* throwException */);
-    }
-
-    /**
-     * Check if the package is a allowed to change the network state. This also accounts that such
-     * an access happened.
-     *
-     * @return {@code true} iff the package is allowed to change the network state.
-     */
-    // TODO: Remove method and replace with direct call once R code is pushed to AOSP
-    private static boolean checkAndNoteChangeNetworkStateOperation(@NonNull Context context,
-            int uid, @NonNull String callingPackage, @Nullable String callingAttributionTag,
-            boolean throwException) {
-        return Settings.checkAndNoteChangeNetworkStateOperation(context, uid, callingPackage,
-                throwException);
-    }
-
-    /**
-     * Check if the package is a allowed to write settings. This also accounts that such an access
-     * happened.
-     *
-     * @return {@code true} iff the package is allowed to write settings.
-     */
-    // TODO: Remove method and replace with direct call once R code is pushed to AOSP
-    private static boolean checkAndNoteWriteSettingsOperation(@NonNull Context context, int uid,
-            @NonNull String callingPackage, @Nullable String callingAttributionTag,
-            boolean throwException) {
-        return Settings.checkAndNoteWriteSettingsOperation(context, uid, callingPackage,
-                throwException);
+        Settings.checkAndNoteChangeNetworkStateOperation(context, uid, Settings
+                .getPackageNameForUid(context, uid), true /* throwException */);
     }
 
     /**
@@ -2470,7 +2360,7 @@ public class ConnectivityManager {
      *
      * {@hide}
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @Deprecated
     public int tether(String iface) {
         return mTetheringManager.tether(iface);
@@ -2911,7 +2801,7 @@ public class ConnectivityManager {
      * {@hide}
      */
     @RequiresPermission(android.Manifest.permission.ACCESS_NETWORK_STATE)
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @Deprecated
     public int getLastTetherError(String iface) {
         int error = mTetheringManager.getLastTetherError(iface);
@@ -3192,9 +3082,42 @@ public class ConnectivityManager {
     }
 
     /**
-     * Set sign in error notification to visible or invisible
+     * Check mobile provisioning.
      *
-     * @hide
+     * @param suggestedTimeOutMs, timeout in milliseconds
+     *
+     * @return time out that will be used, maybe less that suggestedTimeOutMs
+     * -1 if an error.
+     *
+     * {@hide}
+     */
+    public int checkMobileProvisioning(int suggestedTimeOutMs) {
+        int timeOutMs = -1;
+        try {
+            timeOutMs = mService.checkMobileProvisioning(suggestedTimeOutMs);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+        return timeOutMs;
+    }
+
+    /**
+     * Get the mobile provisioning url.
+     * {@hide}
+     */
+    @RequiresPermission(android.Manifest.permission.NETWORK_SETTINGS)
+    public String getMobileProvisioningUrl() {
+        try {
+            return mService.getMobileProvisioningUrl();
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Set sign in error notification to visible or in visible
+     *
+     * {@hide}
      * @deprecated Doesn't properly deal with multiple connected networks of the same type.
      */
     @Deprecated
@@ -3327,9 +3250,9 @@ public class ConnectivityManager {
     @RequiresPermission(anyOf = {
             NetworkStack.PERMISSION_MAINLINE_NETWORK_STACK,
             android.Manifest.permission.NETWORK_FACTORY})
-    public Network registerNetworkAgent(INetworkAgent na, NetworkInfo ni, LinkProperties lp,
+    public Network registerNetworkAgent(Messenger messenger, NetworkInfo ni, LinkProperties lp,
             NetworkCapabilities nc, int score, NetworkAgentConfig config) {
-        return registerNetworkAgent(na, ni, lp, nc, score, config, NetworkProvider.ID_NONE);
+        return registerNetworkAgent(messenger, ni, lp, nc, score, config, NetworkProvider.ID_NONE);
     }
 
     /**
@@ -3340,10 +3263,10 @@ public class ConnectivityManager {
     @RequiresPermission(anyOf = {
             NetworkStack.PERMISSION_MAINLINE_NETWORK_STACK,
             android.Manifest.permission.NETWORK_FACTORY})
-    public Network registerNetworkAgent(INetworkAgent na, NetworkInfo ni, LinkProperties lp,
+    public Network registerNetworkAgent(Messenger messenger, NetworkInfo ni, LinkProperties lp,
             NetworkCapabilities nc, int score, NetworkAgentConfig config, int providerId) {
         try {
-            return mService.registerNetworkAgent(na, ni, lp, nc, score, config, providerId);
+            return mService.registerNetworkAgent(messenger, ni, lp, nc, score, config, providerId);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
@@ -3738,12 +3661,14 @@ public class ConnectivityManager {
     private static final HashMap<NetworkRequest, NetworkCallback> sCallbacks = new HashMap<>();
     private static CallbackHandler sCallbackHandler;
 
+    private static final int LISTEN  = 1;
+    private static final int REQUEST = 2;
+
     private NetworkRequest sendRequestForNetwork(NetworkCapabilities need, NetworkCallback callback,
-            int timeoutMs, NetworkRequest.Type reqType, int legacyType, CallbackHandler handler) {
+            int timeoutMs, int action, int legacyType, CallbackHandler handler) {
         printStackTrace();
         checkCallbackNotNull(callback);
-        Preconditions.checkArgument(
-                reqType == TRACK_DEFAULT || need != null, "null NetworkCapabilities");
+        Preconditions.checkArgument(action == REQUEST || need != null, "null NetworkCapabilities");
         final NetworkRequest request;
         final String callingPackageName = mContext.getOpPackageName();
         try {
@@ -3756,13 +3681,12 @@ public class ConnectivityManager {
                 }
                 Messenger messenger = new Messenger(handler);
                 Binder binder = new Binder();
-                if (reqType == LISTEN) {
+                if (action == LISTEN) {
                     request = mService.listenForNetwork(
                             need, messenger, binder, callingPackageName);
                 } else {
                     request = mService.requestNetwork(
-                            need, reqType.ordinal(), messenger, timeoutMs, binder, legacyType,
-                            callingPackageName, getAttributionTag());
+                            need, messenger, timeoutMs, binder, legacyType, callingPackageName);
                 }
                 if (request != null) {
                     sCallbacks.put(request, callback);
@@ -4056,8 +3980,7 @@ public class ConnectivityManager {
         checkPendingIntentNotNull(operation);
         try {
             mService.pendingRequestForNetwork(
-                    request.networkCapabilities, operation, mContext.getOpPackageName(),
-                    getAttributionTag());
+                    request.networkCapabilities, operation, mContext.getOpPackageName());
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         } catch (ServiceSpecificException e) {
@@ -4266,7 +4189,7 @@ public class ConnectivityManager {
         // request, i.e., the system default network.
         CallbackHandler cbHandler = new CallbackHandler(handler);
         sendRequestForNetwork(null /* NetworkCapabilities need */, networkCallback, 0,
-                TRACK_DEFAULT, TYPE_NONE, cbHandler);
+                REQUEST, TYPE_NONE, cbHandler);
     }
 
     /**
@@ -4438,6 +4361,7 @@ public class ConnectivityManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(NetworkStack.PERMISSION_MAINLINE_NETWORK_STACK)
     public void startCaptivePortalApp(@NonNull Network network, @NonNull Bundle appExtras) {
         try {
@@ -4686,7 +4610,7 @@ public class ConnectivityManager {
      * @deprecated This is strictly for legacy usage to support {@link #startUsingNetworkFeature}.
      */
     @Deprecated
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static boolean setProcessDefaultNetworkForHostResolution(Network network) {
         return NetworkUtils.bindProcessToNetworkForHostResolution(
                 (network == null) ? NETID_UNSET : network.getNetIdForResolv());
@@ -4823,8 +4747,6 @@ public class ConnectivityManager {
     /**
      * Simulates a Data Stall for the specified Network.
      *
-     * <p>This method should only be used for tests.
-     *
      * <p>The caller must be the owner of the specified Network.
      *
      * @param detectionMethod The detection method used to identify the Data Stall.
@@ -4834,7 +4756,7 @@ public class ConnectivityManager {
      * @throws SecurityException if the caller is not the owner of the given network.
      * @hide
      */
-    @SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
+    @TestApi
     @RequiresPermission(anyOf = {android.Manifest.permission.MANAGE_TEST_NETWORKS,
             android.Manifest.permission.NETWORK_STACK})
     public void simulateDataStall(int detectionMethod, long timestampMillis,
@@ -4844,124 +4766,5 @@ public class ConnectivityManager {
         } catch (RemoteException e) {
             e.rethrowFromSystemServer();
         }
-    }
-
-    private void setOemNetworkPreference(@NonNull OemNetworkPreferences preference) {
-        Log.d(TAG, "setOemNetworkPreference called with preference: "
-                + preference.toString());
-    }
-
-    @NonNull
-    private final List<QosCallbackConnection> mQosCallbackConnections = new ArrayList<>();
-
-    /**
-     * Registers a {@link QosSocketInfo} with an associated {@link QosCallback}.  The callback will
-     * receive available QoS events related to the {@link Network} and local ip + port
-     * specified within socketInfo.
-     * <p/>
-     * The same {@link QosCallback} must be unregistered before being registered a second time,
-     * otherwise {@link QosCallbackRegistrationException} is thrown.
-     * <p/>
-     * This API does not, in itself, require any permission if called with a network that is not
-     * restricted. However, the underlying implementation currently only supports the IMS network,
-     * which is always restricted. That means non-preinstalled callers can't possibly find this API
-     * useful, because they'd never be called back on networks that they would have access to.
-     *
-     * @throws SecurityException if {@link QosSocketInfo#getNetwork()} is restricted and the app is
-     * missing CONNECTIVITY_USE_RESTRICTED_NETWORKS permission.
-     * @throws QosCallback.QosCallbackRegistrationException if qosCallback is already registered.
-     * @throws RuntimeException if the app already has too many callbacks registered.
-     *
-     * Exceptions after the time of registration is passed through
-     * {@link QosCallback#onError(QosCallbackException)}.  see: {@link QosCallbackException}.
-     *
-     * @param socketInfo the socket information used to match QoS events
-     * @param callback receives qos events that satisfy socketInfo
-     * @param executor The executor on which the callback will be invoked. The provided
-     *                 {@link Executor} must run callback sequentially, otherwise the order of
-     *                 callbacks cannot be guaranteed.
-     *
-     * @hide
-     */
-    @SystemApi
-    public void registerQosCallback(@NonNull final QosSocketInfo socketInfo,
-            @NonNull final QosCallback callback,
-            @CallbackExecutor @NonNull final Executor executor) {
-        Objects.requireNonNull(socketInfo, "socketInfo must be non-null");
-        Objects.requireNonNull(callback, "callback must be non-null");
-        Objects.requireNonNull(executor, "executor must be non-null");
-
-        try {
-            synchronized (mQosCallbackConnections) {
-                if (getQosCallbackConnection(callback) == null) {
-                    final QosCallbackConnection connection =
-                            new QosCallbackConnection(this, callback, executor);
-                    mQosCallbackConnections.add(connection);
-                    mService.registerQosSocketCallback(socketInfo, connection);
-                } else {
-                    Log.e(TAG, "registerQosCallback: Callback already registered");
-                    throw new QosCallbackRegistrationException();
-                }
-            }
-        } catch (final RemoteException e) {
-            Log.e(TAG, "registerQosCallback: Error while registering ", e);
-
-            // The same unregister method method is called for consistency even though nothing
-            // will be sent to the ConnectivityService since the callback was never successfully
-            // registered.
-            unregisterQosCallback(callback);
-            e.rethrowFromSystemServer();
-        } catch (final ServiceSpecificException e) {
-            Log.e(TAG, "registerQosCallback: Error while registering ", e);
-            unregisterQosCallback(callback);
-            throw convertServiceException(e);
-        }
-    }
-
-    /**
-     * Unregisters the given {@link QosCallback}.  The {@link QosCallback} will no longer receive
-     * events once unregistered and can be registered a second time.
-     * <p/>
-     * If the {@link QosCallback} does not have an active registration, it is a no-op.
-     *
-     * @param callback the callback being unregistered
-     *
-     * @hide
-     */
-    @SystemApi
-    public void unregisterQosCallback(@NonNull final QosCallback callback) {
-        Objects.requireNonNull(callback, "The callback must be non-null");
-        try {
-            synchronized (mQosCallbackConnections) {
-                final QosCallbackConnection connection = getQosCallbackConnection(callback);
-                if (connection != null) {
-                    connection.stopReceivingMessages();
-                    mService.unregisterQosCallback(connection);
-                    mQosCallbackConnections.remove(connection);
-                } else {
-                    Log.d(TAG, "unregisterQosCallback: Callback not registered");
-                }
-            }
-        } catch (final RemoteException e) {
-            Log.e(TAG, "unregisterQosCallback: Error while unregistering ", e);
-            e.rethrowFromSystemServer();
-        }
-    }
-
-    /**
-     * Gets the connection related to the callback.
-     *
-     * @param callback the callback to look up
-     * @return the related connection
-     */
-    @Nullable
-    private QosCallbackConnection getQosCallbackConnection(final QosCallback callback) {
-        for (final QosCallbackConnection connection : mQosCallbackConnections) {
-            // Checking by reference here is intentional
-            if (connection.getCallback() == callback) {
-                return connection;
-            }
-        }
-        return null;
     }
 }

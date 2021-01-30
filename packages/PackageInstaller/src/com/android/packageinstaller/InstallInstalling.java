@@ -339,10 +339,6 @@ public class InstallInstalling extends AlertActivity {
             try {
                 session = getPackageManager().getPackageInstaller().openSession(mSessionId);
             } catch (IOException e) {
-                synchronized (this) {
-                    isDone = true;
-                    notifyAll();
-                }
                 return null;
             }
 

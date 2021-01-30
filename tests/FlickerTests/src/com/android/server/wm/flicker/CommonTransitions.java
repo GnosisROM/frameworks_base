@@ -20,6 +20,7 @@ import static android.os.SystemClock.sleep;
 import static android.view.Surface.rotationToString;
 
 import static com.android.server.wm.flicker.helpers.AutomationUtils.clearRecents;
+import static com.android.server.wm.flicker.helpers.AutomationUtils.closePipWindow;
 import static com.android.server.wm.flicker.helpers.AutomationUtils.exitSplitScreen;
 import static com.android.server.wm.flicker.helpers.AutomationUtils.expandPipWindow;
 import static com.android.server.wm.flicker.helpers.AutomationUtils.launchSplitScreen;
@@ -175,15 +176,11 @@ class CommonTransitions {
                 .repeat(ITERATIONS);
     }
 
-    static TransitionBuilder appToSplitScreen(IAppHelper testApp, UiDevice device,
-            int beginRotation) {
-        final String testTag = "appToSplitScreen_" + testApp.getLauncherName() + "_"
-                + rotationToString(beginRotation);
+    static TransitionBuilder appToSplitScreen(IAppHelper testApp, UiDevice device) {
         return TransitionRunner.newBuilder()
-                .withTag(testTag)
+                .withTag("appToSplitScreen_" + testApp.getLauncherName())
                 .recordAllRuns()
                 .runBeforeAll(AutomationUtils::wakeUpAndGoToHomeScreen)
-                .runBeforeAll(() -> setRotation(device, beginRotation))
                 .runBefore(testApp::open)
                 .runBefore(device::waitForIdle)
                 .runBefore(() -> sleep(500))
@@ -288,52 +285,41 @@ class CommonTransitions {
                 .repeat(ITERATIONS);
     }
 
-    static TransitionBuilder enterPipMode(PipAppHelper testApp, UiDevice device,
-            int beginRotation) {
+    static TransitionBuilder enterPipMode(PipAppHelper testApp, UiDevice device) {
         return TransitionRunner.newBuilder()
-                .withTag("enterPipMode_" + testApp.getLauncherName()
-                        + rotationToString(beginRotation))
+                .withTag("enterPipMode_" + testApp.getLauncherName())
                 .runBeforeAll(AutomationUtils::wakeUpAndGoToHomeScreen)
                 .runBefore(device::pressHome)
-                .runBefore(() -> setRotation(device, beginRotation))
                 .runBefore(testApp::open)
                 .run(() -> testApp.clickEnterPipButton(device))
-                .runAfter(() -> testApp.closePipWindow(device))
+                .runAfter(() -> closePipWindow(device))
                 .runAfterAll(testApp::exit)
                 .repeat(ITERATIONS);
     }
 
-    static TransitionBuilder exitPipModeToHome(PipAppHelper testApp, UiDevice device,
-            int beginRotation) {
+    static TransitionBuilder exitPipModeToHome(PipAppHelper testApp, UiDevice device) {
         return TransitionRunner.newBuilder()
-                .withTag("exitPipModeToHome_" + testApp.getLauncherName()
-                        + rotationToString(beginRotation))
-                .recordAllRuns()
+                .withTag("exitPipModeToHome_" + testApp.getLauncherName())
                 .runBeforeAll(AutomationUtils::wakeUpAndGoToHomeScreen)
                 .runBefore(device::pressHome)
-                .runBefore(() -> setRotation(device, beginRotation))
                 .runBefore(testApp::open)
-                .run(() -> testApp.clickEnterPipButton(device))
-                .run(() -> testApp.closePipWindow(device))
+                .runBefore(() -> testApp.clickEnterPipButton(device))
+                .run(() -> closePipWindow(device))
                 .run(device::waitForIdle)
-                .run(testApp::exit)
+                .runAfterAll(testApp::exit)
                 .repeat(ITERATIONS);
     }
 
-    static TransitionBuilder exitPipModeToApp(PipAppHelper testApp, UiDevice device,
-            int beginRotation) {
+    static TransitionBuilder exitPipModeToApp(PipAppHelper testApp, UiDevice device) {
         return TransitionRunner.newBuilder()
-                .withTag("exitPipModeToApp_" + testApp.getLauncherName()
-                        + rotationToString(beginRotation))
-                .recordAllRuns()
+                .withTag("exitPipModeToApp_" + testApp.getLauncherName())
                 .runBeforeAll(AutomationUtils::wakeUpAndGoToHomeScreen)
-                .run(device::pressHome)
-                .run(() -> setRotation(device, beginRotation))
-                .run(testApp::open)
-                .run(() -> testApp.clickEnterPipButton(device))
+                .runBefore(device::pressHome)
+                .runBefore(testApp::open)
+                .runBefore(() -> testApp.clickEnterPipButton(device))
                 .run(() -> expandPipWindow(device))
                 .run(device::waitForIdle)
-                .run(testApp::exit)
+                .runAfterAll(testApp::exit)
                 .repeat(ITERATIONS);
     }
 }

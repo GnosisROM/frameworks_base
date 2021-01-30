@@ -32,7 +32,7 @@
 #include <fcntl.h>
 #include <utils/threads.h>
 #include "jni.h"
-#include <nativehelper/JNIPlatformHelp.h>
+#include <nativehelper/JNIHelp.h>
 #include <nativehelper/ScopedUtfChars.h>
 #include "android_runtime/AndroidRuntime.h"
 #include "android_runtime/android_view_Surface.h"
@@ -591,7 +591,7 @@ android_media_MediaPlayer_getSyncParams(JNIEnv *env, jobject thiz)
     ALOGV("getSyncSettings: %d %d %f %f",
             scp.sync.mSource, scp.sync.mAudioAdjustMode, scp.sync.mTolerance, scp.frameRate);
 
-    // check params
+    // sanity check params
     if (scp.sync.mSource >= AVSYNC_SOURCE_MAX
             || scp.sync.mAudioAdjustMode >= AVSYNC_AUDIO_ADJUST_MODE_MAX
             || scp.sync.mTolerance < 0.f

@@ -20,7 +20,6 @@ import android.annotation.NonNull;
 import android.annotation.UserIdInt;
 import android.content.Context;
 import android.content.pm.UserInfo;
-import android.os.Build;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.os.Trace;
@@ -29,7 +28,6 @@ import android.os.UserManagerInternal;
 import android.util.ArrayMap;
 import android.util.Slog;
 
-import com.android.internal.os.ClassLoaderFactory;
 import com.android.server.SystemService.TargetUser;
 import com.android.server.utils.TimingsTraceAndSlog;
 
@@ -101,10 +99,7 @@ public class SystemServiceManager {
         if (pathClassLoader == null) {
             // NB: the parent class loader should always be the system server class loader.
             // Changing it has implications that require discussion with the mainline team.
-            pathClassLoader = (PathClassLoader) ClassLoaderFactory.createClassLoader(
-                    path, null /* librarySearchPath */, null /* libraryPermittedPath */,
-                    this.getClass().getClassLoader(), Build.VERSION.SDK_INT,
-                    true /* isNamespaceShared */, null /* classLoaderName */);
+            pathClassLoader = new PathClassLoader(path, this.getClass().getClassLoader());
             mLoadedPaths.put(path, pathClassLoader);
         }
         final Class<SystemService> serviceClass = loadClassFromLoader(className, pathClassLoader);

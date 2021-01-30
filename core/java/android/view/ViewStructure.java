@@ -97,7 +97,6 @@ public abstract class ViewStructure {
     public abstract void setVisibility(int visibility);
 
     /** @hide */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract void setAssistBlocked(boolean state);
 
     /**
@@ -432,7 +431,6 @@ public abstract class ViewStructure {
     public abstract void asyncCommit();
 
     /** @hide */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract Rect getTempRect();
 
     /**

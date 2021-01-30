@@ -3630,6 +3630,8 @@ public class StatusBar extends SystemUI implements DemoMode,
             // the closing
             mNotificationShadeWindowController.setNotificationShadeFocusable(true);
         }
+        // It's closed; no need to leave it open.
+        mStatusBarStateController.setLeaveOpenOnKeyguardHide(false);
     }
 
     public void onUnlockHintStarted() {
@@ -4000,7 +4002,7 @@ public class StatusBar extends SystemUI implements DemoMode,
 
         boolean launchingAffordanceWithPreview =
                 mNotificationPanelViewController.isLaunchingAffordanceWithPreview();
-        mScrimController.setLaunchingAffordanceWithPreview(launchingAffordanceWithPreview);
+        mScrimController.setLaunchingAffordanceWithPreview(true);
 
         if (mBouncerShowing) {
             // Bouncer needs the front scrim when it's on top of an activity,

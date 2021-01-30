@@ -17,6 +17,7 @@
 package android.os;
 
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.compat.annotation.UnsupportedAppUsage;
 
 import libcore.util.NativeAllocationRegistry;
@@ -25,6 +26,7 @@ import java.util.NoSuchElementException;
 
 /** @hide */
 @SystemApi
+@TestApi
 public abstract class HwBinder implements IHwBinder {
     private static final String TAG = "HwBinder";
 
@@ -94,15 +96,6 @@ public abstract class HwBinder implements IHwBinder {
         throws RemoteException, NoSuchElementException;
 
     /**
-     * This allows getService to bypass the VINTF manifest for testing only.
-     *
-     * Disabled on user builds.
-     * @hide
-     */
-    public static native final void setTrebleTestingOverride(
-            boolean testingOverride);
-
-    /**
      * Configures how many threads the process-wide hwbinder threadpool
      * has to process incoming requests.
      *
@@ -159,7 +152,7 @@ public abstract class HwBinder implements IHwBinder {
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static void reportSyspropChanged() {
         native_report_sysprop_change();
     }

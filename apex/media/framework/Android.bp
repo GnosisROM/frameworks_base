@@ -44,6 +44,7 @@ java_library {
     plugins: ["java_api_finder"],
 
     hostdex: true, // for hiddenapi check
+    visibility: ["//frameworks/av/apex:__subpackages__"],
     apex_available: [
         "com.android.media",
         "test_com.android.media",
@@ -82,7 +83,7 @@ filegroup {
         "java/android/media/MediaParser.java"
     ],
     path: "java",
-}
+}	
 
 java_sdk_library {
     name: "framework-media",
@@ -98,7 +99,15 @@ java_sdk_library {
     libs: [
         "framework_media_annotation",
     ],
-    impl_library_visibility: ["//frameworks/av/apex:__subpackages__"],
+
+    // Allow access to the stubs from anywhere.
+    visibility: ["//visibility:public"],
+
+    // Restrict access to implementation library.
+    impl_library_visibility: [
+       "//visibility:override", // Ignore the visibility property.
+       "//frameworks/av/apex:__subpackages__",
+    ],
 }
 
 

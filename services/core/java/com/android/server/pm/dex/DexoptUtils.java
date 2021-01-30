@@ -85,7 +85,7 @@ public final class DexoptUtils {
 
         // The application has splits. Compute their class loader contexts.
 
-        // First, cache the relative paths of the splits and do some validity checks
+        // First, cache the relative paths of the splits and do some sanity checks
         String[] splitRelativeCodePaths = getSplitRelativeCodePaths(pkg);
 
         // The splits have an implicit dependency on the base apk.
@@ -407,7 +407,7 @@ public final class DexoptUtils {
         for (int i = 0; i < splitRelativeCodePaths.length; i++) {
             File pathFile = new File(splitCodePaths[i]);
             splitRelativeCodePaths[i] = pathFile.getName();
-            // Validity check that the base paths of the splits are all the same.
+            // Sanity check that the base paths of the splits are all the same.
             String basePath = pathFile.getParent();
             if (!basePath.equals(baseCodePath)) {
                 Slog.wtf(TAG, "Split paths have different base paths: " + basePath + " and " +

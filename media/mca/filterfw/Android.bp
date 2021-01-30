@@ -65,8 +65,6 @@ cc_library_static {
         "-Wno-unused-parameter",
     ],
 
-    header_libs: ["jni_headers"],
-
     shared_libs: [
         "libmedia",
         "libgui",

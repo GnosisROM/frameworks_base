@@ -296,6 +296,10 @@ applications that come with the platform
         <permission name="android.permission.SUBSTITUTE_NOTIFICATION_APP_NAME"/>
     </privapp-permissions>
 
+    <privapp-permissions package="com.android.settings">
+        <permission name="android.permission.RESET_BATTERY_STATS"/>
+    </privapp-permissions>
+
     <privapp-permissions package="com.android.sharedstoragebackup">
         <permission name="android.permission.WRITE_MEDIA_STORAGE"/>
         <permission name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
@@ -320,7 +324,6 @@ applications that come with the platform
         <permission name="android.permission.DELETE_CACHE_FILES"/>
         <permission name="android.permission.DELETE_PACKAGES"/>
         <permission name="android.permission.DUMP"/>
-        <permission name="android.permission.CONTROL_UI_TRACING"/>
         <permission name="android.permission.ACTIVITY_EMBEDDING"/>
         <permission name="android.permission.FORCE_STOP_PACKAGES"/>
         <permission name="android.permission.GET_APP_OPS_STATS"/>
@@ -343,8 +346,6 @@ applications that come with the platform
         <permission name="android.permission.MOUNT_FORMAT_FILESYSTEMS"/>
         <permission name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
         <permission name="android.permission.MOVE_PACKAGE"/>
-        <!-- Needed for test only -->
-        <permission name="android.permission.NETWORK_AIRPLANE_MODE"/>
         <permission name="android.permission.OBSERVE_APP_USAGE"/>
         <permission name="android.permission.NETWORK_SCAN"/>
         <permission name="android.permission.PACKAGE_USAGE_STATS" />
@@ -436,26 +437,10 @@ applications that come with the platform
         <permission name="android.permission.CAPTURE_AUDIO_OUTPUT" />
         <!-- Permissions required for CTS test - AdbManagerTest -->
         <permission name="android.permission.MANAGE_DEBUGGING" />
-        <!-- Permissions required for CTS test - TimeManagerTest -->
-        <permission name="android.permission.MANAGE_TIME_AND_ZONE_DETECTION" />
-        <!-- Permissions required for CTS test - CtsHdmiCecHostTestCases -->
-        <permission name="android.permission.HDMI_CEC"/>
-        <!-- Permission needed for CTS test - WifiManagerTest -->
-        <permission name="android.permission.WIFI_ACCESS_COEX_UNSAFE_CHANNELS" />
-        <permission name="android.permission.WIFI_UPDATE_COEX_UNSAFE_CHANNELS" />
     </privapp-permissions>
 
     <privapp-permissions package="com.android.statementservice">
         <permission name="android.permission.INTENT_FILTER_VERIFICATION_AGENT"/>
-    </privapp-permissions>
-
-    <privapp-permissions package="com.android.traceur">
-        <!-- Permissions required to receive BUGREPORT_STARTED intent -->
-        <permission name="android.permission.DUMP"/>
-        <!-- Permissions required to start/stop tracing -->
-        <permission name="android.permission.START_FOREGROUND_SERVICES_FROM_BACKGROUND"/>
-        <!-- Permissions required for quick settings tile -->
-        <permission name="android.permission.STATUS_BAR"/>
     </privapp-permissions>
 
     <privapp-permissions package="com.android.tv">

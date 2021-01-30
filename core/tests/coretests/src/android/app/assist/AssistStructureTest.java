@@ -277,7 +277,7 @@ public class AssistStructureTest {
 
         try {
             // Write to parcel
-            parcel.setDataPosition(0); // Validity Check
+            parcel.setDataPosition(0); // Sanity / paranoid check
             structure.writeToParcel(parcel, NO_FLAGS);
 
             // Read from parcel

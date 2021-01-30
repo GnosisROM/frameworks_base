@@ -60,6 +60,7 @@ import android.hardware.usb.gadget.V1_0.Status;
 import android.hidl.manager.V1_0.IServiceManager;
 import android.hidl.manager.V1_0.IServiceNotification;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.os.Handler;
@@ -170,10 +171,7 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
     // Delay for debouncing USB disconnects.
     // We often get rapid connect/disconnect events when enabling USB functions,
     // which need debouncing.
-    private static final int DEVICE_STATE_UPDATE_DELAY = 3000;
-
-    // Delay for debouncing USB disconnects on Type-C ports in host mode
-    private static final int HOST_STATE_UPDATE_DELAY = 1000;
+    private static final int UPDATE_DELAY = 1000;
 
     // Timeout for entering USB request mode.
     // Request is cancelled if host does not configure device within 10 seconds.
@@ -195,22 +193,22 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
     private String[] mAccessoryStrings;
     private final UEventObserver mUEventObserver;
 
-    private static Set<Integer> sDenyInterfaces;
+    private static Set<Integer> sBlackListedInterfaces;
     private HashMap<Long, FileDescriptor> mControlFds;
 
     static {
-        sDenyInterfaces = new HashSet<>();
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_AUDIO);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_COMM);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_HID);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_PRINTER);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_MASS_STORAGE);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_HUB);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_CDC_DATA);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_CSCID);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_CONTENT_SEC);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_VIDEO);
-        sDenyInterfaces.add(UsbConstants.USB_CLASS_WIRELESS_CONTROLLER);
+        sBlackListedInterfaces = new HashSet<>();
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_AUDIO);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_COMM);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_HID);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_PRINTER);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_MASS_STORAGE);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_HUB);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_CDC_DATA);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_CSCID);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_CONTENT_SEC);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_VIDEO);
+        sBlackListedInterfaces.add(UsbConstants.USB_CLASS_WIRELESS_CONTROLLER);
     }
 
     /*
@@ -586,7 +584,7 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
             msg.arg1 = connected;
             msg.arg2 = configured;
             // debounce disconnects to avoid problems bringing up USB tethering
-            sendMessageDelayed(msg, (connected == 0) ? DEVICE_STATE_UPDATE_DELAY : 0);
+            sendMessageDelayed(msg, (connected == 0) ? UPDATE_DELAY : 0);
         }
 
         public void updateHostState(UsbPort port, UsbPortStatus status) {
@@ -601,7 +599,7 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
             removeMessages(MSG_UPDATE_PORT_STATE);
             Message msg = obtainMessage(MSG_UPDATE_PORT_STATE, args);
             // debounce rapid transitions of connect/disconnect on type-c ports
-            sendMessageDelayed(msg, HOST_STATE_UPDATE_DELAY);
+            sendMessageDelayed(msg, UPDATE_DELAY);
         }
 
         private void setAdbEnabled(boolean enable) {
@@ -889,7 +887,7 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
                             while (interfaceCount >= 0) {
                                 UsbInterface intrface = config.getInterface(interfaceCount);
                                 interfaceCount--;
-                                if (sDenyInterfaces.contains(intrface.getInterfaceClass())) {
+                                if (sBlackListedInterfaces.contains(intrface.getInterfaceClass())) {
                                     mHideUsbNotification = true;
                                     break;
                                 }
@@ -1061,41 +1059,9 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
             if (mAudioAccessoryConnected && !mAudioAccessorySupported) {
                 titleRes = com.android.internal.R.string.usb_unsupported_audio_accessory_title;
                 id = SystemMessage.NOTE_USB_AUDIO_ACCESSORY_NOT_SUPPORTED;
-            } else if (mConnected) {
-                if (mCurrentFunctions == UsbManager.FUNCTION_MTP) {
-                    titleRes = com.android.internal.R.string.usb_mtp_notification_title;
-                    id = SystemMessage.NOTE_USB_MTP;
-                } else if (mCurrentFunctions == UsbManager.FUNCTION_PTP) {
-                    titleRes = com.android.internal.R.string.usb_ptp_notification_title;
-                    id = SystemMessage.NOTE_USB_PTP;
-                } else if (mCurrentFunctions == UsbManager.FUNCTION_MIDI) {
-                    titleRes = com.android.internal.R.string.usb_midi_notification_title;
-                    id = SystemMessage.NOTE_USB_MIDI;
-                } else if (mCurrentFunctions == UsbManager.FUNCTION_RNDIS) {
-                    titleRes = com.android.internal.R.string.usb_tether_notification_title;
-                    id = SystemMessage.NOTE_USB_TETHER;
-                } else if (mCurrentFunctions == UsbManager.FUNCTION_ACCESSORY) {
-                    titleRes = com.android.internal.R.string.usb_accessory_notification_title;
-                    id = SystemMessage.NOTE_USB_ACCESSORY;
-                }
-                if (mSourcePower) {
-                    if (titleRes != 0) {
-                        message = r.getText(
-                                com.android.internal.R.string.usb_power_notification_message);
-                    } else {
-                        titleRes = com.android.internal.R.string.usb_supplying_notification_title;
-                        id = SystemMessage.NOTE_USB_SUPPLYING;
-                    }
-                } else if (titleRes == 0) {
-                    titleRes = com.android.internal.R.string.usb_charging_notification_title;
-                    id = SystemMessage.NOTE_USB_CHARGING;
-                }
             } else if (mSourcePower) {
                 titleRes = com.android.internal.R.string.usb_supplying_notification_title;
                 id = SystemMessage.NOTE_USB_SUPPLYING;
-            } else if (mHostConnected && mSinkPower && mUsbCharging) {
-                titleRes = com.android.internal.R.string.usb_charging_notification_title;
-                id = SystemMessage.NOTE_USB_CHARGING;
             }
             if (id != mUsbNotificationId || force) {
                 // clear notification if title needs changing
@@ -1147,7 +1113,7 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
                     }
 
                     Notification.Builder builder = new Notification.Builder(mContext, channel)
-                            .setSmallIcon(com.android.internal.R.drawable.stat_sys_adb)
+                            .setSmallIcon(com.android.internal.R.drawable.stat_sys_data_usb)
                             .setWhen(0)
                             .setOngoing(true)
                             .setTicker(title)
@@ -1157,6 +1123,7 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
                                             .system_notification_accent_color))
                             .setContentTitle(title)
                             .setContentText(message)
+                            .setSubText(Build.ID)
                             .setContentIntent(pi)
                             .setVisibility(Notification.VISIBILITY_PUBLIC);
 

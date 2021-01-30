@@ -317,7 +317,7 @@ public class ContentCaptureEventTest {
 
         try {
             // Write to parcel
-            parcel.setDataPosition(0); // Validity Check
+            parcel.setDataPosition(0); // Sanity / paranoid check
             event.writeToParcel(parcel, 0);
 
             // Read from parcel

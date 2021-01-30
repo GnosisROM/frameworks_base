@@ -210,36 +210,19 @@ public class TunerResourceManagerService extends SystemService implements IBinde
             }
             synchronized (mLock) {
                 if (!checkClientExists(request.getClientId())) {
-                    throw new RemoteException("Request frontend from unregistered client: "
+                    throw new RemoteException("Request frontend from unregistered client:"
                             + request.getClientId());
-                }
-                // If the request client is holding or sharing a frontend, throw an exception.
-                if (!getClientProfile(request.getClientId()).getInUseFrontendIds().isEmpty()) {
-                    throw new RemoteException("Release frontend before requesting another one. "
-                            + "Client id: " + request.getClientId());
                 }
                 return requestFrontendInternal(request, frontendHandle);
             }
         }
 
         @Override
-        public void shareFrontend(int selfClientId, int targetClientId) throws RemoteException {
+        public void shareFrontend(int selfClientId, int targetClientId) {
             enforceTunerAccessPermission("shareFrontend");
             enforceTrmAccessPermission("shareFrontend");
-            synchronized (mLock) {
-                if (!checkClientExists(selfClientId)) {
-                    throw new RemoteException("Share frontend request from an unregistered client:"
-                            + selfClientId);
-                }
-                if (!checkClientExists(targetClientId)) {
-                    throw new RemoteException("Request to share frontend with an unregistered "
-                            + "client:" + targetClientId);
-                }
-                if (getClientProfile(targetClientId).getInUseFrontendIds().isEmpty()) {
-                    throw new RemoteException("Request to share frontend with a client that has no "
-                            + "frontend resources. Target client id:" + targetClientId);
-                }
-                shareFrontendInternal(selfClientId, targetClientId);
+            if (DEBUG) {
+                Slog.d(TAG, "shareFrontend from " + selfClientId + " with " + targetClientId);
             }
         }
 
@@ -332,7 +315,7 @@ public class TunerResourceManagerService extends SystemService implements IBinde
                     throw new RemoteException(
                             "Client is not the current owner of the releasing fe.");
                 }
-                releaseFrontendInternal(fe, clientId);
+                releaseFrontendInternal(fe);
             }
         }
 
@@ -666,17 +649,6 @@ public class TunerResourceManagerService extends SystemService implements IBinde
     }
 
     @VisibleForTesting
-    protected void shareFrontendInternal(int selfClientId, int targetClientId) {
-        if (DEBUG) {
-            Slog.d(TAG, "shareFrontend from " + selfClientId + " with " + targetClientId);
-        }
-        for (int feId : getClientProfile(targetClientId).getInUseFrontendIds()) {
-            getClientProfile(selfClientId).useFrontend(feId);
-        }
-        getClientProfile(targetClientId).shareFrontend(selfClientId);
-    }
-
-    @VisibleForTesting
     protected boolean requestLnbInternal(TunerLnbRequest request, int[] lnbHandle) {
         if (DEBUG) {
             Slog.d(TAG, "requestLnb(request=" + request + ")");
@@ -805,17 +777,11 @@ public class TunerResourceManagerService extends SystemService implements IBinde
     }
 
     @VisibleForTesting
-    protected void releaseFrontendInternal(FrontendResource fe, int clientId) {
+    protected void releaseFrontendInternal(FrontendResource fe) {
         if (DEBUG) {
-            Slog.d(TAG, "releaseFrontend(id=" + fe.getId() + ", clientId=" + clientId + " )");
+            Slog.d(TAG, "releaseFrontend(id=" + fe.getId() + ")");
         }
-        if (clientId == fe.getOwnerClientId()) {
-            ClientProfile ownerClient = getClientProfile(fe.getOwnerClientId());
-            for (int shareOwnerId : ownerClient.getShareFeClientIds()) {
-                clearFrontendAndClientMapping(getClientProfile(shareOwnerId));
-            }
-        }
-        clearFrontendAndClientMapping(getClientProfile(clientId));
+        updateFrontendClientMappingOnRelease(fe);
     }
 
     @VisibleForTesting
@@ -916,21 +882,8 @@ public class TunerResourceManagerService extends SystemService implements IBinde
             Slog.e(TAG, "Failed to reclaim resources on client " + reclaimingClientId, e);
             return false;
         }
-
-        // Reclaim all the resources of the share owners of the frontend that is used by the current
-        // resource reclaimed client.
         ClientProfile profile = getClientProfile(reclaimingClientId);
-        Set<Integer> shareFeClientIds = profile.getShareFeClientIds();
-        for (int clientId : shareFeClientIds) {
-            try {
-                mListeners.get(clientId).getListener().onReclaimResources();
-            } catch (RemoteException e) {
-                Slog.e(TAG, "Failed to reclaim resources on client " + clientId, e);
-                return false;
-            }
-            clearAllResourcesAndClientMapping(getClientProfile(clientId));
-        }
-        clearAllResourcesAndClientMapping(profile);
+        reclaimingResourcesFromClient(profile);
         return true;
     }
 
@@ -976,6 +929,16 @@ public class TunerResourceManagerService extends SystemService implements IBinde
         }
     }
 
+    private void updateFrontendClientMappingOnRelease(@NonNull FrontendResource releasingFrontend) {
+        ClientProfile ownerProfile = getClientProfile(releasingFrontend.getOwnerClientId());
+        releasingFrontend.removeOwner();
+        ownerProfile.releaseFrontend(releasingFrontend.getId());
+        for (int exclusiveGroupMember : releasingFrontend.getExclusiveGroupMemberFeIds()) {
+            getFrontendResource(exclusiveGroupMember).removeOwner();
+            ownerProfile.releaseFrontend(exclusiveGroupMember);
+        }
+    }
+
     private void updateLnbClientMappingOnNewGrant(int grantingId, int ownerClientId) {
         LnbResource grantingLnb = getLnbResource(grantingId);
         ClientProfile ownerProfile = getClientProfile(ownerClientId);
@@ -1004,10 +967,10 @@ public class TunerResourceManagerService extends SystemService implements IBinde
     }
 
     /**
-     * Get the owner client's priority.
+     * Get the owner client's priority from the resource id.
      *
      * @param clientId the owner client id.
-     * @return the priority of the owner client.
+     * @return the priority of the owner client of the resource.
      */
     private int getOwnerClientPriority(int clientId) {
         return getClientProfile(clientId).getPriority();
@@ -1048,11 +1011,7 @@ public class TunerResourceManagerService extends SystemService implements IBinde
             return;
         }
         if (fe.isInUse()) {
-            ClientProfile ownerClient = getClientProfile(fe.getOwnerClientId());
-            for (int shareOwnerId : ownerClient.getShareFeClientIds()) {
-                clearFrontendAndClientMapping(getClientProfile(shareOwnerId));
-            }
-            clearFrontendAndClientMapping(ownerClient);
+            releaseFrontendInternal(fe);
         }
         for (int excGroupmemberFeId : fe.getExclusiveGroupMemberFeIds()) {
             getFrontendResource(excGroupmemberFeId)
@@ -1134,37 +1093,21 @@ public class TunerResourceManagerService extends SystemService implements IBinde
     }
 
     private void removeClientProfile(int clientId) {
-        for (int shareOwnerId : getClientProfile(clientId).getShareFeClientIds()) {
-            clearFrontendAndClientMapping(getClientProfile(shareOwnerId));
-        }
-        clearAllResourcesAndClientMapping(getClientProfile(clientId));
+        reclaimingResourcesFromClient(getClientProfile(clientId));
         mClientProfiles.remove(clientId);
         mListeners.remove(clientId);
     }
 
-    private void clearFrontendAndClientMapping(ClientProfile profile) {
+    private void reclaimingResourcesFromClient(ClientProfile profile) {
         for (Integer feId : profile.getInUseFrontendIds()) {
-            FrontendResource fe = getFrontendResource(feId);
-            if (fe.getOwnerClientId() == profile.getId()) {
-                fe.removeOwner();
-                continue;
-            }
-            getClientProfile(fe.getOwnerClientId()).stopSharingFrontend(profile.getId());
+            getFrontendResource(feId).removeOwner();
         }
-        profile.releaseFrontend();
-    }
-
-    private void clearAllResourcesAndClientMapping(ClientProfile profile) {
-        // Clear Lnb
         for (Integer lnbId : profile.getInUseLnbIds()) {
             getLnbResource(lnbId).removeOwner();
         }
-        // Clear Cas
         if (profile.getInUseCasSystemId() != ClientProfile.INVALID_RESOURCE_ID) {
             getCasResource(profile.getInUseCasSystemId()).removeOwner(profile.getId());
         }
-        // Clear Frontend
-        clearFrontendAndClientMapping(profile);
         profile.reclaimAllResources();
     }
 

@@ -46,6 +46,7 @@ import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.StringRes;
+import android.annotation.TestApi;
 import android.apex.ApexInfo;
 import android.app.ActivityTaskManager;
 import android.app.ActivityThread;
@@ -143,14 +144,8 @@ import java.util.UUID;
  * <li>All installations must contain a single base APK.
  * </ul>
  *
- * @deprecated This class is mostly unused and no new changes should be added to it. Use
- * {@link android.content.pm.parsing.ParsingPackageUtils} and related parsing v2 infrastructure in
- * the core/services parsing subpackages. Or for a quick parse of a provided APK, use
- * {@link PackageManager#getPackageArchiveInfo(String, int)}.
- *
  * @hide
  */
-@Deprecated
 public class PackageParser {
 
     public static final boolean DEBUG_JAR = false;
@@ -283,6 +278,8 @@ public class PackageParser {
     @UnsupportedAppUsage
     public static final PackageParser.NewPermissionInfo NEW_PERMISSIONS[] =
         new PackageParser.NewPermissionInfo[] {
+            new PackageParser.NewPermissionInfo(android.Manifest.permission.OTHER_SENSORS,
+                    android.os.Build.VERSION_CODES.CUR_DEVELOPMENT + 1, 0),
             new PackageParser.NewPermissionInfo(android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     android.os.Build.VERSION_CODES.DONUT, 0),
             new PackageParser.NewPermissionInfo(android.Manifest.permission.READ_PHONE_STATE,
@@ -298,7 +295,7 @@ public class PackageParser {
     public String[] mSeparateProcesses;
     private boolean mOnlyCoreApps;
     private DisplayMetrics mMetrics;
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public Callback mCallback;
     private File mCacheDir;
 
@@ -918,7 +915,7 @@ public class PackageParser {
      * Automatically detects if the package is a monolithic style (single APK
      * file) or cluster style (directory of APKs).
      * <p>
-     * This performs checking on cluster style packages, such as
+     * This performs sanity checking on cluster style packages, such as
      * requiring identical package name and version codes, a single base APK,
      * and unique split names.
      *
@@ -1039,7 +1036,7 @@ public class PackageParser {
      * package is a monolithic style (single APK file) or cluster style
      * (directory of APKs).
      * <p>
-     * This performs checking on cluster style packages, such as
+     * This performs sanity checking on cluster style packages, such as
      * requiring identical package name and version codes, a single base APK,
      * and unique split names.
      * <p>
@@ -1073,7 +1070,7 @@ public class PackageParser {
 
     /**
      * Parse all APKs contained in the given directory, treating them as a
-     * single package. This also performs checking, such as requiring
+     * single package. This also performs sanity checking, such as requiring
      * identical package name and version codes, a single base APK, and unique
      * split names.
      * <p>
@@ -1369,7 +1366,7 @@ public class PackageParser {
         }
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private static void collectCertificates(Package pkg, File apkFile, boolean skipVerify)
             throws PackageParserException {
         final String apkPath = apkFile.getAbsolutePath();
@@ -2550,6 +2547,7 @@ public class PackageParser {
      *         not compatible with this platform
      * @hide Exposed for unit testing only.
      */
+    @TestApi
     public static int computeTargetSdkVersion(@IntRange(from = 0) int targetVers,
             @Nullable String targetCode, @NonNull String[] platformSdkCodenames,
             @NonNull String[] outError) {
@@ -2614,6 +2612,7 @@ public class PackageParser {
      *         compatible with this platform
      * @hide Exposed for unit testing only.
      */
+    @TestApi
     public static int computeMinSdkVersion(@IntRange(from = 1) int minVers,
             @Nullable String minCode, @IntRange(from = 1) int platformSdkVersion,
             @NonNull String[] platformSdkCodenames, @NonNull String[] outError) {
@@ -4657,10 +4656,8 @@ public class PackageParser {
      * ratio set.
      */
     private void setMaxAspectRatio(Package owner) {
-        // Default to (1.86) 16.7:9 aspect ratio for pre-O apps and unset for O and greater.
-        // NOTE: 16.7:9 was the max aspect ratio Android devices can support pre-O per the CDD.
-        float maxAspectRatio = owner.applicationInfo.targetSdkVersion < O
-                ? DEFAULT_PRE_O_MAX_ASPECT_RATIO : 0;
+        // Start at an unlimited aspect ratio unless we get a more restrictive one
+        float maxAspectRatio = 0;
 
         if (owner.applicationInfo.maxAspectRatio != 0) {
             // Use the application max aspect ration as default if set.
@@ -4735,6 +4732,7 @@ public class PackageParser {
      *                                AndroidManifest.xml.
      * @hide Exposed for unit testing only.
      */
+    @TestApi
     public static int getActivityConfigChanges(int configChanges, int recreateOnConfigChanges) {
         return configChanges | ((~recreateOnConfigChanges) & RECREATE_ON_CONFIG_CHANGES_MASK);
     }
@@ -6565,7 +6563,7 @@ public class PackageParser {
             }
 
             /** set the signing certificates by which the APK proved it can be authenticated */
-            @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+            @UnsupportedAppUsage
             public Builder setPastSigningCertificates(Signature[] pastSigningCertificates) {
                 mPastSigningCertificates = pastSigningCertificates;
                 return this;
@@ -6779,9 +6777,9 @@ public class PackageParser {
         /**
          * Data used to feed the KeySetManagerService
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public ArraySet<String> mUpgradeKeySets;
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public ArrayMap<String, ArraySet<PublicKey>> mKeySetMapping;
 
         /**

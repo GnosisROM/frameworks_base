@@ -1,4 +1,0 @@
-filegroup {
-    name: "framework-vcn-util-sources",
-    srcs: ["util/**/*.java"],
-}

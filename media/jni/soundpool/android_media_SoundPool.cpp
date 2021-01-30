@@ -21,7 +21,7 @@
 
 #include <utils/Log.h>
 #include <jni.h>
-#include <nativehelper/JNIPlatformHelp.h>
+#include <nativehelper/JNIHelp.h>
 #include <android_runtime/AndroidRuntime.h>
 #include "SoundPool.h"
 
@@ -200,7 +200,7 @@ android_media_SoundPool_native_setup(JNIEnv *env, jobject thiz, jobject weakRef,
     paa->usage = (audio_usage_t) env->GetIntField(jaa, javaAudioAttrFields.fieldUsage);
     paa->content_type =
             (audio_content_type_t) env->GetIntField(jaa, javaAudioAttrFields.fieldContentType);
-    paa->flags = (audio_flags_mask_t) env->GetIntField(jaa, javaAudioAttrFields.fieldFlags);
+    paa->flags = env->GetIntField(jaa, javaAudioAttrFields.fieldFlags);
 
     ALOGV("android_media_SoundPool_native_setup");
     auto *ap = new SoundPool(maxChannels, paa);

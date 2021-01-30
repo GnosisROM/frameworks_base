@@ -32,7 +32,7 @@ public interface BiometricAuthenticator {
 
     /**
      * No biometric methods or nothing has been enrolled.
-     * Move/expose these in BiometricPrompt if we ever want to allow applications to "denylist"
+     * Move/expose these in BiometricPrompt if we ever want to allow applications to "blacklist"
      * modalities when calling authenticate().
      * @hide
      */

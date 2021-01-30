@@ -234,7 +234,7 @@ public class BatteryMeterView extends LinearLayout implements
         }
 
         Dependency.get(TunerService.class)
-                .addTunable(this, StatusBarIconController.ICON_HIDE_LIST);
+                .addTunable(this, StatusBarIconController.ICON_BLACKLIST);
         mIsSubscribedForTunerUpdates = true;
     }
 
@@ -287,8 +287,8 @@ public class BatteryMeterView extends LinearLayout implements
 
     @Override
     public void onTuningChanged(String key, String newValue) {
-        if (StatusBarIconController.ICON_HIDE_LIST.equals(key)) {
-            ArraySet<String> icons = StatusBarIconController.getIconHideList(
+        if (StatusBarIconController.ICON_BLACKLIST.equals(key)) {
+            ArraySet<String> icons = StatusBarIconController.getIconBlacklist(
                     getContext(), newValue);
             setVisibility(icons.contains(mSlotBattery) ? View.GONE : View.VISIBLE);
         }

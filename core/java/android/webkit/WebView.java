@@ -111,7 +111,7 @@ public class WebView extends AbsoluteLayout
     // Throwing an exception for incorrect thread usage if the
     // build target is JB MR2 or newer. Defaults to false, and is
     // set in the WebView constructor.
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private static volatile boolean sEnforceThreadChecking = false;
 
     /**
@@ -406,7 +406,7 @@ public class WebView extends AbsoluteLayout
      * @hide
      */
     @SuppressWarnings("deprecation")  // for super() call into deprecated base class constructor.
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     protected WebView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr,
             int defStyleRes, @Nullable Map<String, Object> javaScriptInterfaces,
             boolean privateBrowsing) {
@@ -1510,7 +1510,7 @@ public class WebView extends AbsoluteLayout
      *
      * @param hosts the list of hosts
      * @param callback will be called with {@code true} if hosts are successfully added to the
-     * allowlist. It will be called with {@code false} if any hosts are malformed. The callback
+     * whitelist. It will be called with {@code false} if any hosts are malformed. The callback
      * will be run on the UI thread
      */
     public static void setSafeBrowsingWhitelist(@NonNull List<String> hosts,
@@ -2576,7 +2576,7 @@ public class WebView extends AbsoluteLayout
         return WebViewFactory.getProvider();
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private final Looper mWebViewThread = Looper.myLooper();
 
     @UnsupportedAppUsage

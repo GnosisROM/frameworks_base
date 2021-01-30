@@ -28,7 +28,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import android.app.timedetector.GnssTimeSuggestion;
 import android.app.timedetector.ManualTimeSuggestion;
 import android.app.timedetector.NetworkTimeSuggestion;
 import android.app.timedetector.TelephonyTimeSuggestion;
@@ -133,14 +132,15 @@ public class TimeDetectorServiceTest {
         doNothing().when(mMockContext).enforceCallingOrSelfPermission(anyString(), any());
 
         ManualTimeSuggestion manualTimeSuggestion = createManualTimeSuggestion();
-
-        assertTrue(mTimeDetectorService.suggestManualTime(manualTimeSuggestion));
-        mStubbedTimeDetectorStrategy.verifySuggestManualTimeCalled(manualTimeSuggestion);
+        mTimeDetectorService.suggestManualTime(manualTimeSuggestion);
+        mTestHandler.assertTotalMessagesEnqueued(1);
 
         verify(mMockContext).enforceCallingOrSelfPermission(
                 eq(android.Manifest.permission.SUGGEST_MANUAL_TIME_AND_ZONE),
                 anyString());
 
+        mTestHandler.waitForMessagesToBeProcessed();
+        mStubbedTimeDetectorStrategy.verifySuggestManualTimeCalled(manualTimeSuggestion);
     }
 
     @Test(expected = SecurityException.class)
@@ -171,36 +171,6 @@ public class TimeDetectorServiceTest {
 
         mTestHandler.waitForMessagesToBeProcessed();
         mStubbedTimeDetectorStrategy.verifySuggestNetworkTimeCalled(NetworkTimeSuggestion);
-    }
-
-    @Test(expected = SecurityException.class)
-    public void testSuggestGnssTime_withoutPermission() {
-        doThrow(new SecurityException("Mock"))
-                .when(mMockContext).enforceCallingOrSelfPermission(anyString(), any());
-        GnssTimeSuggestion gnssTimeSuggestion = createGnssTimeSuggestion();
-
-        try {
-            mTimeDetectorService.suggestGnssTime(gnssTimeSuggestion);
-            fail();
-        } finally {
-            verify(mMockContext).enforceCallingOrSelfPermission(
-                    eq(android.Manifest.permission.SET_TIME), anyString());
-        }
-    }
-
-    @Test
-    public void testSuggestGnssTime() throws Exception {
-        doNothing().when(mMockContext).enforceCallingOrSelfPermission(anyString(), any());
-
-        GnssTimeSuggestion gnssTimeSuggestion = createGnssTimeSuggestion();
-        mTimeDetectorService.suggestGnssTime(gnssTimeSuggestion);
-        mTestHandler.assertTotalMessagesEnqueued(1);
-
-        verify(mMockContext).enforceCallingOrSelfPermission(
-                eq(android.Manifest.permission.SET_TIME), anyString());
-
-        mTestHandler.waitForMessagesToBeProcessed();
-        mStubbedTimeDetectorStrategy.verifySuggestGnssTimeCalled(gnssTimeSuggestion);
     }
 
     @Test
@@ -247,20 +217,18 @@ public class TimeDetectorServiceTest {
         return new NetworkTimeSuggestion(timeValue);
     }
 
-    private static GnssTimeSuggestion createGnssTimeSuggestion() {
-        TimestampedValue<Long> timeValue = new TimestampedValue<>(100L, 1_000_000L);
-        return new GnssTimeSuggestion(timeValue);
-    }
-
     private static class StubbedTimeDetectorStrategy implements TimeDetectorStrategy {
 
         // Call tracking.
         private TelephonyTimeSuggestion mLastTelephonySuggestion;
         private ManualTimeSuggestion mLastManualSuggestion;
         private NetworkTimeSuggestion mLastNetworkSuggestion;
-        private GnssTimeSuggestion mLastGnssSuggestion;
         private boolean mHandleAutoTimeDetectionChangedCalled;
         private boolean mDumpCalled;
+
+        @Override
+        public void initialize(Callback ignored) {
+        }
 
         @Override
         public void suggestTelephonyTime(TelephonyTimeSuggestion timeSuggestion) {
@@ -268,9 +236,8 @@ public class TimeDetectorServiceTest {
         }
 
         @Override
-        public boolean suggestManualTime(ManualTimeSuggestion timeSuggestion) {
+        public void suggestManualTime(ManualTimeSuggestion timeSuggestion) {
             mLastManualSuggestion = timeSuggestion;
-            return true;
         }
 
         @Override
@@ -279,12 +246,7 @@ public class TimeDetectorServiceTest {
         }
 
         @Override
-        public void suggestGnssTime(GnssTimeSuggestion timeSuggestion) {
-            mLastGnssSuggestion = timeSuggestion;
-        }
-
-        @Override
-        public void handleAutoTimeConfigChanged() {
+        public void handleAutoTimeDetectionChanged() {
             mHandleAutoTimeDetectionChangedCalled = true;
         }
 
@@ -297,7 +259,6 @@ public class TimeDetectorServiceTest {
             mLastTelephonySuggestion = null;
             mLastManualSuggestion = null;
             mLastNetworkSuggestion = null;
-            mLastGnssSuggestion = null;
             mHandleAutoTimeDetectionChangedCalled = false;
             mDumpCalled = false;
         }
@@ -306,16 +267,12 @@ public class TimeDetectorServiceTest {
             assertEquals(expectedSuggestion, mLastTelephonySuggestion);
         }
 
-        void verifySuggestManualTimeCalled(ManualTimeSuggestion expectedSuggestion) {
+        public void verifySuggestManualTimeCalled(ManualTimeSuggestion expectedSuggestion) {
             assertEquals(expectedSuggestion, mLastManualSuggestion);
         }
 
-        void verifySuggestNetworkTimeCalled(NetworkTimeSuggestion expectedSuggestion) {
+        public void verifySuggestNetworkTimeCalled(NetworkTimeSuggestion expectedSuggestion) {
             assertEquals(expectedSuggestion, mLastNetworkSuggestion);
-        }
-
-        void verifySuggestGnssTimeCalled(GnssTimeSuggestion expectedSuggestion) {
-            assertEquals(expectedSuggestion, mLastGnssSuggestion);
         }
 
         void verifyHandleAutoTimeDetectionChangedCalled() {

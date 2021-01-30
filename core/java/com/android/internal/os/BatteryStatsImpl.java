@@ -5433,7 +5433,7 @@ public class BatteryStatsImpl extends BatteryStats {
         if (mVideoOnNesting > 0) {
             final long elapsedRealtime = mClocks.elapsedRealtime();
             final long uptime = mClocks.uptimeMillis();
-            mVideoOnNesting = 0;
+            mAudioOnNesting = 0;
             mHistoryCur.states2 &= ~HistoryItem.STATE2_VIDEO_ON_FLAG;
             if (DEBUG_HISTORY) Slog.v(TAG, "Video off to: "
                     + Integer.toHexString(mHistoryCur.states));
@@ -12736,7 +12736,7 @@ public class BatteryStatsImpl extends BatteryStats {
     }
 
     @Override
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public int getDischargeStartLevel() {
         synchronized(this) {
             return getDischargeStartLevelLocked();
@@ -12748,7 +12748,7 @@ public class BatteryStatsImpl extends BatteryStats {
     }
 
     @Override
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public int getDischargeCurrentLevel() {
         synchronized(this) {
             return getDischargeCurrentLevelLocked();

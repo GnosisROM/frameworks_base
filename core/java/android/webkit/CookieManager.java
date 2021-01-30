@@ -154,7 +154,6 @@ public abstract class CookieManager {
      *               HTTP request header
      * @hide Used by Browser and by WebViewProvider implementations.
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     @SystemApi
     public abstract String getCookie(String url, boolean privateBrowsing);
 
@@ -231,7 +230,6 @@ public abstract class CookieManager {
      * @param privateBrowsing whether to use the private browsing cookie jar
      * @hide Used by Browser and WebViewProvider implementations.
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     @SystemApi
     public abstract boolean hasCookies(boolean privateBrowsing);
 
@@ -266,7 +264,6 @@ public abstract class CookieManager {
      *
      * @hide Only for use by WebViewProvider implementations
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     @SystemApi
     protected abstract boolean allowFileSchemeCookiesImpl();
 
@@ -302,7 +299,6 @@ public abstract class CookieManager {
      *
      * @hide Only for use by WebViewProvider implementations
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     @SystemApi
     protected abstract void setAcceptFileSchemeCookiesImpl(boolean accept);
 }

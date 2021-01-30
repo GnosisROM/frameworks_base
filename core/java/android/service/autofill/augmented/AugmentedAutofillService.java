@@ -25,6 +25,7 @@ import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -69,6 +70,7 @@ import java.util.List;
  * @hide
  */
 @SystemApi
+@TestApi
 public abstract class AugmentedAutofillService extends Service {
 
     private static final String TAG = AugmentedAutofillService.class.getSimpleName();
@@ -202,7 +204,7 @@ public abstract class AugmentedAutofillService extends Service {
      * <ul>
      *   <li>Service does not recognize what should be autofilled.
      *   <li>Service does not have data to fill the request.
-     *   <li>Service denylisted that app (or activity) for autofill.
+     *   <li>Service blacklisted that app (or activity) for autofill.
      *   <li>App disabled itself for autofill.
      * </ul>
      *

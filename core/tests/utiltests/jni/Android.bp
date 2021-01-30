@@ -14,7 +14,6 @@
 
 cc_library_shared {
     name: "libmemoryintarraytest",
-    header_libs: ["jni_headers"],
     shared_libs: [
         "libcutils",
     ],

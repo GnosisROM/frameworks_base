@@ -19,7 +19,6 @@ package com.android.internal.util;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.compat.annotation.UnsupportedAppUsage;
-import android.os.Build;
 import android.util.ArraySet;
 
 import dalvik.system.VMRuntime;
@@ -57,7 +56,7 @@ public class ArrayUtils {
         return (char[])VMRuntime.getRuntime().newUnpaddedArray(char.class, minLen);
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static int[] newUnpaddedIntArray(int minLen) {
         return (int[])VMRuntime.getRuntime().newUnpaddedArray(int.class, minLen);
     }
@@ -78,7 +77,7 @@ public class ArrayUtils {
         return (Object[])VMRuntime.getRuntime().newUnpaddedArray(Object.class, minLen);
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @SuppressWarnings("unchecked")
     public static <T> T[] newUnpaddedArray(Class<T> clazz, int minLen) {
         return (T[])VMRuntime.getRuntime().newUnpaddedArray(clazz, minLen);
@@ -383,7 +382,7 @@ public class ArrayUtils {
      * Adds value to given array if not already present, providing set-like
      * behavior.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @SuppressWarnings("unchecked")
     public static @NonNull <T> T[] appendElement(Class<T> kind, @Nullable T[] array, T element) {
         return appendElement(kind, array, element, false);
@@ -413,7 +412,7 @@ public class ArrayUtils {
     /**
      * Removes value from given array if present, providing set-like behavior.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @SuppressWarnings("unchecked")
     public static @Nullable <T> T[] removeElement(Class<T> kind, @Nullable T[] array, T element) {
         if (array != null) {
@@ -730,25 +729,6 @@ public class ArrayUtils {
     public static void checkBounds(int len, int index) {
         if (index < 0 || len <= index) {
             throw new ArrayIndexOutOfBoundsException("length=" + len + "; index=" + index);
-        }
-    }
-
-    /**
-     * Throws {@link ArrayIndexOutOfBoundsException} if the range is out of bounds.
-     * @param len length of the array. Must be non-negative
-     * @param offset start index of the range. Must be non-negative
-     * @param count length of the range. Must be non-negative
-     * @throws ArrayIndexOutOfBoundsException if the range from {@code offset} with length
-     * {@code count} is out of bounds of the array
-     */
-    public static void throwsIfOutOfBounds(int len, int offset, int count) {
-        if (len < 0) {
-            throw new ArrayIndexOutOfBoundsException("Negative length: " + len);
-        }
-
-        if ((offset | count) < 0 || offset > len - count) {
-            throw new ArrayIndexOutOfBoundsException(
-                    "length=" + len + "; regionStart=" + offset + "; regionLength=" + count);
         }
     }
 

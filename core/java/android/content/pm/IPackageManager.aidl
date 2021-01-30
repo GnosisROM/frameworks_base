@@ -64,7 +64,7 @@ import android.content.IntentSender;
  */
 interface IPackageManager {
     void checkPackageStartable(String packageName, int userId);
-    @UnsupportedAppUsage(trackingBug = 171933273)
+    @UnsupportedAppUsage
     boolean isPackageAvailable(String packageName, int userId);
     @UnsupportedAppUsage
     PackageInfo getPackageInfo(String packageName, int flags, int userId);
@@ -132,7 +132,7 @@ interface IPackageManager {
 
     boolean canForwardTo(in Intent intent, String resolvedType, int sourceUserId, int targetUserId);
 
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     ParceledListSlice queryIntentActivities(in Intent intent,
             String resolvedType, int flags, int userId);
 
@@ -177,7 +177,7 @@ interface IPackageManager {
      * limit that kicks in when flags are included that bloat up the data
      * returned.
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     ParceledListSlice getInstalledApplications(int flags, int userId);
 
     /**
@@ -198,7 +198,7 @@ interface IPackageManager {
      * @param outInfo Filled in with a list of the ProviderInfo for each
      *                name in 'outNames'.
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void querySyncProviders(inout List<String> outNames,
             inout List<ProviderInfo> outInfo);
 
@@ -209,7 +209,7 @@ interface IPackageManager {
     InstrumentationInfo getInstrumentationInfo(
             in ComponentName className, int flags);
 
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     ParceledListSlice queryInstrumentation(
             String targetPackage, int flags);
 
@@ -645,7 +645,7 @@ interface IPackageManager {
     void setSystemAppHiddenUntilInstalled(String packageName, boolean hidden);
     boolean setSystemAppInstallState(String packageName, boolean installed, int userId);
 
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     IPackageInstaller getPackageInstaller();
 
     boolean setBlockUninstallForUser(String packageName, boolean blockUninstall, int userId);
@@ -657,7 +657,7 @@ interface IPackageManager {
     boolean isPackageSignedByKeySet(String packageName, in KeySet ks);
     boolean isPackageSignedByKeySetExactly(String packageName, in KeySet ks);
 
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     String getPermissionControllerPackageName();
 
     ParceledListSlice getInstantApps(int userId);
@@ -674,9 +674,9 @@ interface IPackageManager {
      */
     void setUpdateAvailable(String packageName, boolean updateAvaialble);
 
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     String getServicesSystemSharedLibraryPackageName();
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     String getSharedSystemSharedLibraryPackageName();
 
     ChangedPackages getChangedPackages(int sequenceNumber, int userId);
@@ -752,7 +752,7 @@ interface IPackageManager {
     //------------------------------------------------------------------------
     // We need to keep these in IPackageManager for app compatibility
     //------------------------------------------------------------------------
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     String[] getAppOpPermissionPackages(String permissionName);
 
     @UnsupportedAppUsage
@@ -767,10 +767,10 @@ interface IPackageManager {
     @UnsupportedAppUsage
     void removePermission(String name);
 
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     int checkPermission(String permName, String pkgName, int userId);
 
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void grantRuntimePermission(String packageName, String permissionName, int userId);
 
     //------------------------------------------------------------------------

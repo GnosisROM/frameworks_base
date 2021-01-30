@@ -29,6 +29,7 @@ import android.net.ConnectivityManager;
 import android.net.ConnectivityManager.NetworkCallback;
 import android.net.IConnectivityManager;
 import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.os.Handler;
 import android.os.RemoteException;
@@ -65,8 +66,12 @@ public class SecurityControllerImpl extends CurrentUserTracker implements Securi
     private static final String TAG = "SecurityController";
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
 
-    private static final NetworkRequest REQUEST =
-            new NetworkRequest.Builder().clearCapabilities().build();
+    private static final NetworkRequest REQUEST = new NetworkRequest.Builder()
+            .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+            .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+            .removeCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED)
+            .setUids(null)
+            .build();
     private static final int NO_NETWORK = -1;
 
     private static final String VPN_BRANDED_META_DATA = "com.android.systemui.IS_BRANDED";

@@ -20,6 +20,7 @@ import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.telephony.ims.ImsUtListener;
@@ -39,6 +40,7 @@ import java.lang.annotation.RetentionPolicy;
 // DO NOT remove or change the existing APIs, only add new ones to this Base implementation or you
 // will break other implementations of ImsUt maintained by other ImsServices.
 @SystemApi
+@TestApi
 public class ImsUtImplBase {
     /**
      * Bar all incoming calls. (See 3GPP TS 24.611)

@@ -20,6 +20,7 @@ import android.annotation.FloatRange;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.MathUtils;
@@ -43,6 +44,7 @@ import java.io.IOException;
  * @hide
  */
 @SystemApi
+@TestApi
 public final class BrightnessCorrection implements Parcelable {
 
     private static final int SCALE_AND_TRANSLATE_LOG = 1;

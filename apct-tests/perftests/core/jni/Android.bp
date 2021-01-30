@@ -10,5 +10,4 @@ cc_library_shared {
         "-Wunused",
         "-Wunreachable-code",
     ],
-    header_libs: ["jni_headers"],
 }

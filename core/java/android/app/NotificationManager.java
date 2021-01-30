@@ -801,8 +801,8 @@ public class NotificationManager {
      *
      * <p>The name and description should only be changed if the locale changes
      * or in response to the user renaming this channel. For example, if a user has a channel
-     * named 'Messages' and the user changes their locale, this channel's name should be updated
-     * with the translation of 'Messages' in the new locale.
+     * named 'John Doe' that represents messages from a 'John Doe', and 'John Doe' changes his name
+     * to 'John Smith,' the channel can be renamed to match.
      *
      * <p>The importance of an existing channel will only be changed if the new importance is lower
      * than the current value and the user has not altered any settings on this channel.
@@ -1019,7 +1019,7 @@ public class NotificationManager {
     /**
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public ZenModeConfig getZenModeConfig() {
         INotificationManager service = getService();
         try {
@@ -1337,6 +1337,7 @@ public class NotificationManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     public boolean isNotificationAssistantAccessGranted(@NonNull ComponentName assistant) {
         INotificationManager service = getService();
         try {
@@ -1372,6 +1373,7 @@ public class NotificationManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     public @NonNull @Adjustment.Keys List<String> getAllowedAssistantAdjustments() {
         INotificationManager service = getService();
         try {
@@ -1504,6 +1506,7 @@ public class NotificationManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     public void setNotificationAssistantAccessGranted(@Nullable ComponentName assistant,
             boolean granted) {
         INotificationManager service = getService();
@@ -1526,6 +1529,7 @@ public class NotificationManager {
 
     /** @hide */
     @SystemApi
+    @TestApi
     public @Nullable ComponentName getAllowedNotificationAssistant() {
         INotificationManager service = getService();
         try {

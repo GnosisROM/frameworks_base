@@ -20,6 +20,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.content.ComponentName;
 import android.content.Context;
@@ -847,6 +848,7 @@ public class BackupManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(android.Manifest.permission.BACKUP)
     public Intent getConfigurationIntent(String transportName) {
         checkServiceBinder();
@@ -868,6 +870,7 @@ public class BackupManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(android.Manifest.permission.BACKUP)
     public String getDestinationString(String transportName) {
         checkServiceBinder();
@@ -889,6 +892,7 @@ public class BackupManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(android.Manifest.permission.BACKUP)
     public Intent getDataManagementIntent(String transportName) {
         checkServiceBinder();
@@ -914,6 +918,7 @@ public class BackupManager {
      */
     @Deprecated
     @SystemApi
+    @TestApi
     @RequiresPermission(android.Manifest.permission.BACKUP)
     @Nullable
     public String getDataManagementLabel(@NonNull String transportName) {
@@ -930,6 +935,7 @@ public class BackupManager {
      * @hide
      */
     @SystemApi
+    @TestApi
     @RequiresPermission(android.Manifest.permission.BACKUP)
     @Nullable
     public CharSequence getDataManagementIntentLabel(@NonNull String transportName) {

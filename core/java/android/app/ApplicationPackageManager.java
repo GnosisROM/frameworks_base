@@ -1158,7 +1158,7 @@ public class ApplicationPackageManager extends PackageManager {
         }
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @Override
     public boolean setInstantAppCookie(@NonNull byte[] cookie) {
         try {
@@ -2276,7 +2276,7 @@ public class ApplicationPackageManager extends PackageManager {
     }
 
     @Override
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public @Nullable VolumeInfo getPackageCurrentVolume(ApplicationInfo app) {
         final StorageManager storage = mContext.getSystemService(StorageManager.class);
         return getPackageCurrentVolume(app, storage);

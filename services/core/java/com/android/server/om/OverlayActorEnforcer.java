@@ -45,7 +45,7 @@ public class OverlayActorEnforcer {
     // By default, the reason is not logged to prevent leaks of why it failed
     private static final boolean DEBUG_REASON = false;
 
-    private final PackageManagerHelper mPackageManager;
+    private final OverlayableInfoCallback mOverlayableCallback;
 
     /**
      * @return nullable actor result with {@link ActorState} failure status
@@ -79,8 +79,8 @@ public class OverlayActorEnforcer {
         return Pair.create(packageName, ActorState.ALLOWED);
     }
 
-    public OverlayActorEnforcer(@NonNull PackageManagerHelper packageManager) {
-        mPackageManager = packageManager;
+    public OverlayActorEnforcer(@NonNull OverlayableInfoCallback overlayableCallback) {
+        mOverlayableCallback = overlayableCallback;
     }
 
     void enforceActor(@NonNull OverlayInfo overlayInfo, @NonNull String methodName,
@@ -110,7 +110,7 @@ public class OverlayActorEnforcer {
                 return ActorState.ALLOWED;
         }
 
-        String[] callingPackageNames = mPackageManager.getPackagesForUid(callingUid);
+        String[] callingPackageNames = mOverlayableCallback.getPackagesForUid(callingUid);
         if (ArrayUtils.isEmpty(callingPackageNames)) {
             return ActorState.NO_PACKAGES_FOR_UID;
         }
@@ -125,12 +125,12 @@ public class OverlayActorEnforcer {
 
         if (TextUtils.isEmpty(targetOverlayableName)) {
             try {
-                if (mPackageManager.doesTargetDefineOverlayable(targetPackageName, userId)) {
+                if (mOverlayableCallback.doesTargetDefineOverlayable(targetPackageName, userId)) {
                     return ActorState.MISSING_TARGET_OVERLAYABLE_NAME;
                 } else {
                     // If there's no overlayable defined, fallback to the legacy permission check
                     try {
-                        mPackageManager.enforcePermission(
+                        mOverlayableCallback.enforcePermission(
                                 android.Manifest.permission.CHANGE_OVERLAY_PACKAGES, methodName);
 
                         // If the previous method didn't throw, check passed
@@ -146,7 +146,7 @@ public class OverlayActorEnforcer {
 
         OverlayableInfo targetOverlayable;
         try {
-            targetOverlayable = mPackageManager.getOverlayableForTarget(targetPackageName,
+            targetOverlayable = mOverlayableCallback.getOverlayableForTarget(targetPackageName,
                     targetOverlayableName, userId);
         } catch (IOException e) {
             return ActorState.UNABLE_TO_GET_TARGET;
@@ -160,7 +160,7 @@ public class OverlayActorEnforcer {
         if (TextUtils.isEmpty(actor)) {
             // If there's no actor defined, fallback to the legacy permission check
             try {
-                mPackageManager.enforcePermission(
+                mOverlayableCallback.enforcePermission(
                         android.Manifest.permission.CHANGE_OVERLAY_PACKAGES, methodName);
 
                 // If the previous method didn't throw, check passed
@@ -170,7 +170,7 @@ public class OverlayActorEnforcer {
             }
         }
 
-        Map<String, Map<String, String>> namedActors = mPackageManager.getNamedActors();
+        Map<String, Map<String, String>> namedActors = mOverlayableCallback.getNamedActors();
         Pair<String, ActorState> actorUriPair = getPackageNameForActor(actor, namedActors);
         ActorState actorUriState = actorUriPair.second;
         if (actorUriState != ActorState.ALLOWED) {
@@ -178,7 +178,7 @@ public class OverlayActorEnforcer {
         }
 
         String packageName = actorUriPair.first;
-        PackageInfo packageInfo = mPackageManager.getPackageInfo(packageName, userId);
+        PackageInfo packageInfo = mOverlayableCallback.getPackageInfo(packageName, userId);
         if (packageInfo == null) {
             return ActorState.MISSING_APP_INFO;
         }

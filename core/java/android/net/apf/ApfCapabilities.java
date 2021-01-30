@@ -19,6 +19,7 @@ package android.net.apf;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.content.res.Resources;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -35,6 +36,7 @@ import com.android.internal.R;
  * @hide
  */
 @SystemApi
+@TestApi
 public final class ApfCapabilities implements Parcelable {
     /**
      * Version of APF instruction set supported for packet filtering. 0 indicates no support for
@@ -125,7 +127,7 @@ public final class ApfCapabilities implements Parcelable {
     }
 
     /**
-     * @return An array of denylisted EtherType, packets with EtherTypes within it will be dropped.
+     * @return An array of blacklisted EtherType, packets with EtherTypes within it will be dropped.
      */
     public static @NonNull int[] getApfEtherTypeBlackList() {
         return Resources.getSystem().getIntArray(R.array.config_apfEthTypeBlackList);

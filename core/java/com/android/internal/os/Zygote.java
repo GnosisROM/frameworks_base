@@ -24,6 +24,8 @@ import android.content.pm.ApplicationInfo;
 import android.net.Credentials;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
+import android.net.NetworkUtils;
+import android.os.Build;
 import android.os.FactoryTest;
 import android.os.IVold;
 import android.os.Process;
@@ -33,8 +35,6 @@ import android.provider.DeviceConfig;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.util.Log;
-
-import com.android.internal.net.NetworkUtilsInternal;
 
 import dalvik.annotation.optimization.FastNative;
 import dalvik.system.ZygoteHooks;
@@ -47,6 +47,7 @@ import java.io.DataOutputStream;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 
 /** @hide */
 public final class Zygote {
@@ -207,7 +208,7 @@ public final class Zygote {
     /** List of packages with the same uid, and its app data info: volume uuid and inode. */
     public static final String PKG_DATA_INFO_MAP = "--pkg-data-info-map";
 
-    /** List of allowlisted packages and its app data info: volume uuid and inode. */
+    /** List of whitelisted packages and its app data info: volume uuid and inode. */
     public static final String WHITELISTED_DATA_INFO_MAP = "--whitelisted-data-info-map";
 
     /** Bind mount app storage dirs to lower fs not via fuse */
@@ -286,6 +287,9 @@ public final class Zygote {
      */
     public static final String USAP_POOL_SECONDARY_SOCKET_NAME = "usap_pool_secondary";
 
+    private static final boolean PRODUCT_NEEDS_MODEL_EDIT =
+            SystemProperties.getBoolean("ro.product.needs_model_edit", false);
+
     private Zygote() {}
 
     private static boolean containsInetGid(int[] gids) {
@@ -328,7 +332,7 @@ public final class Zygote {
      * @param isTopApp true if the process is for top (high priority) application.
      * @param pkgDataInfoList A list that stores related packages and its app data
      * info: volume uuid and inode.
-     * @param whitelistedDataInfoList Like pkgDataInfoList, but it's for allowlisted apps.
+     * @param whitelistedDataInfoList Like pkgDataInfoList, but it's for whitelisted apps.
      * @param bindMountAppDataDirs  True if the zygote needs to mount data dirs.
      * @param bindMountAppStorageDirs  True if the zygote needs to mount storage dirs.
      *
@@ -353,7 +357,7 @@ public final class Zygote {
 
             // If no GIDs were specified, don't make any permissions changes based on groups.
             if (gids != null && gids.length > 0) {
-                NetworkUtilsInternal.setAllowNetworkingForProcess(containsInetGid(gids));
+                NetworkUtils.setAllowNetworkingForProcess(containsInetGid(gids));
             }
         }
 
@@ -396,7 +400,7 @@ public final class Zygote {
      * volume uuid and CE dir inode. For example, pkgDataInfoList = [app_a_pkg_name,
      * app_a_data_volume_uuid, app_a_ce_inode, app_b_pkg_name, app_b_data_volume_uuid,
      * app_b_ce_inode, ...];
-     * @param whitelistedDataInfoList Like pkgDataInfoList, but it's for allowlisted apps.
+     * @param whitelistedDataInfoList Like pkgDataInfoList, but it's for whitelisted apps.
      * @param bindMountAppDataDirs  True if the zygote needs to mount data dirs.
      * @param bindMountAppStorageDirs  True if the zygote needs to mount storage dirs.
      */
@@ -787,6 +791,34 @@ public final class Zygote {
 
     private static native void nativeBoostUsapPriority();
 
+    private static void maybeSetGoogleModel(String packageName, String loggingTag) {
+        if (PRODUCT_NEEDS_MODEL_EDIT &&
+                packageName != null &&
+                packageName.startsWith("com.google.android.googlequicksearchbox")) {
+            /*
+             * This would be much prettier if we just removed "final" from the MODEL field in Build,
+             * but that requires changing the API.
+             *
+             * While this an awful hack, it's technically safe because the field was populated at
+             * runtime (in pre-fork Zygote) and it's not a primitive.
+             */
+            try {
+                // Unlock
+                Field field = Build.class.getDeclaredField("MODEL");
+                field.setAccessible(true);
+
+                // Edit
+                String newModel = "Pixel 3 XL";
+                field.set(null, newModel);
+
+                // Lock
+                field.setAccessible(false);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                Log.w(loggingTag, "Failed to set fake model name for Google", e);
+            }
+        }
+    }
+
     static void setAppProcessName(ZygoteArguments args, String loggingTag) {
         if (args.mNiceName != null) {
             Process.setArgV0(args.mNiceName);
@@ -795,6 +827,9 @@ public final class Zygote {
         } else {
             Log.w(loggingTag, "Unable to set package name.");
         }
+
+        // Modify model to defy Next-Generation Assistant in the Google app
+        maybeSetGoogleModel(args.mPackageName, loggingTag);
     }
 
     private static final String USAP_ERROR_PREFIX = "Invalid command to USAP: ";
@@ -817,9 +852,9 @@ public final class Zygote {
             throw new IllegalArgumentException(USAP_ERROR_PREFIX + "--preload-app");
         } else if (args.mStartChildZygote) {
             throw new IllegalArgumentException(USAP_ERROR_PREFIX + "--start-child-zygote");
-        } else if (args.mApiDenylistExemptions != null) {
+        } else if (args.mApiBlacklistExemptions != null) {
             throw new IllegalArgumentException(
-                    USAP_ERROR_PREFIX + "--set-api-denylist-exemptions");
+                USAP_ERROR_PREFIX + "--set-api-blacklist-exemptions");
         } else if (args.mHiddenApiAccessLogSampleRate != -1) {
             throw new IllegalArgumentException(
                     USAP_ERROR_PREFIX + "--hidden-api-log-sampling-rate=");
@@ -1091,11 +1126,6 @@ public final class Zygote {
      */
     @FastNative
     public static native int nativeParseSigChld(byte[] in, int length, int[] out);
-
-    /**
-     * Returns whether the hardware supports memory tagging (ARM MTE).
-     */
-    public static native boolean nativeSupportsMemoryTagging();
 
     /**
      * Returns whether the kernel supports tagged pointers. Present in the

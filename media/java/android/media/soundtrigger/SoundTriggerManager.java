@@ -33,7 +33,6 @@ import android.hardware.soundtrigger.SoundTrigger.KeyphraseSoundModel;
 import android.hardware.soundtrigger.SoundTrigger.ModelParamRange;
 import android.hardware.soundtrigger.SoundTrigger.RecognitionConfig;
 import android.hardware.soundtrigger.SoundTrigger.SoundModel;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
@@ -364,7 +363,7 @@ public final class SoundTriggerManager {
      * @hide
      */
     @RequiresPermission(android.Manifest.permission.MANAGE_SOUND_TRIGGER)
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public int stopRecognition(UUID soundModelId) {
         if (soundModelId == null) {
             return STATUS_ERROR;
@@ -381,7 +380,7 @@ public final class SoundTriggerManager {
      * @hide
      */
     @RequiresPermission(android.Manifest.permission.MANAGE_SOUND_TRIGGER)
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public int unloadSoundModel(UUID soundModelId) {
         if (soundModelId == null) {
             return STATUS_ERROR;

@@ -65,7 +65,7 @@ public final class CellIdentityLte extends CellIdentity {
     /**
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public CellIdentityLte() {
         super(TAG, CellInfo.TYPE_LTE, null, null, null, null);
         mCi = CellInfo.UNAVAILABLE;

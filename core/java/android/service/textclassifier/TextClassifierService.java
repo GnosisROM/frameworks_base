@@ -22,6 +22,7 @@ import android.annotation.MainThread;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
@@ -87,6 +88,7 @@ import java.util.concurrent.Executors;
  * @hide
  */
 @SystemApi
+@TestApi
 public abstract class TextClassifierService extends Service {
 
     private static final String LOG_TAG = "TextClassifierService";

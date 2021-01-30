@@ -513,19 +513,4 @@ public class HdmiDeviceInfo implements Parcelable {
                 && mDeviceId == other.mDeviceId
                 && mAdopterId == other.mAdopterId;
     }
-
-    @Override
-    public int hashCode() {
-        return java.util.Objects.hash(
-                mHdmiDeviceType,
-                mPhysicalAddress,
-                mPortId,
-                mLogicalAddress,
-                mDeviceType,
-                mVendorId,
-                mDevicePowerStatus,
-                mDisplayName,
-                mDeviceId,
-                mAdopterId);
-    }
 }

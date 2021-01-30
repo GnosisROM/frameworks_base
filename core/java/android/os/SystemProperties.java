@@ -19,6 +19,7 @@ package android.os;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.util.Log;
 import android.util.MutableInt;
@@ -51,6 +52,7 @@ import java.util.HashMap;
  * {@hide}
  */
 @SystemApi
+@TestApi
 public class SystemProperties {
     private static final String TAG = "SystemProperties";
     private static final boolean TRACK_KEY_ACCESS = false;
@@ -60,7 +62,7 @@ public class SystemProperties {
      * uses reflection to read this whenever text is selected (http://b/36095274).
      * @hide
      */
-    @UnsupportedAppUsage(trackingBug = 172649311)
+    @UnsupportedAppUsage
     public static final int PROP_NAME_MAX = Integer.MAX_VALUE;
 
     /** @hide */
@@ -144,6 +146,7 @@ public class SystemProperties {
      */
     @NonNull
     @SystemApi
+    @TestApi
     public static String get(@NonNull String key) {
         if (TRACK_KEY_ACCESS) onKeyAccess(key);
         return native_get(key);
@@ -160,6 +163,7 @@ public class SystemProperties {
      */
     @NonNull
     @SystemApi
+    @TestApi
     public static String get(@NonNull String key, @Nullable String def) {
         if (TRACK_KEY_ACCESS) onKeyAccess(key);
         return native_get(key, def);
@@ -175,6 +179,7 @@ public class SystemProperties {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static int getInt(@NonNull String key, int def) {
         if (TRACK_KEY_ACCESS) onKeyAccess(key);
         return native_get_int(key, def);
@@ -190,6 +195,7 @@ public class SystemProperties {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static long getLong(@NonNull String key, long def) {
         if (TRACK_KEY_ACCESS) onKeyAccess(key);
         return native_get_long(key, def);
@@ -210,6 +216,7 @@ public class SystemProperties {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static boolean getBoolean(@NonNull String key, boolean def) {
         if (TRACK_KEY_ACCESS) onKeyAccess(key);
         return native_get_boolean(key, def);
@@ -256,7 +263,7 @@ public class SystemProperties {
      * @param callback The {@link Runnable} that should be removed.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static void removeChangeCallback(@NonNull Runnable callback) {
         synchronized (sChangeCallbacks) {
             if (sChangeCallbacks.contains(callback)) {

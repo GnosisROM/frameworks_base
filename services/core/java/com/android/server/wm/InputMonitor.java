@@ -268,8 +268,6 @@ final class InputMonitor {
             final boolean hasFocus, final boolean hasWallpaper) {
         // Add a window to our list of input windows.
         inputWindowHandle.name = child.toString();
-        inputWindowHandle.inputApplicationHandle = child.mActivityRecord != null
-                ? child.mActivityRecord.getInputApplicationHandle(false /* update */) : null;
         flags = child.getSurfaceTouchableRegion(inputWindowHandle, flags);
         inputWindowHandle.layoutParamsFlags = flags;
         inputWindowHandle.layoutParamsType = type;
@@ -388,8 +386,15 @@ final class InputMonitor {
 
     public void setFocusedAppLw(ActivityRecord newApp) {
         // Focused app has changed.
-        mService.mInputManager.setFocusedApplication(mDisplayId,
-                newApp != null ? newApp.getInputApplicationHandle(true /* update */) : null);
+        if (newApp == null) {
+            mService.mInputManager.setFocusedApplication(mDisplayId, null);
+        } else {
+            final InputApplicationHandle handle = newApp.mInputApplicationHandle;
+            handle.name = newApp.toString();
+            handle.dispatchingTimeoutNanos = newApp.mInputDispatchingTimeoutNanos;
+
+            mService.mInputManager.setFocusedApplication(mDisplayId, handle);
+        }
     }
 
     public void pauseDispatchingLw(WindowToken window) {
@@ -522,8 +527,7 @@ final class InputMonitor {
             }
 
             if (mAddNavInputConsumerHandle) {
-                // We set the layer to z=MAX-1 so that it's always on top.
-                mNavInputConsumer.show(mInputTransaction, Integer.MAX_VALUE - 1);
+                mNavInputConsumer.show(mInputTransaction, w);
                 mAddNavInputConsumerHandle = false;
             }
 

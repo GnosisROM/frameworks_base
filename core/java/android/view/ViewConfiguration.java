@@ -254,7 +254,7 @@ public class ViewConfiguration {
     /**
      * Max distance in dips to overfling for edge effects
      */
-    private static final int OVERFLING_DISTANCE = 6;
+    private static final int OVERFLING_DISTANCE = 0;
 
     /**
      * Amount to scroll in response to a horizontal {@link MotionEvent#ACTION_SCROLL} event,
@@ -678,7 +678,7 @@ public class ViewConfiguration {
      * to a hover movement gesture.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static int getHoverTapSlop() {
         return HOVER_TAP_SLOP;
     }

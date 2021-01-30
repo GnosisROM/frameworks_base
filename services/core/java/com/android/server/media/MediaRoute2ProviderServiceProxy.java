@@ -108,8 +108,8 @@ final class MediaRoute2ProviderServiceProxy extends MediaRoute2Provider
         mLastDiscoveryPreference = discoveryPreference;
         if (mConnectionReady) {
             mActiveConnection.updateDiscoveryPreference(discoveryPreference);
+            updateBinding();
         }
-        updateBinding();
     }
 
     @Override
@@ -205,11 +205,9 @@ final class MediaRoute2ProviderServiceProxy extends MediaRoute2Provider
     }
 
     private boolean shouldBind() {
+        //TODO: Binding could be delayed until it's necessary.
         if (mRunning) {
-            // Bind when there is a discovery preference or an active route session.
-            return (mLastDiscoveryPreference != null
-                    && !mLastDiscoveryPreference.getPreferredFeatures().isEmpty())
-                    || !getSessionInfos().isEmpty();
+            return true;
         }
         return false;
     }

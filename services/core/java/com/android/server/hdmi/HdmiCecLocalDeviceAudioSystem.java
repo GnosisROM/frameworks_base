@@ -708,17 +708,17 @@ public class HdmiCecLocalDeviceAudioSystem extends HdmiCecLocalDeviceSource {
     private byte[] getSupportedShortAudioDescriptorsFromConfig(
             List<DeviceConfig> deviceConfig, @AudioCodec int[] audioFormatCodes) {
         DeviceConfig deviceConfigToUse = null;
-        String audioDeviceName = SystemProperties.get(
-                Constants.PROPERTY_SYSTEM_AUDIO_MODE_AUDIO_PORT,
-                "VX_AUDIO_DEVICE_IN_HDMI_ARC");
         for (DeviceConfig device : deviceConfig) {
-            if (device.name.equals(audioDeviceName)) {
+            // TODO(amyjojo) use PROPERTY_SYSTEM_AUDIO_MODE_AUDIO_PORT to get the audio device name
+            if (device.name.equals("VX_AUDIO_DEVICE_IN_HDMI_ARC")) {
                 deviceConfigToUse = device;
                 break;
             }
         }
         if (deviceConfigToUse == null) {
-            Slog.w(TAG, "sadConfig.xml does not have required device info for " + audioDeviceName);
+            // TODO(amyjojo) use PROPERTY_SYSTEM_AUDIO_MODE_AUDIO_PORT to get the audio device name
+            Slog.w(TAG, "sadConfig.xml does not have required device info for "
+                        + "VX_AUDIO_DEVICE_IN_HDMI_ARC");
             return new byte[0];
         }
         HashMap<Integer, byte[]> map = new HashMap<>();
@@ -901,6 +901,7 @@ public class HdmiCecLocalDeviceAudioSystem extends HdmiCecLocalDeviceSource {
 
     @ServiceThreadOnly
     void setArcStatus(boolean enabled) {
+        // TODO(shubang): add tests
         assertRunOnServiceThread();
 
         HdmiLogger.debug("Set Arc Status[old:%b new:%b]", mArcEstablished, enabled);

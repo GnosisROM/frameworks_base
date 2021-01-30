@@ -85,12 +85,6 @@ public abstract class SocketKeepalive implements AutoCloseable {
     public static final int ERROR_INVALID_SOCKET = -25;
     /** The target socket is not idle. */
     public static final int ERROR_SOCKET_NOT_IDLE = -26;
-    /**
-     * The stop reason is uninitialized. This should only be internally used as initial state
-     * of stop reason, instead of propagating to application.
-     * @hide
-     */
-    public static final int ERROR_STOP_REASON_UNINITIALIZED = -27;
 
     /** The device does not support this request. */
     public static final int ERROR_UNSUPPORTED = -30;
@@ -187,54 +181,38 @@ public abstract class SocketKeepalive implements AutoCloseable {
         mCallback = new ISocketKeepaliveCallback.Stub() {
             @Override
             public void onStarted(int slot) {
-                final long token = Binder.clearCallingIdentity();
-                try {
-                    mExecutor.execute(() -> {
-                        mSlot = slot;
-                        callback.onStarted();
-                    });
-                } finally {
-                    Binder.restoreCallingIdentity(token);
-                }
+                Binder.withCleanCallingIdentity(() ->
+                        mExecutor.execute(() -> {
+                            mSlot = slot;
+                            callback.onStarted();
+                        }));
             }
 
             @Override
             public void onStopped() {
-                final long token = Binder.clearCallingIdentity();
-                try {
-                    executor.execute(() -> {
-                        mSlot = null;
-                        callback.onStopped();
-                    });
-                } finally {
-                    Binder.restoreCallingIdentity(token);
-                }
+                Binder.withCleanCallingIdentity(() ->
+                        executor.execute(() -> {
+                            mSlot = null;
+                            callback.onStopped();
+                        }));
             }
 
             @Override
             public void onError(int error) {
-                final long token = Binder.clearCallingIdentity();
-                try {
-                    executor.execute(() -> {
-                        mSlot = null;
-                        callback.onError(error);
-                    });
-                } finally {
-                    Binder.restoreCallingIdentity(token);
-                }
+                Binder.withCleanCallingIdentity(() ->
+                        executor.execute(() -> {
+                            mSlot = null;
+                            callback.onError(error);
+                        }));
             }
 
             @Override
             public void onDataReceived() {
-                final long token = Binder.clearCallingIdentity();
-                try {
-                    executor.execute(() -> {
-                        mSlot = null;
-                        callback.onDataReceived();
-                    });
-                } finally {
-                    Binder.restoreCallingIdentity(token);
-                }
+                Binder.withCleanCallingIdentity(() ->
+                        executor.execute(() -> {
+                            mSlot = null;
+                            callback.onDataReceived();
+                        }));
             }
         };
     }

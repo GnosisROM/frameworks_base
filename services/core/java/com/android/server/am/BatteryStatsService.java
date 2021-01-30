@@ -21,14 +21,11 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.net.INetworkManagementEventObserver;
-import android.net.NetworkCapabilities;
 import android.os.BatteryStats;
 import android.os.BatteryStatsInternal;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.INetworkManagementService;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFormatException;
@@ -36,7 +33,6 @@ import android.os.PowerManager.ServiceType;
 import android.os.PowerManagerInternal;
 import android.os.PowerSaveState;
 import android.os.Process;
-import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
@@ -56,7 +52,6 @@ import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.util.Slog;
 
-import com.android.internal.annotations.GuardedBy;
 import com.android.internal.app.IBatteryStats;
 import com.android.internal.os.BatteryStatsHelper;
 import com.android.internal.os.BatteryStatsImpl;
@@ -67,7 +62,6 @@ import com.android.internal.util.DumpUtils;
 import com.android.internal.util.FrameworkStatsLog;
 import com.android.internal.util.ParseUtils;
 import com.android.server.LocalServices;
-import com.android.server.net.BaseNetworkObserver;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -114,39 +108,6 @@ public final class BatteryStatsService extends IBatteryStats.Stub
     private CharBuffer mUtf16BufferStat = CharBuffer.allocate(MAX_LOW_POWER_STATS_SIZE);
     private static final int MAX_LOW_POWER_STATS_SIZE = 4096;
 
-    @GuardedBy("mStats")
-    private int mLastPowerStateFromRadio = DataConnectionRealTimeInfo.DC_POWER_STATE_LOW;
-    @GuardedBy("mStats")
-    private int mLastPowerStateFromWifi = DataConnectionRealTimeInfo.DC_POWER_STATE_LOW;
-    private final INetworkManagementEventObserver mActivityChangeObserver =
-            new BaseNetworkObserver() {
-                @Override
-                public void interfaceClassDataActivityChanged(int transportType, boolean active,
-                        long tsNanos, int uid) {
-                    final int powerState = active
-                            ? DataConnectionRealTimeInfo.DC_POWER_STATE_HIGH
-                            : DataConnectionRealTimeInfo.DC_POWER_STATE_LOW;
-                    final long timestampNanos;
-                    if (tsNanos <= 0) {
-                        timestampNanos = SystemClock.elapsedRealtimeNanos();
-                    } else {
-                        timestampNanos = tsNanos;
-                    }
-
-                    switch (transportType) {
-                        case NetworkCapabilities.TRANSPORT_CELLULAR:
-                            noteMobileRadioPowerState(powerState, timestampNanos, uid);
-                            break;
-                        case NetworkCapabilities.TRANSPORT_WIFI:
-                            noteWifiRadioPowerState(powerState, timestampNanos, uid);
-                            break;
-                        default:
-                            Slog.d(TAG, "Received unexpected transport in "
-                                    + "interfaceClassDataActivityChanged unexpected type: "
-                                    + transportType);
-                    }
-                }
-            };
     /**
      * Replaces the information in the given rpmStats with up-to-date information.
      */
@@ -242,13 +203,6 @@ public final class BatteryStatsService extends IBatteryStats.Stub
     }
 
     public void systemServicesReady() {
-        final INetworkManagementService nms = INetworkManagementService.Stub.asInterface(
-                ServiceManager.getService(Context.NETWORKMANAGEMENT_SERVICE));
-        try {
-            nms.registerObserver(mActivityChangeObserver);
-        } catch (RemoteException e) {
-            Slog.e(TAG, "Could not register INetworkManagement event observer " + e);
-        }
         mStats.systemServicesReady(mContext);
     }
 
@@ -466,6 +420,14 @@ public final class BatteryStatsService extends IBatteryStats.Stub
     public boolean isCharging() {
         synchronized (mStats) {
             return mStats.isCharging();
+        }
+    }
+
+    public void resetStatistics() {
+        mContext.enforceCallingPermission(
+                android.Manifest.permission.RESET_BATTERY_STATS, null);
+        synchronized (mStats) {
+            mStats.resetAllStatsCmdLocked();
         }
     }
 
@@ -726,21 +688,14 @@ public final class BatteryStatsService extends IBatteryStats.Stub
 
     public void noteMobileRadioPowerState(int powerState, long timestampNs, int uid) {
         enforceCallingPermission();
-
         final boolean update;
         synchronized (mStats) {
-            // Ignore if no power state change.
-            if (mLastPowerStateFromRadio == powerState) return;
-
-            mLastPowerStateFromRadio = powerState;
             update = mStats.noteMobileRadioPowerStateLocked(powerState, timestampNs, uid);
         }
 
         if (update) {
             mWorker.scheduleSync("modem-data", BatteryExternalStatsWorker.UPDATE_RADIO);
         }
-        FrameworkStatsLog.write_non_chained(
-                FrameworkStatsLog.MOBILE_RADIO_POWER_STATE_CHANGED, uid, null, powerState);
     }
 
     public void notePhoneOn() {
@@ -914,10 +869,6 @@ public final class BatteryStatsService extends IBatteryStats.Stub
         // There was a change in WiFi power state.
         // Collect data now for the past activity.
         synchronized (mStats) {
-            // Ignore if no power state change.
-            if (mLastPowerStateFromWifi == powerState) return;
-
-            mLastPowerStateFromWifi = powerState;
             if (mStats.isOnBattery()) {
                 final String type = (powerState == DataConnectionRealTimeInfo.DC_POWER_STATE_HIGH ||
                         powerState == DataConnectionRealTimeInfo.DC_POWER_STATE_MEDIUM) ? "active"
@@ -926,8 +877,6 @@ public final class BatteryStatsService extends IBatteryStats.Stub
             }
             mStats.noteWifiRadioPowerState(powerState, tsNanos, uid);
         }
-        FrameworkStatsLog.write_non_chained(
-                FrameworkStatsLog.WIFI_RADIO_POWER_STATE_CHANGED, uid, null, powerState);
     }
 
     public void noteWifiRunning(WorkSource ws) {

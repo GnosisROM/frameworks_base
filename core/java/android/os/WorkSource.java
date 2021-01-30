@@ -98,6 +98,7 @@ public class WorkSource implements Parcelable {
      * @param uid the uid performing the work
      * @hide
      */
+    @TestApi
     @SystemApi
     public WorkSource(int uid) {
         mNum = 1;
@@ -151,6 +152,7 @@ public class WorkSource implements Parcelable {
      * Returns the number of uids in this work source.
      * @hide
      */
+    @TestApi
     @SystemApi
     public int size() {
         return mNum;
@@ -171,6 +173,7 @@ public class WorkSource implements Parcelable {
      * If {@code index} < 0 or {@code index} >= {@link #size() N}, then the behavior is undefined.
      * @hide
      */
+    @TestApi
     @SystemApi
     public int getUid(int index) {
         return mUids[index];
@@ -206,6 +209,7 @@ public class WorkSource implements Parcelable {
      * If {@code index} < 0 or {@code index} >= {@link #size() N}, then the behavior is undefined.
      * @hide
      */
+    @TestApi
     @SystemApi
     @Nullable
     public String getPackageName(int index) {
@@ -451,6 +455,7 @@ public class WorkSource implements Parcelable {
      * @hide
      */
     @SystemApi
+    @TestApi
     @NonNull
     public WorkSource withoutNames() {
         final WorkSource copy = new WorkSource(this);
@@ -577,6 +582,7 @@ public class WorkSource implements Parcelable {
      * @hide for internal use only.
      */
     @SystemApi
+    @TestApi
     public boolean isEmpty() {
         return mNum == 0 && (mChains == null || mChains.isEmpty());
     }
@@ -1127,7 +1133,7 @@ public class WorkSource implements Parcelable {
         ArrayList<WorkChain> newChains = null;
         ArrayList<WorkChain> goneChains = null;
 
-        // TODO(narayan): This is a naive O(M*N) algorithm that determines what has changed across
+        // TODO(narayan): This is a dumb O(M*N) algorithm that determines what has changed across
         // WorkSource objects. We can replace this with something smarter, for e.g by defining
         // a Comparator between WorkChains. It's unclear whether that will be more efficient if
         // the number of chains associated with a WorkSource is expected to be small

@@ -3724,7 +3724,7 @@ public class UserManagerService extends IUserManager.Stub {
     UserData putUserInfo(UserInfo userInfo) {
         final UserData userData = new UserData();
         userData.info = userInfo;
-        synchronized (mUsersLock) {
+        synchronized (mUsers) {
             mUsers.put(userInfo.id, userData);
         }
         return userData;
@@ -3732,7 +3732,7 @@ public class UserManagerService extends IUserManager.Stub {
 
     @VisibleForTesting
     void removeUserInfo(@UserIdInt int userId) {
-        synchronized (mUsersLock) {
+        synchronized (mUsers) {
             mUsers.remove(userId);
         }
     }
@@ -4052,7 +4052,7 @@ public class UserManagerService extends IUserManager.Stub {
         userFile.delete();
         updateUserIds();
         if (RELEASE_DELETED_USER_ID) {
-            synchronized (mUsersLock) {
+            synchronized (mUsers) {
                 mRemovingUserIds.delete(userId);
             }
         }
@@ -5183,9 +5183,6 @@ public class UserManagerService extends IUserManager.Stub {
                                 debugMsg + " for another profile "
                                         + targetUserId + " from " + callingUserId);
                     }
-                    Slog.w(LOG_TAG, debugMsg + " for another profile "
-                            + targetUserId + " from " + callingUserId);
-                    return false;
                 }
 
                 UserInfo targetUserInfo = getUserInfoLU(targetUserId);

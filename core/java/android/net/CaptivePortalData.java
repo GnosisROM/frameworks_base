@@ -19,6 +19,7 @@ package android.net;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -29,6 +30,7 @@ import java.util.Objects;
  * @hide
  */
 @SystemApi
+@TestApi
 public final class CaptivePortalData implements Parcelable {
     private final long mRefreshTimeMillis;
     @Nullable
@@ -39,11 +41,9 @@ public final class CaptivePortalData implements Parcelable {
     private final long mByteLimit;
     private final long mExpiryTimeMillis;
     private final boolean mCaptive;
-    private final String mVenueFriendlyName;
 
     private CaptivePortalData(long refreshTimeMillis, Uri userPortalUrl, Uri venueInfoUrl,
-            boolean isSessionExtendable, long byteLimit, long expiryTimeMillis, boolean captive,
-            String venueFriendlyName) {
+            boolean isSessionExtendable, long byteLimit, long expiryTimeMillis, boolean captive) {
         mRefreshTimeMillis = refreshTimeMillis;
         mUserPortalUrl = userPortalUrl;
         mVenueInfoUrl = venueInfoUrl;
@@ -51,12 +51,11 @@ public final class CaptivePortalData implements Parcelable {
         mByteLimit = byteLimit;
         mExpiryTimeMillis = expiryTimeMillis;
         mCaptive = captive;
-        mVenueFriendlyName = venueFriendlyName;
     }
 
     private CaptivePortalData(Parcel p) {
         this(p.readLong(), p.readParcelable(null), p.readParcelable(null), p.readBoolean(),
-                p.readLong(), p.readLong(), p.readBoolean(), p.readString());
+                p.readLong(), p.readLong(), p.readBoolean());
     }
 
     @Override
@@ -73,7 +72,6 @@ public final class CaptivePortalData implements Parcelable {
         dest.writeLong(mByteLimit);
         dest.writeLong(mExpiryTimeMillis);
         dest.writeBoolean(mCaptive);
-        dest.writeString(mVenueFriendlyName);
     }
 
     /**
@@ -87,7 +85,6 @@ public final class CaptivePortalData implements Parcelable {
         private long mBytesRemaining = -1;
         private long mExpiryTime = -1;
         private boolean mCaptive;
-        private String mVenueFriendlyName;
 
         /**
          * Create an empty builder.
@@ -105,8 +102,7 @@ public final class CaptivePortalData implements Parcelable {
                     .setSessionExtendable(data.mIsSessionExtendable)
                     .setBytesRemaining(data.mByteLimit)
                     .setExpiryTime(data.mExpiryTimeMillis)
-                    .setCaptive(data.mCaptive)
-                    .setVenueFriendlyName(data.mVenueFriendlyName);
+                    .setCaptive(data.mCaptive);
         }
 
         /**
@@ -173,22 +169,12 @@ public final class CaptivePortalData implements Parcelable {
         }
 
         /**
-         * Set the venue friendly name.
-         */
-        @NonNull
-        public Builder setVenueFriendlyName(@Nullable String venueFriendlyName) {
-            mVenueFriendlyName = venueFriendlyName;
-            return this;
-        }
-
-        /**
          * Create a new {@link CaptivePortalData}.
          */
         @NonNull
         public CaptivePortalData build() {
             return new CaptivePortalData(mRefreshTime, mUserPortalUrl, mVenueInfoUrl,
-                    mIsSessionExtendable, mBytesRemaining, mExpiryTime, mCaptive,
-                    mVenueFriendlyName);
+                    mIsSessionExtendable, mBytesRemaining, mExpiryTime, mCaptive);
         }
     }
 
@@ -248,14 +234,6 @@ public final class CaptivePortalData implements Parcelable {
         return mCaptive;
     }
 
-    /**
-     * Get the venue friendly name
-     */
-    @Nullable
-    public String getVenueFriendlyName() {
-        return mVenueFriendlyName;
-    }
-
     @NonNull
     public static final Creator<CaptivePortalData> CREATOR = new Creator<CaptivePortalData>() {
         @Override
@@ -272,7 +250,7 @@ public final class CaptivePortalData implements Parcelable {
     @Override
     public int hashCode() {
         return Objects.hash(mRefreshTimeMillis, mUserPortalUrl, mVenueInfoUrl,
-                mIsSessionExtendable, mByteLimit, mExpiryTimeMillis, mCaptive, mVenueFriendlyName);
+                mIsSessionExtendable, mByteLimit, mExpiryTimeMillis, mCaptive);
     }
 
     @Override
@@ -285,8 +263,7 @@ public final class CaptivePortalData implements Parcelable {
                 && mIsSessionExtendable == other.mIsSessionExtendable
                 && mByteLimit == other.mByteLimit
                 && mExpiryTimeMillis == other.mExpiryTimeMillis
-                && mCaptive == other.mCaptive
-                && Objects.equals(mVenueFriendlyName, other.mVenueFriendlyName);
+                && mCaptive == other.mCaptive;
     }
 
     @Override
@@ -299,7 +276,6 @@ public final class CaptivePortalData implements Parcelable {
                 + ", byteLimit: " + mByteLimit
                 + ", expiryTime: " + mExpiryTimeMillis
                 + ", captive: " + mCaptive
-                + ", venueFriendlyName: " + mVenueFriendlyName
                 + "}";
     }
 }

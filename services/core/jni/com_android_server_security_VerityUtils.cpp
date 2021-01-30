@@ -76,7 +76,7 @@ int statxForFsverity(JNIEnv *env, jobject /* clazz */, jstring filePath) {
         return -errno;
     }
 
-    // Validity check.
+    // Sanity check.
     if ((out.stx_attributes_mask & STATX_ATTR_VERITY) == 0) {
         ALOGE("Unexpected, STATX_ATTR_VERITY not supported by kernel");
         return -ENOSYS;

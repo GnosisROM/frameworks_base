@@ -22,6 +22,7 @@
 
 #include <android/log.h>
 #include <cutils/compiler.h>
+#include <jni.h>
 
 #include <string>
 

@@ -17,7 +17,6 @@
 package android.content.om;
 
 import android.content.om.OverlayInfo;
-import android.content.om.OverlayManagerTransaction;
 
 /**
  * Api for getting information about overlay packages.
@@ -38,7 +37,7 @@ interface IOverlayManager {
      *         mapped to lists of overlays; if no overlays exist for the
      *         requested user, an empty map is returned.
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     Map getAllOverlays(in int userId);
 
     /**
@@ -62,7 +61,7 @@ interface IOverlayManager {
      * @return The OverlayInfo for the overlay package; or null if no such
      *         overlay package exists.
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     OverlayInfo getOverlayInfo(in String packageName, in int userId);
 
     /**
@@ -164,18 +163,4 @@ interface IOverlayManager {
      * @param packageName The name of the overlay package whose idmap should be deleted.
      */
     void invalidateCachesForOverlay(in String packageName, in int userIs);
-
-    /**
-     * Perform a series of requests related to overlay packages. This is an
-     * atomic operation: either all requests were performed successfully and
-     * the changes were propagated to the rest of the system, or at least one
-     * request could not be performed successfully and nothing is changed and
-     * nothing is propagated to the rest of the system.
-     *
-     * @see OverlayManagerTransaction
-     *
-     * @param transaction the series of overlay related requests to perform
-     * @throws SecurityException if the transaction failed
-     */
-    void commit(in OverlayManagerTransaction transaction);
 }

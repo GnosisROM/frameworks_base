@@ -67,7 +67,6 @@ class NetworkTemplateTest {
         val caps = NetworkCapabilities().apply {
             setCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED, false)
             setCapability(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING, true)
-            setSSID(ssid)
         }
         return NetworkState(info, lp, caps, mock(Network::class.java), subscriberId, ssid)
     }

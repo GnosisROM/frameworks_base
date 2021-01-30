@@ -19,7 +19,6 @@ cc_library {
     name: "libdumpcoverage",
     srcs: ["dump_coverage.cc"],
     header_libs: [
-        "jni_headers",
         "libopenjdkjvmti_headers",
     ],
 

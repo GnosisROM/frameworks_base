@@ -74,8 +74,7 @@ public final class TelephonyPermissions {
      *   <li>return false: if the caller lacks all of these permissions and doesn't support runtime
      *       permissions. This implies that the user revoked the ability to read phone state
      *       manually (via AppOps). In this case we can't throw as it would break app compatibility,
-     *       so we return false to indicate that the calling function should return placeholder
-     *       data.
+     *       so we return false to indicate that the calling function should return dummy data.
      * </ul>
      *
      * <p>Note: for simplicity, this method always returns false for callers using legacy
@@ -120,8 +119,7 @@ public final class TelephonyPermissions {
      *   <li>return false: if the caller lacks all of these permissions and doesn't support runtime
      *       permissions. This implies that the user revoked the ability to read phone state
      *       manually (via AppOps). In this case we can't throw as it would break app compatibility,
-     *       so we return false to indicate that the calling function should return placeholder
-     *       data.
+     *       so we return false to indicate that the calling function should return dummy data.
      * </ul>
      *
      * <p>Note: for simplicity, this method always returns false for callers using legacy
@@ -227,7 +225,7 @@ public final class TelephonyPermissions {
      *   <li>return false: if the caller is targeting pre-Q and does have the READ_PHONE_STATE
      *       permission. In this case the caller would expect to have access to the device
      *       identifiers so false is returned instead of throwing a SecurityException to indicate
-     *       the calling function should return placeholder data.
+     *       the calling function should return dummy data.
      * </ul>
      */
     public static boolean checkCallingOrSelfReadDeviceIdentifiers(Context context,
@@ -251,7 +249,7 @@ public final class TelephonyPermissions {
      *   <li>return false: if the caller is targeting pre-Q and does have the READ_PHONE_STATE
      *       permission or carrier privileges. In this case the caller would expect to have access
      *       to the device identifiers so false is returned instead of throwing a SecurityException
-     *       to indicate the calling function should return placeholder data.
+     *       to indicate the calling function should return dummy data.
      * </ul>
      */
     public static boolean checkCallingOrSelfReadDeviceIdentifiers(Context context, int subId,
@@ -273,7 +271,7 @@ public final class TelephonyPermissions {
      *   <li>return false: if the caller is targeting pre-Q and does have the READ_PHONE_STATE
      *       permission. In this case the caller would expect to have access to the device
      *       identifiers so false is returned instead of throwing a SecurityException to indicate
-     *       the calling function should return placeholder data.
+     *       the calling function should return dummy data.
      * </ul>
      */
     public static boolean checkCallingOrSelfReadSubscriberIdentifiers(Context context, int subId,
@@ -297,7 +295,7 @@ public final class TelephonyPermissions {
      *   <li>return false: if the caller is targeting pre-Q and does have the READ_PHONE_STATE
      *       permission. In this case the caller would expect to have access to the device
      *       identifiers so false is returned instead of throwing a SecurityException to indicate
-     *       the calling function should return placeholder data.
+     *       the calling function should return dummy data.
      * </ul>
      */
     private static boolean checkPrivilegedReadPermissionOrCarrierPrivilegePermission(
@@ -650,24 +648,5 @@ public final class TelephonyPermissions {
         }
 
         throw new SecurityException(message + ": Only shell user can call it");
-    }
-
-    /**
-     * Returns the target SDK version number for a given package name.
-     *
-     * This call MUST be invoked before clearing the calling UID.
-     *
-     * @return target SDK if the package is found or INT_MAX.
-     */
-    public static int getTargetSdk(Context c, String packageName) {
-        try {
-            final ApplicationInfo ai = c.getPackageManager().getApplicationInfoAsUser(
-                    packageName, 0, UserHandle.getUserHandleForUid(Binder.getCallingUid()));
-            if (ai != null) return ai.targetSdkVersion;
-        } catch (PackageManager.NameNotFoundException unexpected) {
-            Log.e(LOG_TAG, "Failed to get package info for pkg="
-                    + packageName + ", uid=" + Binder.getCallingUid());
-        }
-        return Integer.MAX_VALUE;
     }
 }

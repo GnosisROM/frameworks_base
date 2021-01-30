@@ -49,7 +49,6 @@ import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.DeadObjectException;
@@ -568,7 +567,7 @@ public abstract class ContentResolver implements ContentInterface {
     public static final String MIME_TYPE_DEFAULT = ClipDescription.MIMETYPE_UNKNOWN;
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final int SYNC_ERROR_SYNC_ALREADY_IN_PROGRESS = 1;
     /** @hide */
     public static final int SYNC_ERROR_AUTHENTICATION = 2;
@@ -625,7 +624,7 @@ public abstract class ContentResolver implements ContentInterface {
     public static final int SYNC_OBSERVER_TYPE_PENDING = 1<<1;
     public static final int SYNC_OBSERVER_TYPE_ACTIVE = 1<<2;
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final int SYNC_OBSERVER_TYPE_STATUS = 1<<3;
     /** @hide */
     public static final int SYNC_OBSERVER_TYPE_ALL = 0x7fffffff;
@@ -727,7 +726,7 @@ public abstract class ContentResolver implements ContentInterface {
 
     /**
      * In addition to {@link #SYNC_EXEMPTION_PROMOTE_BUCKET}, we put the sync adapter app in the
-     * temp allowlist for 10 minutes, so that even RARE apps can run syncs right away.
+     * temp whitelist for 10 minutes, so that even RARE apps can run syncs right away.
      * @hide
      */
     public static final int SYNC_EXEMPTION_PROMOTE_BUCKET_WITH_TEMP = 2;
@@ -835,7 +834,6 @@ public abstract class ContentResolver implements ContentInterface {
     }
 
     /** @hide */
-    @SuppressWarnings("HiddenAbstractMethod")
     @UnsupportedAppUsage
     protected abstract IContentProvider acquireProvider(Context c, String name);
 
@@ -852,19 +850,15 @@ public abstract class ContentResolver implements ContentInterface {
     }
 
     /** @hide */
-    @SuppressWarnings("HiddenAbstractMethod")
     @UnsupportedAppUsage
     public abstract boolean releaseProvider(IContentProvider icp);
     /** @hide */
-    @SuppressWarnings("HiddenAbstractMethod")
     @UnsupportedAppUsage
     protected abstract IContentProvider acquireUnstableProvider(Context c, String name);
     /** @hide */
-    @SuppressWarnings("HiddenAbstractMethod")
     @UnsupportedAppUsage
     public abstract boolean releaseUnstableProvider(IContentProvider icp);
     /** @hide */
-    @SuppressWarnings("HiddenAbstractMethod")
     @UnsupportedAppUsage
     public abstract void unstableProviderDied(IContentProvider icp);
 
@@ -3390,12 +3384,12 @@ public abstract class ContentResolver implements ContentInterface {
     }
 
     /**
-     * Gets the global auto-sync setting that applies to all the providers and accounts.
+     * Gets the master auto-sync setting that applies to all the providers and accounts.
      * If this is false then the per-provider auto-sync setting is ignored.
      * <p>This method requires the caller to hold the permission
      * {@link android.Manifest.permission#READ_SYNC_SETTINGS}.
      *
-     * @return the global auto-sync setting that applies to all the providers and accounts
+     * @return the master auto-sync setting that applies to all the providers and accounts
      */
     public static boolean getMasterSyncAutomatically() {
         try {
@@ -3418,12 +3412,12 @@ public abstract class ContentResolver implements ContentInterface {
     }
 
     /**
-     * Sets the global auto-sync setting that applies to all the providers and accounts.
+     * Sets the master auto-sync setting that applies to all the providers and accounts.
      * If this is false then the per-provider auto-sync setting is ignored.
      * <p>This method requires the caller to hold the permission
      * {@link android.Manifest.permission#WRITE_SYNC_SETTINGS}.
      *
-     * @param sync the global auto-sync setting that applies to all the providers and accounts
+     * @param sync the master auto-sync setting that applies to all the providers and accounts
      */
     public static void setMasterSyncAutomatically(boolean sync) {
         setMasterSyncAutomaticallyAsUser(sync, UserHandle.myUserId());
@@ -3540,7 +3534,7 @@ public abstract class ContentResolver implements ContentInterface {
      * @see #getSyncStatus(Account, String)
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static SyncStatusInfo getSyncStatusAsUser(Account account, String authority,
             @UserIdInt int userId) {
         try {
@@ -4100,6 +4094,7 @@ public abstract class ContentResolver implements ContentInterface {
      * @hide
      */
     @SystemApi
+    @TestApi
     // We can't accept an already-opened FD here, since these methods are
     // rewriting actual filesystem paths
     @SuppressLint("StreamFiles")
@@ -4119,6 +4114,7 @@ public abstract class ContentResolver implements ContentInterface {
      * @hide
      */
     @SystemApi
+    @TestApi
     // We can't accept an already-opened FD here, since these methods are
     // rewriting actual filesystem paths
     @SuppressLint("StreamFiles")

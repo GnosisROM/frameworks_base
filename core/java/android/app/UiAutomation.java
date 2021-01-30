@@ -22,7 +22,6 @@ import android.accessibilityservice.AccessibilityService.IAccessibilityServiceCl
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.IAccessibilityServiceClient;
 import android.accessibilityservice.IAccessibilityServiceConnection;
-import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.TestApi;
@@ -61,8 +60,6 @@ import com.android.internal.util.function.pooled.PooledLambda;
 import libcore.io.IoUtils;
 
 import java.io.IOException;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -119,28 +116,6 @@ public final class UiAutomation {
     /** Rotation constant: Freeze rotation to 270 degrees . */
     public static final int ROTATION_FREEZE_270 = Surface.ROTATION_270;
 
-    @Retention(RetentionPolicy.SOURCE)
-    @IntDef(value = {
-            ConnectionState.DISCONNECTED,
-            ConnectionState.CONNECTING,
-            ConnectionState.CONNECTED,
-            ConnectionState.FAILED
-    })
-    private @interface ConnectionState {
-        /** The initial state before {@link #connect} or after {@link #disconnect} is called. */
-        int DISCONNECTED = 0;
-        /**
-         * The temporary state after {@link #connect} is called. Will transition to
-         * {@link #CONNECTED} or {@link #FAILED} depending on whether {@link #connect} succeeds or
-         * not.
-         */
-        int CONNECTING = 1;
-        /** The state when {@link #connect} has succeeded. */
-        int CONNECTED = 2;
-        /** The state when {@link #connect} has failed. */
-        int FAILED = 3;
-    }
-
     /**
      * UiAutomation supresses accessibility services by default. This flag specifies that
      * existing accessibility services should continue to run, and that new ones may start.
@@ -169,13 +144,11 @@ public final class UiAutomation {
 
     private long mLastEventTimeMillis;
 
-    private @ConnectionState int mConnectionState = ConnectionState.DISCONNECTED;
+    private boolean mIsConnecting;
 
     private boolean mIsDestroyed;
 
     private int mFlags;
-
-    private int mGenerationId = 0;
 
     /**
      * Listener for observing the {@link AccessibilityEvent} stream.
@@ -237,55 +210,32 @@ public final class UiAutomation {
     }
 
     /**
-     * Connects this UiAutomation to the accessibility introspection APIs with default flags
-     * and default timeout.
+     * Connects this UiAutomation to the accessibility introspection APIs with default flags.
      *
      * @hide
      */
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.P, trackingBug = 115609023)
     public void connect() {
-        try {
-            connectWithTimeout(0, CONNECT_TIMEOUT_MILLIS);
-        } catch (TimeoutException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Connects this UiAutomation to the accessibility introspection APIs with default timeout.
-     *
-     * @hide
-     */
-    public void connect(int flags) {
-        try {
-            connectWithTimeout(flags, CONNECT_TIMEOUT_MILLIS);
-        } catch (TimeoutException e) {
-            throw new RuntimeException(e);
-        }
+        connect(0);
     }
 
     /**
      * Connects this UiAutomation to the accessibility introspection APIs.
      *
      * @param flags Any flags to apply to the automation as it gets connected
-     * @param timeoutMillis The wait timeout in milliseconds
-     *
-     * @throws TimeoutException If not connected within the timeout
      *
      * @hide
      */
-    public void connectWithTimeout(int flags, long timeoutMillis) throws TimeoutException {
+    public void connect(int flags) {
         synchronized (mLock) {
             throwIfConnectedLocked();
-            if (mConnectionState == ConnectionState.CONNECTING) {
+            if (mIsConnecting) {
                 return;
             }
-            mConnectionState = ConnectionState.CONNECTING;
+            mIsConnecting = true;
             mRemoteCallbackThread = new HandlerThread("UiAutomation");
             mRemoteCallbackThread.start();
-            // Increment the generation since we are about to interact with a new client
-            mClient = new IAccessibilityServiceClientImpl(
-                    mRemoteCallbackThread.getLooper(), ++mGenerationId);
+            mClient = new IAccessibilityServiceClientImpl(mRemoteCallbackThread.getLooper());
         }
 
         try {
@@ -298,21 +248,24 @@ public final class UiAutomation {
 
         synchronized (mLock) {
             final long startTimeMillis = SystemClock.uptimeMillis();
-            while (true) {
-                if (mConnectionState == ConnectionState.CONNECTED) {
-                    break;
+            try {
+                while (true) {
+                    if (isConnectedLocked()) {
+                        break;
+                    }
+                    final long elapsedTimeMillis = SystemClock.uptimeMillis() - startTimeMillis;
+                    final long remainingTimeMillis = CONNECT_TIMEOUT_MILLIS - elapsedTimeMillis;
+                    if (remainingTimeMillis <= 0) {
+                        throw new RuntimeException("Error while connecting " + this);
+                    }
+                    try {
+                        mLock.wait(remainingTimeMillis);
+                    } catch (InterruptedException ie) {
+                        /* ignore */
+                    }
                 }
-                final long elapsedTimeMillis = SystemClock.uptimeMillis() - startTimeMillis;
-                final long remainingTimeMillis = timeoutMillis - elapsedTimeMillis;
-                if (remainingTimeMillis <= 0) {
-                    mConnectionState = ConnectionState.FAILED;
-                    throw new TimeoutException("Timeout while connecting " + this);
-                }
-                try {
-                    mLock.wait(remainingTimeMillis);
-                } catch (InterruptedException ie) {
-                    /* ignore */
-                }
+            } finally {
+                mIsConnecting = false;
             }
         }
     }
@@ -336,17 +289,12 @@ public final class UiAutomation {
     @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.P, trackingBug = 115609023)
     public void disconnect() {
         synchronized (mLock) {
-            if (mConnectionState == ConnectionState.CONNECTING) {
+            if (mIsConnecting) {
                 throw new IllegalStateException(
                         "Cannot call disconnect() while connecting " + this);
             }
-            if (mConnectionState == ConnectionState.DISCONNECTED) {
-                return;
-            }
-            mConnectionState = ConnectionState.DISCONNECTED;
+            throwIfNotConnectedLocked();
             mConnectionId = CONNECTION_ID_UNDEFINED;
-            // Increment the generation so we no longer interact with the existing client
-            ++mGenerationId;
         }
         try {
             // Calling out without a lock held.
@@ -1276,14 +1224,18 @@ public final class UiAutomation {
         return stringBuilder.toString();
     }
 
+    private boolean isConnectedLocked() {
+        return mConnectionId != CONNECTION_ID_UNDEFINED;
+    }
+
     private void throwIfConnectedLocked() {
-        if (mConnectionState == ConnectionState.CONNECTED) {
-            throw new IllegalStateException("UiAutomation connected, " + this);
+        if (mConnectionId != CONNECTION_ID_UNDEFINED) {
+            throw new IllegalStateException("UiAutomation not connected, " + this);
         }
     }
 
     private void throwIfNotConnectedLocked() {
-        if (mConnectionState != ConnectionState.CONNECTED) {
+        if (!isConnectedLocked()) {
             throw new IllegalStateException("UiAutomation not connected, " + this);
         }
     }
@@ -1300,25 +1252,11 @@ public final class UiAutomation {
 
     private class IAccessibilityServiceClientImpl extends IAccessibilityServiceClientWrapper {
 
-        public IAccessibilityServiceClientImpl(Looper looper, int generationId) {
+        public IAccessibilityServiceClientImpl(Looper looper) {
             super(null, looper, new Callbacks() {
-                private final int mGenerationId = generationId;
-                /**
-                 * True if UiAutomation doesn't interact with this client anymore.
-                 * Used by methods below to stop sending notifications or changing members
-                 * of {@link UiAutomation}.
-                 */
-                private boolean isGenerationChangedLocked() {
-                    return mGenerationId != UiAutomation.this.mGenerationId;
-                }
-
                 @Override
                 public void init(int connectionId, IBinder windowToken) {
                     synchronized (mLock) {
-                        if (isGenerationChangedLocked()) {
-                            return;
-                        }
-                        mConnectionState = ConnectionState.CONNECTED;
                         mConnectionId = connectionId;
                         mLock.notifyAll();
                     }
@@ -1352,9 +1290,6 @@ public final class UiAutomation {
                 public void onAccessibilityEvent(AccessibilityEvent event) {
                     final OnAccessibilityEventListener listener;
                     synchronized (mLock) {
-                        if (isGenerationChangedLocked()) {
-                            return;
-                        }
                         mLastEventTimeMillis = event.getEventTime();
                         if (mWaitingForEventDelivery) {
                             mEventQueue.add(AccessibilityEvent.obtain(event));

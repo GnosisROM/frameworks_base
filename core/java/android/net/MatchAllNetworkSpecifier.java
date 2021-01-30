@@ -43,8 +43,7 @@ public final class MatchAllNetworkSpecifier extends NetworkSpecifier implements 
     }
 
     /** @hide */
-    @Override
-    public boolean canBeSatisfiedBy(NetworkSpecifier other) {
+    public boolean satisfiedBy(NetworkSpecifier other) {
         /*
          * The method is called by a NetworkRequest to see if it is satisfied by a proposed
          * network (e.g. as offered by a network factory). Since MatchAllNetweorkSpecifier must

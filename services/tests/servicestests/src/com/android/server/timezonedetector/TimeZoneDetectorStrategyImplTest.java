@@ -98,7 +98,7 @@ public class TimeZoneDetectorStrategyImplTest {
                 .initializeAutoTimeZoneDetection(true)
                 .initializeTimeZoneSetting(ARBITRARY_TIME_ZONE_ID);
 
-        script.simulateTelephonyTimeZoneSuggestion(slotIndex1TimeZoneSuggestion)
+        script.suggestTelephonyTimeZone(slotIndex1TimeZoneSuggestion)
                 .verifyTimeZoneNotSet();
 
         // Assert internal service state.
@@ -111,7 +111,7 @@ public class TimeZoneDetectorStrategyImplTest {
         assertEquals(expectedSlotIndex1ScoredSuggestion,
                 mTimeZoneDetectorStrategy.findBestTelephonySuggestionForTests());
 
-        script.simulateTelephonyTimeZoneSuggestion(slotIndex2TimeZoneSuggestion)
+        script.suggestTelephonyTimeZone(slotIndex2TimeZoneSuggestion)
                 .verifyTimeZoneNotSet();
 
         // Assert internal service state.
@@ -144,7 +144,8 @@ public class TimeZoneDetectorStrategyImplTest {
         {
             TelephonyTimeZoneSuggestion lowQualitySuggestion =
                     testCase.createSuggestion(SLOT_INDEX1, "America/New_York");
-            script.simulateTelephonyTimeZoneSuggestion(lowQualitySuggestion)
+
+            script.suggestTelephonyTimeZone(lowQualitySuggestion)
                     .verifyTimeZoneNotSet();
 
             // Assert internal service state.
@@ -161,7 +162,7 @@ public class TimeZoneDetectorStrategyImplTest {
         {
             TelephonyTimeZoneSuggestion goodQualitySuggestion =
                     testCase2.createSuggestion(SLOT_INDEX1, "Europe/London");
-            script.simulateTelephonyTimeZoneSuggestion(goodQualitySuggestion)
+            script.suggestTelephonyTimeZone(goodQualitySuggestion)
                     .verifyTimeZoneSetAndReset(goodQualitySuggestion);
 
             // Assert internal service state.
@@ -178,7 +179,7 @@ public class TimeZoneDetectorStrategyImplTest {
         {
             TelephonyTimeZoneSuggestion lowQualitySuggestion2 =
                     testCase.createSuggestion(SLOT_INDEX1, "America/Los_Angeles");
-            script.simulateTelephonyTimeZoneSuggestion(lowQualitySuggestion2)
+            script.suggestTelephonyTimeZone(lowQualitySuggestion2)
                     .verifyTimeZoneNotSet();
 
             // Assert internal service state.
@@ -207,7 +208,7 @@ public class TimeZoneDetectorStrategyImplTest {
 
             TelephonyTimeZoneSuggestion suggestion =
                     testCase.createSuggestion(SLOT_INDEX1, "Europe/London");
-            script.simulateTelephonyTimeZoneSuggestion(suggestion);
+            script.suggestTelephonyTimeZone(suggestion);
 
             // When time zone detection is not enabled, the time zone suggestion will not be set
             // regardless of the score.
@@ -287,7 +288,7 @@ public class TimeZoneDetectorStrategyImplTest {
                 new QualifiedTelephonyTimeZoneSuggestion(
                         zoneSlotIndex1Suggestion, testCase.expectedScore);
 
-        script.simulateTelephonyTimeZoneSuggestion(zoneSlotIndex1Suggestion);
+        script.suggestTelephonyTimeZone(zoneSlotIndex1Suggestion);
         if (testCase.expectedScore >= TELEPHONY_SCORE_USAGE_THRESHOLD) {
             script.verifyTimeZoneSetAndReset(zoneSlotIndex1Suggestion);
         } else {
@@ -323,8 +324,8 @@ public class TimeZoneDetectorStrategyImplTest {
                 .initializeTimeZoneSetting(ARBITRARY_TIME_ZONE_ID)
                 // Initialize the latest suggestions as empty so we don't need to worry about nulls
                 // below for the first loop.
-                .simulateTelephonyTimeZoneSuggestion(emptySlotIndex1Suggestion)
-                .simulateTelephonyTimeZoneSuggestion(emptySlotIndex2Suggestion)
+                .suggestTelephonyTimeZone(emptySlotIndex1Suggestion)
+                .suggestTelephonyTimeZone(emptySlotIndex2Suggestion)
                 .resetState();
 
         for (SuggestionTestCase testCase : TEST_CASES) {
@@ -340,7 +341,7 @@ public class TimeZoneDetectorStrategyImplTest {
                             testCase.expectedScore);
 
             // Start the test by making a suggestion for slotIndex1.
-            script.simulateTelephonyTimeZoneSuggestion(zoneSlotIndex1Suggestion);
+            script.suggestTelephonyTimeZone(zoneSlotIndex1Suggestion);
             if (testCase.expectedScore >= TELEPHONY_SCORE_USAGE_THRESHOLD) {
                 script.verifyTimeZoneSetAndReset(zoneSlotIndex1Suggestion);
             } else {
@@ -357,7 +358,7 @@ public class TimeZoneDetectorStrategyImplTest {
 
             // SlotIndex2 then makes an alternative suggestion with an identical score. SlotIndex1's
             // suggestion should still "win" if it is above the required threshold.
-            script.simulateTelephonyTimeZoneSuggestion(zoneSlotIndex2Suggestion);
+            script.suggestTelephonyTimeZone(zoneSlotIndex2Suggestion);
             script.verifyTimeZoneNotSet();
 
             // Assert internal service state.
@@ -372,7 +373,7 @@ public class TimeZoneDetectorStrategyImplTest {
             // Withdrawing slotIndex1's suggestion should leave slotIndex2 as the new winner. Since
             // the zoneId is different, the time zone setting should be updated if the score is high
             // enough.
-            script.simulateTelephonyTimeZoneSuggestion(emptySlotIndex1Suggestion);
+            script.suggestTelephonyTimeZone(emptySlotIndex1Suggestion);
             if (testCase.expectedScore >= TELEPHONY_SCORE_USAGE_THRESHOLD) {
                 script.verifyTimeZoneSetAndReset(zoneSlotIndex2Suggestion);
             } else {
@@ -388,7 +389,7 @@ public class TimeZoneDetectorStrategyImplTest {
                     mTimeZoneDetectorStrategy.findBestTelephonySuggestionForTests());
 
             // Reset the state for the next loop.
-            script.simulateTelephonyTimeZoneSuggestion(emptySlotIndex2Suggestion)
+            script.suggestTelephonyTimeZone(emptySlotIndex2Suggestion)
                     .verifyTimeZoneNotSet();
             assertEquals(expectedEmptySlotIndex1ScoredSuggestion,
                     mTimeZoneDetectorStrategy.getLatestTelephonySuggestion(SLOT_INDEX1));
@@ -416,10 +417,10 @@ public class TimeZoneDetectorStrategyImplTest {
                 testCase.createSuggestion(SLOT_INDEX1, "America/New_York");
 
         // Initialization.
-        script.simulateTelephonyTimeZoneSuggestion(losAngelesSuggestion)
+        script.suggestTelephonyTimeZone(losAngelesSuggestion)
                 .verifyTimeZoneSetAndReset(losAngelesSuggestion);
         // Suggest it again - it should not be set because it is already set.
-        script.simulateTelephonyTimeZoneSuggestion(losAngelesSuggestion)
+        script.suggestTelephonyTimeZone(losAngelesSuggestion)
                 .verifyTimeZoneNotSet();
 
         // Toggling time zone detection should set the device time zone only if the current setting
@@ -432,7 +433,7 @@ public class TimeZoneDetectorStrategyImplTest {
         // Simulate a user turning auto detection off, a new suggestion being made while auto
         // detection is off, and the user turning it on again.
         script.autoTimeZoneDetectionEnabled(false)
-                .simulateTelephonyTimeZoneSuggestion(newYorkSuggestion)
+                .suggestTelephonyTimeZone(newYorkSuggestion)
                 .verifyTimeZoneNotSet();
         // Latest suggestion should be used.
         script.autoTimeZoneDetectionEnabled(true)
@@ -446,8 +447,7 @@ public class TimeZoneDetectorStrategyImplTest {
                 .initializeAutoTimeZoneDetection(true);
 
         // Auto time zone detection is enabled so the manual suggestion should be ignored.
-        script.simulateManualTimeZoneSuggestion(
-                createManualSuggestion("Europe/Paris"), false /* expectedResult */)
+        script.suggestManualTimeZone(createManualSuggestion("Europe/Paris"))
             .verifyTimeZoneNotSet();
     }
 
@@ -460,7 +460,7 @@ public class TimeZoneDetectorStrategyImplTest {
 
         // Auto time zone detection is disabled so the manual suggestion should be used.
         ManualTimeZoneSuggestion manualSuggestion = createManualSuggestion("Europe/Paris");
-        script.simulateManualTimeZoneSuggestion(manualSuggestion, true /* expectedResult */)
+        script.suggestManualTimeZone(manualSuggestion)
             .verifyTimeZoneSetAndReset(manualSuggestion);
     }
 
@@ -603,16 +603,14 @@ public class TimeZoneDetectorStrategyImplTest {
         /**
          * Simulates the time zone detection strategy receiving a telephony-originated suggestion.
          */
-        Script simulateTelephonyTimeZoneSuggestion(TelephonyTimeZoneSuggestion timeZoneSuggestion) {
+        Script suggestTelephonyTimeZone(TelephonyTimeZoneSuggestion timeZoneSuggestion) {
             mTimeZoneDetectorStrategy.suggestTelephonyTimeZone(timeZoneSuggestion);
             return this;
         }
 
         /** Simulates the time zone detection strategy receiving a user-originated suggestion. */
-        Script simulateManualTimeZoneSuggestion(
-                ManualTimeZoneSuggestion manualTimeZoneSuggestion, boolean expectedResult) {
-            assertEquals(expectedResult,
-                    mTimeZoneDetectorStrategy.suggestManualTimeZone(manualTimeZoneSuggestion));
+        Script suggestManualTimeZone(ManualTimeZoneSuggestion manualTimeZoneSuggestion) {
+            mTimeZoneDetectorStrategy.suggestManualTimeZone(manualTimeZoneSuggestion);
             return this;
         }
 

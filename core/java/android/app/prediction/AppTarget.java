@@ -19,6 +19,7 @@ import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.SystemApi;
+import android.annotation.TestApi;
 import android.content.pm.ShortcutInfo;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -32,6 +33,7 @@ import java.util.Objects;
  * @hide
  */
 @SystemApi
+@TestApi
 public final class AppTarget implements Parcelable {
 
     private final AppTargetId mId;
@@ -188,6 +190,7 @@ public final class AppTarget implements Parcelable {
      * @hide
      */
     @SystemApi
+    @TestApi
     public static final class Builder {
 
         @NonNull
@@ -218,6 +221,7 @@ public final class AppTarget implements Parcelable {
          * @hide
          */
         @SystemApi
+        @TestApi
         public Builder(@NonNull AppTargetId id, @NonNull String packageName,
                 @NonNull UserHandle user) {
             mId = Objects.requireNonNull(id);
@@ -231,6 +235,7 @@ public final class AppTarget implements Parcelable {
          * @hide
          */
         @SystemApi
+        @TestApi
         public Builder(@NonNull AppTargetId id, @NonNull ShortcutInfo info) {
             mId = Objects.requireNonNull(id);
             mShortcutInfo = Objects.requireNonNull(info);

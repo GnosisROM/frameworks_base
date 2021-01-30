@@ -510,7 +510,7 @@ public class NotificationManagerService extends SystemService {
 
     private static final int MY_UID = Process.myUid();
     private static final int MY_PID = Process.myPid();
-    private static final IBinder ALLOWLIST_TOKEN = new Binder();
+    private static final IBinder WHITELIST_TOKEN = new Binder();
     protected RankingHandler mRankingHandler;
     private long mLastOverRateLogTime;
     private float mMaxPackageEnqueueRate = DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE;
@@ -1706,7 +1706,7 @@ public class NotificationManagerService extends SystemService {
         super(context);
         mNotificationRecordLogger = notificationRecordLogger;
         mNotificationInstanceIdSequence = notificationInstanceIdSequence;
-        Notification.processAllowlistToken = ALLOWLIST_TOKEN;
+        Notification.processWhitelistToken = WHITELIST_TOKEN;
     }
 
     // TODO - replace these methods with new fields in the VisibleForTesting constructor
@@ -5769,21 +5769,21 @@ public class NotificationManagerService extends SystemService {
             mShortcutHelper.cacheShortcut(info, user);
         }
 
-        // temporarily allow apps to perform extra work when their pending intents are launched
+        // Whitelist pending intents.
         if (notification.allPendingIntents != null) {
             final int intentCount = notification.allPendingIntents.size();
             if (intentCount > 0) {
                 final ActivityManagerInternal am = LocalServices
                         .getService(ActivityManagerInternal.class);
                 final long duration = LocalServices.getService(
-                        DeviceIdleInternal.class).getNotificationAllowlistDuration();
+                        DeviceIdleInternal.class).getNotificationWhitelistDuration();
                 for (int i = 0; i < intentCount; i++) {
                     PendingIntent pendingIntent = notification.allPendingIntents.valueAt(i);
                     if (pendingIntent != null) {
                         am.setPendingIntentWhitelistDuration(pendingIntent.getTarget(),
-                                ALLOWLIST_TOKEN, duration);
+                                WHITELIST_TOKEN, duration);
                         am.setPendingIntentAllowBgActivityStarts(pendingIntent.getTarget(),
-                                ALLOWLIST_TOKEN, (FLAG_ACTIVITY_SENDER | FLAG_BROADCAST_SENDER
+                                WHITELIST_TOKEN, (FLAG_ACTIVITY_SENDER | FLAG_BROADCAST_SENDER
                                         | FLAG_SERVICE_SENDER));
                     }
                 }
@@ -6973,15 +6973,11 @@ public class NotificationManagerService extends SystemService {
         if (record.getSbn().isGroup() && record.getNotification().suppressAlertingDueToGrouping()) {
             return false;
         }
-        // not if in call
-        if (isInCall()) {
+        // not if in call or the screen's on
+        if (isInCall() || mScreenOn) {
             return false;
         }
-        // check current user
-        if (!isNotificationForCurrentUser(record)) {
-            return false;
-        }
-        // Light, but only when the screen is off
+
         return true;
     }
 
@@ -7638,7 +7634,7 @@ public class NotificationManagerService extends SystemService {
                     // make sure deleteIntent cannot be used to start activities from background
                     LocalServices.getService(ActivityManagerInternal.class)
                             .clearPendingIntentAllowBgActivityStarts(deleteIntent.getTarget(),
-                            ALLOWLIST_TOKEN);
+                            WHITELIST_TOKEN);
                     deleteIntent.send();
                 } catch (PendingIntent.CanceledException ex) {
                     // do nothing - there's no relevant way to recover, and

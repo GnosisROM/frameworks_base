@@ -29,11 +29,12 @@ import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.telephony.PhoneStateListener;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
-import android.util.Log;
+import android.util.Slog;
 
 import com.android.internal.R;
 import com.android.internal.annotations.VisibleForTesting;
@@ -113,8 +114,8 @@ public class MultinetworkPolicyTracker {
 
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
-        mContext.registerReceiverForAllUsers(mBroadcastReceiver, intentFilter,
-                null /* broadcastPermission */, mHandler);
+        mContext.registerReceiverAsUser(
+                mBroadcastReceiver, UserHandle.ALL, intentFilter, null, mHandler);
 
         reevaluate();
     }
@@ -203,13 +204,13 @@ public class MultinetworkPolicyTracker {
 
         @Override
         public void onChange(boolean selfChange) {
-            Log.wtf(TAG, "Should never be reached.");
+            Slog.wtf(TAG, "Should never be reached.");
         }
 
         @Override
         public void onChange(boolean selfChange, Uri uri) {
             if (!mSettingsUris.contains(uri)) {
-                Log.wtf(TAG, "Unexpected settings observation: " + uri);
+                Slog.wtf(TAG, "Unexpected settings observation: " + uri);
             }
             reevaluate();
         }

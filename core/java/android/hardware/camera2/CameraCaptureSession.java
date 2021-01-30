@@ -188,7 +188,6 @@ public abstract class CameraCaptureSession implements AutoCloseable {
      *
      * @hide
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract void prepare(int maxCount, @NonNull Surface surface)
             throws CameraAccessException;
 
@@ -228,7 +227,6 @@ public abstract class CameraCaptureSession implements AutoCloseable {
      *
      * @hide
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract void tearDown(@NonNull Surface surface) throws CameraAccessException;
 
     /**

@@ -89,7 +89,6 @@ import android.os.storage.StorageManager;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.provider.Settings.SettingNotFoundException;
-import android.security.Authorization;
 import android.security.KeyStore;
 import android.security.keystore.AndroidKeyStoreProvider;
 import android.security.keystore.KeyProperties;
@@ -156,7 +155,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -264,13 +262,7 @@ public class LockSettingsService extends ILockSettings.Stub {
 
         @Override
         public void onStart() {
-            Optional<Boolean> keystore2_enabled =
-                    android.sysprop.Keystore2Properties.keystore2_enabled();
-            if (keystore2_enabled.isPresent() && keystore2_enabled.get()) {
-                android.security.keystore2.AndroidKeyStoreProvider.install();
-            } else {
-                AndroidKeyStoreProvider.install();
-            }
+            AndroidKeyStoreProvider.install();
             mLockSettingsService = new LockSettingsService(getContext());
             publishBinderService("lock_settings", mLockSettingsService);
         }
@@ -551,8 +543,7 @@ public class LockSettingsService extends ILockSettings.Stub {
 
         public @NonNull ManagedProfilePasswordCache getManagedProfilePasswordCache() {
             try {
-                java.security.KeyStore ks = java.security.KeyStore.getInstance(
-                        SyntheticPasswordCrypto.androidKeystoreProviderName());
+                java.security.KeyStore ks = java.security.KeyStore.getInstance("AndroidKeyStore");
                 ks.load(null);
                 return new ManagedProfilePasswordCache(ks, getUserManager());
             } catch (Exception e) {
@@ -1273,7 +1264,6 @@ public class LockSettingsService extends ILockSettings.Stub {
 
     private void unlockKeystore(byte[] password, int userHandle) {
         if (DEBUG) Slog.v(TAG, "Unlock keystore for user: " + userHandle);
-        new Authorization().onLockScreenEvent(false, userHandle, password);
         // TODO(b/120484642): Update keystore to accept byte[] passwords
         String passwordString = password == null ? null : new String(password);
         final KeyStore ks = KeyStore.getInstance();
@@ -1295,8 +1285,7 @@ public class LockSettingsService extends ILockSettings.Stub {
         byte[] encryptedPassword = Arrays.copyOfRange(storedData, PROFILE_KEY_IV_SIZE,
                 storedData.length);
         byte[] decryptionResult;
-        java.security.KeyStore keyStore = java.security.KeyStore.getInstance(
-                SyntheticPasswordCrypto.androidKeystoreProviderName());
+        java.security.KeyStore keyStore = java.security.KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
         SecretKey decryptionKey = (SecretKey) keyStore.getKey(
                 LockPatternUtils.PROFILE_KEY_NAME_DECRYPT + userId, null);
@@ -1755,8 +1744,7 @@ public class LockSettingsService extends ILockSettings.Stub {
             KeyGenerator keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES);
             keyGenerator.init(new SecureRandom());
             SecretKey secretKey = keyGenerator.generateKey();
-            java.security.KeyStore keyStore = java.security.KeyStore.getInstance(
-                    SyntheticPasswordCrypto.androidKeystoreProviderName());
+            java.security.KeyStore keyStore = java.security.KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
             try {
                 keyStore.setEntry(
@@ -2312,8 +2300,7 @@ public class LockSettingsService extends ILockSettings.Stub {
     private void removeKeystoreProfileKey(int targetUserId) {
         Slog.i(TAG, "Remove keystore profile key for user: " + targetUserId);
         try {
-            java.security.KeyStore keyStore = java.security.KeyStore.getInstance(
-                    SyntheticPasswordCrypto.androidKeystoreProviderName());
+            java.security.KeyStore keyStore = java.security.KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
             keyStore.deleteEntry(LockPatternUtils.PROFILE_KEY_NAME_ENCRYPT + targetUserId);
             keyStore.deleteEntry(LockPatternUtils.PROFILE_KEY_NAME_DECRYPT + targetUserId);
@@ -2604,11 +2591,11 @@ public class LockSettingsService extends ILockSettings.Stub {
      *     make it consistent with current behaviour. It also allows ActivityManager to call
      *     unlockUser() with empty secret.
      * 3. Once a user is migrated to have synthetic password, its value will never change, no matter
-     *     whether the user changes their lockscreen PIN or clear/reset it. When the user clears its
+     *     whether the user changes his lockscreen PIN or clear/reset it. When the user clears its
      *     lockscreen PIN, we still maintain the existing synthetic password in a password blob
      *     protected by a default PIN.
      * 4. The user SID is linked with synthetic password, but its cleared/re-created when the user
-     *     clears/re-creates their lockscreen PIN.
+     *     clears/re-creates his lockscreen PIN.
      *
      *
      * Different cases of calling this method:

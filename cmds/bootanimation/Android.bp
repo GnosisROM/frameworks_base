@@ -28,8 +28,6 @@ cc_binary {
     name: "bootanimation",
     defaults: ["bootanimation_defaults"],
 
-    header_libs: ["jni_headers"],
-
     shared_libs: [
         "libOpenSLES",
         "libbootanimation",

@@ -83,16 +83,15 @@ public interface StatusBarIconController {
     public void removeIcon(String slot, int tag);
     public void removeAllIconsForSlot(String slot);
 
-    // TODO: See if we can rename this tunable name.
-    String ICON_HIDE_LIST = "icon_blacklist";
+    public static final String ICON_BLACKLIST = "icon_blacklist";
 
-    /** Reads the default hide list from config value unless hideListStr is provided. */
-    static ArraySet<String> getIconHideList(Context context, String hideListStr) {
+    /** Reads the default blacklist from config value unless blacklistStr is provided. */
+    static ArraySet<String> getIconBlacklist(Context context, String blackListStr) {
         ArraySet<String> ret = new ArraySet<>();
-        String[] hideList = hideListStr == null
+        String[] blacklist = blackListStr == null
             ? context.getResources().getStringArray(R.array.config_statusBarIconBlackList)
-            : hideListStr.split(",");
-        for (String slot : hideList) {
+            : blackListStr.split(",");
+        for (String slot : blacklist) {
             if (!TextUtils.isEmpty(slot)) {
                 ret.add(slot);
             }

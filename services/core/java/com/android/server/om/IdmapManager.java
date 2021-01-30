@@ -27,7 +27,6 @@ import android.content.pm.PackageInfo;
 import android.os.Build.VERSION_CODES;
 import android.os.OverlayablePolicy;
 import android.os.SystemProperties;
-import android.text.TextUtils;
 import android.util.Slog;
 
 import java.io.IOException;
@@ -54,20 +53,11 @@ final class IdmapManager {
     }
 
     private final IdmapDaemon mIdmapDaemon;
-    private final PackageManagerHelper mPackageManager;
+    private final OverlayableInfoCallback mOverlayableCallback;
 
-    /**
-     * Package name of the reference package defined in 'overlay-config-signature' tag of
-     * SystemConfig or empty String if tag not defined. This package is vetted on scan by
-     * PackageManagerService that it's a system package and is used to check if overlay matches
-     * its signature in order to fulfill the config_signature policy.
-     */
-    private final String mConfigSignaturePackage;
-
-    IdmapManager(final IdmapDaemon idmapDaemon, final PackageManagerHelper packageManager) {
-        mPackageManager = packageManager;
+    IdmapManager(final IdmapDaemon idmapDaemon, final OverlayableInfoCallback verifyCallback) {
+        mOverlayableCallback = verifyCallback;
         mIdmapDaemon = idmapDaemon;
-        mConfigSignaturePackage = packageManager.getConfigSignaturePackage();
     }
 
     /**
@@ -149,7 +139,7 @@ final class IdmapManager {
         int fulfilledPolicies = OverlayablePolicy.PUBLIC;
 
         // Overlay matches target signature
-        if (mPackageManager.signaturesMatching(targetPackage.packageName,
+        if (mOverlayableCallback.signaturesMatching(targetPackage.packageName,
                 overlayPackage.packageName, userId)) {
             fulfilledPolicies |= OverlayablePolicy.SIGNATURE;
         }
@@ -157,16 +147,6 @@ final class IdmapManager {
         // Overlay matches actor signature
         if (matchesActorSignature(targetPackage, overlayPackage, userId)) {
             fulfilledPolicies |= OverlayablePolicy.ACTOR_SIGNATURE;
-        }
-
-        // If SystemConfig defines 'overlay-config-signature' package, given that
-        // this package is vetted by OverlayManagerService that it's a
-        // preinstalled package, check if overlay matches its signature.
-        if (!TextUtils.isEmpty(mConfigSignaturePackage)
-                && mPackageManager.signaturesMatching(mConfigSignaturePackage,
-                                                           overlayPackage.packageName,
-                                                           userId)) {
-            fulfilledPolicies |= OverlayablePolicy.CONFIG_SIGNATURE;
         }
 
         // Vendor partition (/vendor)
@@ -203,12 +183,12 @@ final class IdmapManager {
         String targetOverlayableName = overlayPackage.targetOverlayableName;
         if (targetOverlayableName != null) {
             try {
-                OverlayableInfo overlayableInfo = mPackageManager.getOverlayableForTarget(
+                OverlayableInfo overlayableInfo = mOverlayableCallback.getOverlayableForTarget(
                         targetPackage.packageName, targetOverlayableName, userId);
                 if (overlayableInfo != null && overlayableInfo.actor != null) {
                     String actorPackageName = OverlayActorEnforcer.getPackageNameForActor(
-                            overlayableInfo.actor, mPackageManager.getNamedActors()).first;
-                    if (mPackageManager.signaturesMatching(actorPackageName,
+                            overlayableInfo.actor, mOverlayableCallback.getNamedActors()).first;
+                    if (mOverlayableCallback.signaturesMatching(actorPackageName,
                             overlayPackage.packageName, userId)) {
                         return true;
                     }

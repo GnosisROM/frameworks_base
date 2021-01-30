@@ -2799,7 +2799,6 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
                 if (index < 0) {
                     Log.e(TAG, "Error processing scroll; pointer index for id "
                             + mScrollPointerId + " not found. Did any MotionEvents get skipped?");
-                    vtev.recycle();
                     return false;
                 }
 
@@ -4969,7 +4968,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
          * constructed by {@link GapWorker} prefetch from being bound to a lower priority prefetch.
          */
         static class ScrapData {
-            @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+            @UnsupportedAppUsage
             ArrayList<ViewHolder> mScrapHeap = new ArrayList<>();
             int mMaxScrap = DEFAULT_MAX_SCRAP;
             long mCreateRunningAverageNs = 0;

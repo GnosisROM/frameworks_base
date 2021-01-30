@@ -46,13 +46,12 @@ import java.util.List;
  * CarrierMessagingService.
  * @hide
  */
-public final class CarrierMessagingServiceWrapper {
+public abstract class CarrierMessagingServiceWrapper {
     // Populated by bindToCarrierMessagingService. bindToCarrierMessagingService must complete
     // prior to calling disposeConnection so that mCarrierMessagingServiceConnection is initialized.
     private volatile CarrierMessagingServiceConnection mCarrierMessagingServiceConnection;
 
     private volatile ICarrierMessagingService mICarrierMessagingService;
-    private Runnable mOnServiceReadyCallback;
 
     /**
      * Binds to the carrier messaging service under package {@code carrierPackageName}. This method
@@ -64,14 +63,12 @@ public final class CarrierMessagingServiceWrapper {
      * @hide
      */
     public boolean bindToCarrierMessagingService(@NonNull Context context,
-            @NonNull String carrierPackageName,
-            @NonNull Runnable onServiceReadyCallback) {
+            @NonNull String carrierPackageName) {
         Preconditions.checkState(mCarrierMessagingServiceConnection == null);
 
         Intent intent = new Intent(CarrierMessagingService.SERVICE_INTERFACE);
         intent.setPackage(carrierPackageName);
         mCarrierMessagingServiceConnection = new CarrierMessagingServiceConnection();
-        mOnServiceReadyCallback = onServiceReadyCallback;
         return context.bindService(intent, mCarrierMessagingServiceConnection,
                 Context.BIND_AUTO_CREATE);
     }
@@ -86,8 +83,13 @@ public final class CarrierMessagingServiceWrapper {
         Preconditions.checkNotNull(mCarrierMessagingServiceConnection);
         context.unbindService(mCarrierMessagingServiceConnection);
         mCarrierMessagingServiceConnection = null;
-        mOnServiceReadyCallback = null;
     }
+
+    /**
+     * Implemented by subclasses to use the carrier messaging service once it is ready.
+     * @hide
+     */
+    public abstract void onServiceReady();
 
     /**
      * Called when connection with service is established.
@@ -96,7 +98,7 @@ public final class CarrierMessagingServiceWrapper {
      */
     private void onServiceReady(ICarrierMessagingService carrierMessagingService) {
         mICarrierMessagingService = carrierMessagingService;
-        if (mOnServiceReadyCallback != null) mOnServiceReadyCallback.run();
+        onServiceReady();
     }
 
     /**
@@ -111,11 +113,11 @@ public final class CarrierMessagingServiceWrapper {
      * @hide
      */
     public void filterSms(@NonNull MessagePdu pdu, @NonNull String format, int destPort,
-            int subId, @NonNull final CarrierMessagingCallback callback) {
+            int subId, @NonNull final CarrierMessagingCallbackWrapper callback) {
         if (mICarrierMessagingService != null) {
             try {
                 mICarrierMessagingService.filterSms(pdu, format, destPort, subId,
-                        new CarrierMessagingCallbackInternal(callback));
+                        new CarrierMessagingCallbackWrapperInternal(callback));
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
@@ -135,11 +137,11 @@ public final class CarrierMessagingServiceWrapper {
      * @hide
      */
     public void sendTextSms(@NonNull String text, int subId, @NonNull String destAddress,
-            int sendSmsFlag, @NonNull final CarrierMessagingCallback callback) {
+            int sendSmsFlag, @NonNull final CarrierMessagingCallbackWrapper callback) {
         if (mICarrierMessagingService != null) {
             try {
                 mICarrierMessagingService.sendTextSms(text, subId, destAddress, sendSmsFlag,
-                        new CarrierMessagingCallbackInternal(callback));
+                        new CarrierMessagingCallbackWrapperInternal(callback));
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
@@ -161,11 +163,11 @@ public final class CarrierMessagingServiceWrapper {
      */
     public void sendDataSms(@NonNull byte[] data, int subId, @NonNull String destAddress,
             int destPort, int sendSmsFlag,
-            @NonNull final CarrierMessagingCallback callback) {
+            @NonNull final CarrierMessagingCallbackWrapper callback) {
         if (mICarrierMessagingService != null) {
             try {
                 mICarrierMessagingService.sendDataSms(data, subId, destAddress, destPort,
-                        sendSmsFlag, new CarrierMessagingCallbackInternal(callback));
+                        sendSmsFlag, new CarrierMessagingCallbackWrapperInternal(callback));
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
@@ -186,11 +188,11 @@ public final class CarrierMessagingServiceWrapper {
      */
     public void sendMultipartTextSms(@NonNull List<String> parts, int subId,
             @NonNull String destAddress, int sendSmsFlag,
-            @NonNull final CarrierMessagingCallback callback) {
+            @NonNull final CarrierMessagingCallbackWrapper callback) {
         if (mICarrierMessagingService != null) {
             try {
                 mICarrierMessagingService.sendMultipartTextSms(parts, subId, destAddress,
-                        sendSmsFlag, new CarrierMessagingCallbackInternal(callback));
+                        sendSmsFlag, new CarrierMessagingCallbackWrapperInternal(callback));
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
@@ -210,11 +212,11 @@ public final class CarrierMessagingServiceWrapper {
      * @hide
      */
     public void sendMms(@NonNull Uri pduUri, int subId, @NonNull Uri location,
-            @NonNull final CarrierMessagingCallback callback) {
+            @NonNull final CarrierMessagingCallbackWrapper callback) {
         if (mICarrierMessagingService != null) {
             try {
                 mICarrierMessagingService.sendMms(pduUri, subId, location,
-                        new CarrierMessagingCallbackInternal(callback));
+                        new CarrierMessagingCallbackWrapperInternal(callback));
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
@@ -233,11 +235,11 @@ public final class CarrierMessagingServiceWrapper {
      * @hide
      */
     public void downloadMms(@NonNull Uri pduUri, int subId, @NonNull Uri location,
-            @NonNull final CarrierMessagingCallback callback) {
+            @NonNull final CarrierMessagingCallbackWrapper callback) {
         if (mICarrierMessagingService != null) {
             try {
                 mICarrierMessagingService.downloadMms(pduUri, subId, location,
-                        new CarrierMessagingCallbackInternal(callback));
+                        new CarrierMessagingCallbackWrapperInternal(callback));
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
@@ -263,7 +265,7 @@ public final class CarrierMessagingServiceWrapper {
      * {@link CarrierMessagingServiceWrapper}.
      * @hide
      */
-    public interface CarrierMessagingCallback {
+    public abstract static class CarrierMessagingCallbackWrapper {
 
         /**
          * Response callback for {@link CarrierMessagingServiceWrapper#filterSms}.
@@ -275,7 +277,7 @@ public final class CarrierMessagingServiceWrapper {
          *               {@see CarrierMessagingService#onReceiveTextSms}.
          * @hide
          */
-        default void onFilterComplete(int result) {
+        public void onFilterComplete(int result) {
 
         }
 
@@ -289,7 +291,7 @@ public final class CarrierMessagingServiceWrapper {
          *                   only if result is {@link CarrierMessagingService#SEND_STATUS_OK}.
          * @hide
          */
-        default void onSendSmsComplete(int result, int messageRef) {
+        public void onSendSmsComplete(int result, int messageRef) {
 
         }
 
@@ -303,7 +305,7 @@ public final class CarrierMessagingServiceWrapper {
          *                    {@link CarrierMessagingService#SEND_STATUS_OK}.
          * @hide
          */
-        default void onSendMultipartSmsComplete(int result, @Nullable int[] messageRefs) {
+        public void onSendMultipartSmsComplete(int result, @Nullable int[] messageRefs) {
 
         }
 
@@ -317,7 +319,7 @@ public final class CarrierMessagingServiceWrapper {
          *                    {@link CarrierMessagingService#SEND_STATUS_OK}.
          * @hide
          */
-        default void onSendMmsComplete(int result, @Nullable byte[] sendConfPdu) {
+        public void onSendMmsComplete(int result, @Nullable byte[] sendConfPdu) {
 
         }
 
@@ -328,43 +330,43 @@ public final class CarrierMessagingServiceWrapper {
          *               and {@link CarrierMessagingService#SEND_STATUS_ERROR}.
          * @hide
          */
-        default void onDownloadMmsComplete(int result) {
+        public void onDownloadMmsComplete(int result) {
 
         }
     }
 
-    private final class CarrierMessagingCallbackInternal
+    private final class CarrierMessagingCallbackWrapperInternal
             extends ICarrierMessagingCallback.Stub {
-        CarrierMessagingCallback mCarrierMessagingCallback;
+        CarrierMessagingCallbackWrapper mCarrierMessagingCallbackWrapper;
 
-        CarrierMessagingCallbackInternal(CarrierMessagingCallback callback) {
-            mCarrierMessagingCallback = callback;
+        CarrierMessagingCallbackWrapperInternal(CarrierMessagingCallbackWrapper callback) {
+            mCarrierMessagingCallbackWrapper = callback;
         }
 
         @Override
         public void onFilterComplete(int result) throws RemoteException {
-            mCarrierMessagingCallback.onFilterComplete(result);
+            mCarrierMessagingCallbackWrapper.onFilterComplete(result);
         }
 
         @Override
         public void onSendSmsComplete(int result, int messageRef) throws RemoteException {
-            mCarrierMessagingCallback.onSendSmsComplete(result, messageRef);
+            mCarrierMessagingCallbackWrapper.onSendSmsComplete(result, messageRef);
         }
 
         @Override
         public void onSendMultipartSmsComplete(int result, int[] messageRefs)
                 throws RemoteException {
-            mCarrierMessagingCallback.onSendMultipartSmsComplete(result, messageRefs);
+            mCarrierMessagingCallbackWrapper.onSendMultipartSmsComplete(result, messageRefs);
         }
 
         @Override
         public void onSendMmsComplete(int result, byte[] sendConfPdu) throws RemoteException {
-            mCarrierMessagingCallback.onSendMmsComplete(result, sendConfPdu);
+            mCarrierMessagingCallbackWrapper.onSendMmsComplete(result, sendConfPdu);
         }
 
         @Override
         public void onDownloadMmsComplete(int result) throws RemoteException {
-            mCarrierMessagingCallback.onDownloadMmsComplete(result);
+            mCarrierMessagingCallbackWrapper.onDownloadMmsComplete(result);
         }
     }
 }

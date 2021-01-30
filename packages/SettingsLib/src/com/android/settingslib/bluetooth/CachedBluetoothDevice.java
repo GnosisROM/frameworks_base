@@ -151,8 +151,8 @@ public class CachedBluetoothDevice implements Comparable<CachedBluetoothDevice> 
 
     void onProfileStateChanged(LocalBluetoothProfile profile, int newProfileState) {
         if (BluetoothUtils.D) {
-            Log.d(TAG, "onProfileStateChanged: profile " + profile + ", device "
-                    + mDevice.getAlias() + ", newProfileState " + newProfileState);
+            Log.d(TAG, "onProfileStateChanged: profile " + profile + ", device=" + mDevice
+                    + ", newProfileState " + newProfileState);
         }
         if (mLocalAdapter.getState() == BluetoothAdapter.STATE_TURNING_OFF)
         {
@@ -290,6 +290,9 @@ public class CachedBluetoothDevice implements Comparable<CachedBluetoothDevice> 
     }
 
     public void setHiSyncId(long id) {
+        if (BluetoothUtils.D) {
+            Log.d(TAG, "setHiSyncId: mDevice " + mDevice + ", id " + id);
+        }
         mHiSyncId = id;
     }
 
@@ -635,7 +638,7 @@ public class CachedBluetoothDevice implements Comparable<CachedBluetoothDevice> 
         }
 
         if (BluetoothUtils.D) {
-            Log.d(TAG, "updating profiles for " + mDevice.getAlias());
+            Log.e(TAG, "updating profiles for " + mDevice.getAlias() + ", " + mDevice);
             BluetoothClass bluetoothClass = mDevice.getBluetoothClass();
 
             if (bluetoothClass != null) Log.v(TAG, "Class: " + bluetoothClass.toString());
@@ -685,8 +688,8 @@ public class CachedBluetoothDevice implements Comparable<CachedBluetoothDevice> 
          * If a connect was attempted earlier without any UUID, we will do the connect now.
          * Otherwise, allow the connect on UUID change.
          */
-        if ((mConnectAttempted + timeout) > SystemClock.elapsedRealtime()) {
-            Log.d(TAG, "onUuidChanged: triggering connectAllEnabledProfiles");
+        if (!mProfiles.isEmpty()
+                && ((mConnectAttempted + timeout) > SystemClock.elapsedRealtime())) {
             connectAllEnabledProfiles();
         }
 

@@ -165,7 +165,7 @@ public abstract class DocumentsProvider extends ContentProvider {
     public void attachInfo(Context context, ProviderInfo info) {
         registerAuthority(info.authority);
 
-        // Validity check our setup
+        // Sanity check our setup
         if (!info.exported) {
             throw new SecurityException("Provider must be exported");
         }

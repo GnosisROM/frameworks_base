@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -192,11 +193,6 @@ public class BroadcastInterceptingContext extends ContextWrapper {
 
     @Override
     public void sendStickyBroadcast(Intent intent) {
-        sendBroadcast(intent);
-    }
-
-    @Override
-    public void sendStickyBroadcast(Intent intent, Bundle options) {
         sendBroadcast(intent);
     }
 

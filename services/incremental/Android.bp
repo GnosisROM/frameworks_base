@@ -39,7 +39,6 @@ cc_defaults {
 cc_defaults {
     name: "service.incremental-defaults",
     defaults: ["service.incremental-proto-defaults"],
-    header_libs: ["jni_headers"],
     local_include_dirs: ["include/"],
     cflags: [
         "-Wall",
@@ -51,9 +50,10 @@ cc_defaults {
     static_libs: [
         "libbase",
         "libext2_uuid",
-        "libdataloader_aidl-unstable-cpp",
-        "libincremental_aidl-unstable-cpp",
-        "libincremental_manager_aidl-unstable-cpp",
+        "libdataloader_aidl-cpp",
+        "libincremental_aidl-cpp",
+        "libincremental_manager_aidl-cpp",
+        "libnativehelper",
         "libprotobuf-cpp-lite",
         "service.incremental.proto",
         "libutils",

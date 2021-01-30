@@ -33,6 +33,15 @@
 
 // Static whitelist of open paths that the zygote is allowed to keep open.
 static const char* kPathWhitelist[] = {
+        "/apex/com.android.conscrypt/javalib/conscrypt.jar",
+        "/apex/com.android.ipsec/javalib/ike.jar",
+        "/apex/com.android.media/javalib/updatable-media.jar",
+        "/apex/com.android.mediaprovider/javalib/framework-mediaprovider.jar",
+        "/apex/com.android.os.statsd/javalib/framework-statsd.jar",
+        "/apex/com.android.permission/javalib/framework-permission.jar",
+        "/apex/com.android.sdkext/javalib/framework-sdkextensions.jar",
+        "/apex/com.android.wifi/javalib/framework-wifi.jar",
+        "/apex/com.android.tethering/javalib/framework-tethering.jar",
         "/dev/null",
         "/dev/socket/zygote",
         "/dev/socket/zygote_secondary",
@@ -76,26 +85,18 @@ bool FileDescriptorWhitelist::IsAllowed(const std::string& path) const {
   }
 
   // Framework jars are allowed.
-  static const char* kFrameworksPrefix[] = {
-          "/system/framework/",
-          "/system_ext/framework/",
-  };
-
+  static const char* kFrameworksPrefix = "/system/framework/";
   static const char* kJarSuffix = ".jar";
-
-  for (const auto& frameworks_prefix : kFrameworksPrefix) {
-    if (android::base::StartsWith(path, frameworks_prefix)
-        && android::base::EndsWith(path, kJarSuffix)) {
-      return true;
-    }
+  if (android::base::StartsWith(path, kFrameworksPrefix)
+      && android::base::EndsWith(path, kJarSuffix)) {
+    return true;
   }
 
-  // Jars from APEXes are allowed. This matches /apex/**/javalib/*.jar.
-  static const char* kApexPrefix = "/apex/";
-  static const char* kApexJavalibPathSuffix = "/javalib";
-  if (android::base::StartsWith(path, kApexPrefix) && android::base::EndsWith(path, kJarSuffix) &&
-      android::base::EndsWith(android::base::Dirname(path), kApexJavalibPathSuffix)) {
-      return true;
+  // Jars from the ART APEX are allowed.
+  static const char* kArtApexPrefix = "/apex/com.android.art/javalib/";
+  if (android::base::StartsWith(path, kArtApexPrefix)
+      && android::base::EndsWith(path, kJarSuffix)) {
+    return true;
   }
 
   // the in-memory file created by ART through memfd_create is allowed.

@@ -82,11 +82,6 @@ public class LockSettingsStorageTestable extends LockSettingsStorage {
     }
 
     @Override
-    String getRebootEscrowServerBlob() {
-        return makeDirs(mStorageDir, super.getRebootEscrowServerBlob()).getAbsolutePath();
-    }
-
-    @Override
     protected File getSyntheticPasswordDirectoryForUser(int userId) {
         return makeDirs(mStorageDir, super.getSyntheticPasswordDirectoryForUser(
                 userId).getAbsolutePath());

@@ -14,8 +14,6 @@
  * limitations under the License
  */
 
-@file:JvmName("ConnectivityServiceTestUtils")
-
 package com.android.server
 
 import android.net.ConnectivityManager.TYPE_BLUETOOTH

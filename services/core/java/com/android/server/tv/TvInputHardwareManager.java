@@ -156,7 +156,6 @@ class TvInputHardwareManager implements TvInputHal.Callback {
         synchronized (mLock) {
             Connection connection = new Connection(info);
             connection.updateConfigsLocked(configs);
-            connection.updateCableConnectionStatusLocked(info.getCableConnectionStatus());
             mConnections.put(info.getDeviceId(), connection);
             buildHardwareListLocked();
             mHandler.obtainMessage(
@@ -203,8 +202,7 @@ class TvInputHardwareManager implements TvInputHal.Callback {
     }
 
     @Override
-    public void onStreamConfigurationChanged(int deviceId, TvStreamConfig[] configs,
-            int cableConnectionStatus) {
+    public void onStreamConfigurationChanged(int deviceId, TvStreamConfig[] configs) {
         synchronized (mLock) {
             Connection connection = mConnections.get(deviceId);
             if (connection == null) {
@@ -213,22 +211,12 @@ class TvInputHardwareManager implements TvInputHal.Callback {
                 return;
             }
             int previousConfigsLength = connection.getConfigsLengthLocked();
-            int previousCableConnectionStatus = connection.getInputStateLocked();
             connection.updateConfigsLocked(configs);
             String inputId = mHardwareInputIdMap.get(deviceId);
-            if (inputId != null) {
-                if (connection.updateCableConnectionStatusLocked(cableConnectionStatus)) {
-                    if (previousCableConnectionStatus != connection.getInputStateLocked()) {
-                        mHandler.obtainMessage(ListenerHandler.STATE_CHANGED,
-                            connection.getInputStateLocked(), 0, inputId).sendToTarget();
-                    }
-                } else {
-                    if ((previousConfigsLength == 0)
-                            != (connection.getConfigsLengthLocked() == 0)) {
-                        mHandler.obtainMessage(ListenerHandler.STATE_CHANGED,
-                            connection.getInputStateLocked(), 0, inputId).sendToTarget();
-                    }
-                }
+            if (inputId != null
+                    && (previousConfigsLength == 0) != (connection.getConfigsLengthLocked() == 0)) {
+                mHandler.obtainMessage(ListenerHandler.STATE_CHANGED,
+                    connection.getInputStateLocked(), 0, inputId).sendToTarget();
             }
             ITvInputHardwareCallback callback = connection.getCallbackLocked();
             if (callback != null) {
@@ -636,7 +624,7 @@ class TvInputHardwareManager implements TvInputHal.Callback {
     }
 
     private class Connection implements IBinder.DeathRecipient {
-        private TvInputHardwareInfo mHardwareInfo;
+        private final TvInputHardwareInfo mHardwareInfo;
         private TvInputInfo mInfo;
         private TvInputHardwareImpl mHardware = null;
         private ITvInputHardwareCallback mCallback;
@@ -645,7 +633,6 @@ class TvInputHardwareManager implements TvInputHal.Callback {
         private Integer mResolvedUserId = null;
         private Runnable mOnFirstFrameCaptured;
         private ResourceClientProfile mResourceClientProfile = null;
-        private boolean mIsCableConnectionStatusUpdated = false;
 
         public Connection(TvInputHardwareInfo hardwareInfo) {
             mHardwareInfo = hardwareInfo;
@@ -748,17 +735,6 @@ class TvInputHardwareManager implements TvInputHal.Callback {
                     + " }";
         }
 
-        public boolean updateCableConnectionStatusLocked(int cableConnectionStatus) {
-            // Update connection status only if it's not default value
-            if (cableConnectionStatus != TvInputHardwareInfo.CABLE_CONNECTION_STATUS_UNKNOWN
-                    || mIsCableConnectionStatusUpdated) {
-                mIsCableConnectionStatusUpdated = true;
-                mHardwareInfo = mHardwareInfo.toBuilder()
-                    .cableConnectionStatus(cableConnectionStatus).build();
-            }
-            return mIsCableConnectionStatusUpdated;
-        }
-
         private int getConfigsLengthLocked() {
             return mConfigs == null ? 0 : mConfigs.length;
         }
@@ -766,9 +742,7 @@ class TvInputHardwareManager implements TvInputHal.Callback {
         private int getInputStateLocked() {
             int configsLength = getConfigsLengthLocked();
             if (configsLength > 0) {
-                if (!mIsCableConnectionStatusUpdated) {
-                    return INPUT_STATE_CONNECTED;
-                }
+                return INPUT_STATE_CONNECTED;
             }
             switch (mHardwareInfo.getCableConnectionStatus()) {
                 case TvInputHardwareInfo.CABLE_CONNECTION_STATUS_CONNECTED:

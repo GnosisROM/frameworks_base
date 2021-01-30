@@ -220,8 +220,8 @@ import java.util.function.Consumer;
  * <a name="Fragments"></a>
  * <h3>Fragments</h3>
  *
- * <p>The {@link androidx.fragment.app.FragmentActivity} subclass
- * can make use of the {@link androidx.fragment.app.Fragment} class to better
+ * <p>The {@link android.support.v4.app.FragmentActivity} subclass
+ * can make use of the {@link android.support.v4.app.Fragment} class to better
  * modularize their code, build more sophisticated user interfaces for larger
  * screens, and help scale their application between small and large screens.</p>
  *
@@ -756,7 +756,7 @@ public class Activity extends ContextThemeWrapper
      */
     public static final int FINISH_TASK_WITH_ACTIVITY = 2;
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     static final String FRAGMENTS_TAG = "android:fragments";
     private static final String LAST_AUTOFILL_ID = "android:lastAutofillId";
 
@@ -1100,7 +1100,7 @@ public class Activity extends ContextThemeWrapper
     /**
      * Return the LoaderManager for this activity, creating it if needed.
      *
-     * @deprecated Use {@link androidx.fragment.app.FragmentActivity#getSupportLoaderManager()}
+     * @deprecated Use {@link android.support.v4.app.FragmentActivity#getSupportLoaderManager()}
      */
     @Deprecated
     public LoaderManager getLoaderManager() {
@@ -2939,7 +2939,7 @@ public class Activity extends ContextThemeWrapper
      * @see View#onMovedToDisplay(int, Configuration)
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @TestApi
     public void onMovedToDisplay(int displayId, Configuration config) {
     }
@@ -3159,7 +3159,7 @@ public class Activity extends ContextThemeWrapper
      * Return the FragmentManager for interacting with fragments associated
      * with this activity.
      *
-     * @deprecated Use {@link androidx.fragment.app.FragmentActivity#getSupportFragmentManager()}
+     * @deprecated Use {@link android.support.v4.app.FragmentActivity#getSupportFragmentManager()}
      */
     @Deprecated
     public FragmentManager getFragmentManager() {
@@ -3172,7 +3172,7 @@ public class Activity extends ContextThemeWrapper
      * method and before {@link Fragment#onCreate Fragment.onCreate()}.
      *
      * @deprecated Use {@link
-     * androidx.fragment.app.FragmentActivity#onAttachFragment(androidx.fragment.app.Fragment)}
+     * android.support.v4.app.FragmentActivity#onAttachFragment(android.support.v4.app.Fragment)}
      */
     @Deprecated
     public void onAttachFragment(Fragment fragment) {
@@ -3209,7 +3209,7 @@ public class Activity extends ContextThemeWrapper
      * @deprecated Use {@link CursorLoader} instead.
      */
     @Deprecated
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public final Cursor managedQuery(Uri uri, String[] projection, String selection,
             String sortOrder) {
         Cursor c = getContentResolver().query(uri, projection, selection, null, sortOrder);
@@ -5195,8 +5195,8 @@ public class Activity extends ContextThemeWrapper
      * result callbacks including {@link #onRequestPermissionsResult(int, String[], int[])}.
      * </p>
      * <p>
-     * The <a href="https://github.com/android/permissions-samples">
-     * RuntimePermissions</a> sample apps demonstrate how to use this method to
+     * The <a href="https://github.com/googlesamples/android-RuntimePermissions">
+     * RuntimePermissions</a> sample app demonstrates how to use this method to
      * request permissions at run time.
      * </p>
      *
@@ -6026,7 +6026,7 @@ public class Activity extends ContextThemeWrapper
      * @hide
      */
     @Override
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public void startActivityForResult(
             String who, Intent intent, int requestCode, @Nullable Bundle options) {
         Uri referrer = onProvideReferrer();
@@ -6358,7 +6358,7 @@ public class Activity extends ContextThemeWrapper
      * Finishes the current activity and specifies whether to remove the task associated with this
      * activity.
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     private void finish(int finishTask) {
         if (mParent == null) {
             int resultCode;
@@ -7888,7 +7888,7 @@ public class Activity extends ContextThemeWrapper
         mParent = parent;
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     final void attach(Context context, ActivityThread aThread,
             Instrumentation instr, IBinder token, int ident,
             Application application, Intent intent, ActivityInfo info,
@@ -7984,7 +7984,7 @@ public class Activity extends ContextThemeWrapper
         performCreate(icicle, null);
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     final void performCreate(Bundle icicle, PersistableBundle persistentState) {
         dispatchActivityPreCreated(icicle);
         mCanEnterPictureInPicture = true;
@@ -8299,7 +8299,7 @@ public class Activity extends ContextThemeWrapper
         }
     }
 
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void dispatchActivityResult(String who, int requestCode, int resultCode, Intent data,
             String reason) {
         if (false) Log.v(
@@ -8348,7 +8348,7 @@ public class Activity extends ContextThemeWrapper
      *
      * <p>If {@link DevicePolicyManager#isLockTaskPermitted(String)} returns {@code true}
      * for this component, the current task will be launched directly into LockTask mode. Only apps
-     * allowlisted by {@link DevicePolicyManager#setLockTaskPackages(ComponentName, String[])} can
+     * whitelisted by {@link DevicePolicyManager#setLockTaskPackages(ComponentName, String[])} can
      * be launched while LockTask mode is active. The user will not be able to leave this mode
      * until this activity calls {@link #stopLockTask()}. Calling this method while the device is
      * already in LockTask mode has no effect.
@@ -8380,7 +8380,7 @@ public class Activity extends ContextThemeWrapper
      * <p><strong>Note:</strong> If the device is in LockTask mode that is not initially started
      * by this activity, then calling this method will not terminate the LockTask mode, but only
      * finish its own task. The device will remain in LockTask mode, until the activity which
-     * started the LockTask mode calls this method, or until its allowlist authorization is revoked
+     * started the LockTask mode calls this method, or until its whitelist authorization is revoked
      * by {@link DevicePolicyManager#setLockTaskPackages(ComponentName, String[])}.
      *
      * @see #startLockTask()

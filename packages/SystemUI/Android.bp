@@ -45,7 +45,7 @@ android_library {
         "WindowManager-Shell",
         "SystemUIPluginLib",
         "SystemUISharedLib",
-        "SystemUI-statsd",
+	"SystemUI-statsd",
         "SettingsLib",
         "androidx.viewpager2_viewpager2",
         "androidx.legacy_legacy-support-v4",
@@ -68,14 +68,14 @@ android_library {
         "iconloader_base",
         "SystemUI-tags",
         "SystemUI-proto",
-        "dagger2",
+        "dagger2-2.19",
         "jsr330"
     ],
     manifest: "AndroidManifest.xml",
 
     kotlincflags: ["-Xjvm-default=enable"],
 
-    plugins: ["dagger2-compiler"],
+    plugins: ["dagger2-compiler-2.19"],
 }
 
 filegroup {
@@ -139,7 +139,7 @@ android_library {
         "mockito-target-extended-minus-junit4",
         "testables",
         "truth-prebuilt",
-        "dagger2",
+        "dagger2-2.19",
         "jsr330"
     ],
     libs: [
@@ -151,7 +151,7 @@ android_library {
         "--extra-packages",
         "com.android.systemui",
     ],
-    plugins: ["dagger2-compiler"],
+    plugins: ["dagger2-compiler-2.19"],
 }
 
 android_app {

@@ -68,7 +68,7 @@ interface INetworkManagementService
     /**
      * Clear all IP addresses on the specified interface
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void clearInterfaceAddresses(String iface);
 
     /**
@@ -84,26 +84,26 @@ interface INetworkManagementService
     /**
      * Set interface IPv6 privacy extensions
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void setInterfaceIpv6PrivacyExtensions(String iface, boolean enable);
 
     /**
      * Disable IPv6 on an interface
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void disableIpv6(String iface);
 
     /**
      * Enable IPv6 on an interface
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void enableIpv6(String iface);
 
     /**
      * Set IPv6 autoconf address generation mode.
      * This is a no-op if an unsupported mode is requested.
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     void setIPv6AddrGenMode(String iface, int mode);
 
     /**
@@ -115,6 +115,11 @@ interface INetworkManagementService
      * Remove the specified route from the interface.
      */
     void removeRoute(int netId, in RouteInfo route);
+
+    /**
+     * Set the specified MTU size
+     */
+    void setMtu(String iface, int mtu);
 
     /**
      * Shuts down the service
@@ -282,8 +287,8 @@ interface INetworkManagementService
     /**
      * Control network activity of a UID over interfaces with a quota limit.
      */
-    void setUidOnMeteredNetworkDenylist(int uid, boolean enable);
-    void setUidOnMeteredNetworkAllowlist(int uid, boolean enable);
+    void setUidMeteredNetworkBlacklist(int uid, boolean enable);
+    void setUidMeteredNetworkWhitelist(int uid, boolean enable);
     boolean setDataSaverModeEnabled(boolean enable);
 
     void setUidCleartextNetworkPolicy(int uid, int policy);
@@ -291,7 +296,7 @@ interface INetworkManagementService
     /**
      * Return status of bandwidth control module.
      */
-    @UnsupportedAppUsage(maxTargetSdk = 30, trackingBug = 170729553)
+    @UnsupportedAppUsage
     boolean isBandwidthControlEnabled();
 
     /**
@@ -321,6 +326,16 @@ interface INetworkManagementService
     void setFirewallChainEnabled(int chain, boolean enable);
 
     /**
+     * Set all packets from users in ranges to go through VPN specified by netId.
+     */
+    void addVpnUidRanges(int netId, in UidRange[] ranges);
+
+    /**
+     * Clears the special VPN rules for users in ranges and VPN specified by netId.
+     */
+    void removeVpnUidRanges(int netId, in UidRange[] ranges);
+
+    /**
      * Start listening for mobile activity state changes.
      */
     void registerNetworkActivityListener(INetworkActivityListener listener);
@@ -335,7 +350,27 @@ interface INetworkManagementService
      */
     boolean isNetworkActive();
 
+    /**
+     * Add an interface to a network.
+     */
+    void addInterfaceToNetwork(String iface, int netId);
+
+    /**
+     * Remove an Interface from a network.
+     */
+    void removeInterfaceFromNetwork(String iface, int netId);
+
     void addLegacyRouteForNetId(int netId, in RouteInfo routeInfo, int uid);
+
+    void setDefaultNetId(int netId);
+    void clearDefaultNetId();
+
+    /**
+     * Set permission for a network.
+     * @param permission PERMISSION_NONE to clear permissions.
+     *                   PERMISSION_NETWORK or PERMISSION_SYSTEM to set permission.
+     */
+    void setNetworkPermission(int netId, int permission);
 
     /**
      * Allow UID to call protect().
@@ -350,6 +385,8 @@ interface INetworkManagementService
     void addInterfaceToLocalNetwork(String iface, in List<RouteInfo> routes);
     void removeInterfaceFromLocalNetwork(String iface);
     int removeRoutesFromLocalNetwork(in List<RouteInfo> routes);
+
+    void setAllowOnlyVpnForUids(boolean enable, in UidRange[] uidRanges);
 
     boolean isNetworkRestricted(int uid);
 }

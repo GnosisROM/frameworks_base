@@ -44,7 +44,6 @@ import android.os.ServiceManager;
 import android.os.UserHandle;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.SparseIntArray;
 import android.view.Display;
 
 import java.lang.annotation.Retention;
@@ -95,7 +94,6 @@ public class MediaRouter {
 
         RouteInfo mDefaultAudioVideo;
         RouteInfo mBluetoothA2dpRoute;
-        boolean mIsBluetoothA2dpOn;
 
         RouteInfo mSelectedRoute;
 
@@ -110,16 +108,9 @@ public class MediaRouter {
         IMediaRouterClient mClient;
         MediaRouterClientState mClientState;
 
-        SparseIntArray mStreamVolume = new SparseIntArray();
-
         final IAudioRoutesObserver.Stub mAudioRoutesObserver = new IAudioRoutesObserver.Stub() {
             @Override
             public void dispatchAudioRoutesChanged(final AudioRoutesInfo newRoutes) {
-                try {
-                    mIsBluetoothA2dpOn = mAudioService.isBluetoothA2dpOn();
-                } catch (RemoteException e) {
-                    Log.e(TAG, "Error querying Bluetooth A2DP state", e);
-                }
                 mHandler.post(new Runnable() {
                     @Override public void run() {
                         updateAudioRoutes(newRoutes);
@@ -268,24 +259,13 @@ public class MediaRouter {
             mCurAudioRoutesInfo.bluetoothName = newRoutes.bluetoothName;
         }
 
-        int getStreamVolume(int streamType) {
-            int idx = mStreamVolume.indexOfKey(streamType);
-            if (idx < 0) {
-                int volume = 0;
-                try {
-                    volume = mAudioService.getStreamVolume(streamType);
-                    mStreamVolume.put(streamType, volume);
-                } catch (RemoteException e) {
-                    Log.e(TAG, "Error getting local stream volume", e);
-                } finally {
-                    return volume;
-                }
-            }
-            return mStreamVolume.valueAt(idx);
-        }
-
         boolean isBluetoothA2dpOn() {
-            return mBluetoothA2dpRoute != null && mIsBluetoothA2dpOn;
+            try {
+                return mBluetoothA2dpRoute != null && mAudioService.isBluetoothA2dpOn();
+            } catch (RemoteException e) {
+                Log.e(TAG, "Error querying Bluetooth A2DP state", e);
+                return false;
+            }
         }
 
         void updateDiscoveryRequest() {
@@ -863,7 +843,7 @@ public class MediaRouter {
     }
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public RouteInfo getSelectedRoute() {
         return getSelectedRoute(ROUTE_TYPE_ANY);
     }
@@ -1446,8 +1426,12 @@ public class MediaRouter {
                 selectedRoute == sStatic.mDefaultAudioVideo) {
             dispatchRouteVolumeChanged(selectedRoute);
         } else if (sStatic.mBluetoothA2dpRoute != null) {
-            dispatchRouteVolumeChanged(sStatic.mIsBluetoothA2dpOn
-                    ? sStatic.mBluetoothA2dpRoute : sStatic.mDefaultAudioVideo);
+            try {
+                dispatchRouteVolumeChanged(sStatic.mAudioService.isBluetoothA2dpOn() ?
+                        sStatic.mBluetoothA2dpRoute : sStatic.mDefaultAudioVideo);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Error checking Bluetooth A2DP state to report volume change", e);
+            }
         } else {
             dispatchRouteVolumeChanged(sStatic.mDefaultAudioVideo);
         }
@@ -1772,7 +1756,7 @@ public class MediaRouter {
             return getName(context.getResources());
         }
 
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         CharSequence getName(Resources res) {
             if (mNameResId != 0) {
                 return res.getText(mNameResId);
@@ -1972,7 +1956,13 @@ public class MediaRouter {
          */
         public int getVolume() {
             if (mPlaybackType == PLAYBACK_TYPE_LOCAL) {
-                return sStatic.getStreamVolume(mPlaybackStream);
+                int vol = 0;
+                try {
+                    vol = sStatic.mAudioService.getStreamVolume(mPlaybackStream);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Error getting local stream volume", e);
+                }
+                return vol;
             } else {
                 return mVolume;
             }
@@ -3087,12 +3077,11 @@ public class MediaRouter {
             if (intent.getAction().equals(AudioManager.VOLUME_CHANGED_ACTION)) {
                 final int streamType = intent.getIntExtra(AudioManager.EXTRA_VOLUME_STREAM_TYPE,
                         -1);
-                final int newVolume = intent.getIntExtra(AudioManager.EXTRA_VOLUME_STREAM_VALUE, 0);
-                sStatic.mStreamVolume.put(streamType, newVolume);
                 if (streamType != AudioManager.STREAM_MUSIC) {
                     return;
                 }
 
+                final int newVolume = intent.getIntExtra(AudioManager.EXTRA_VOLUME_STREAM_VALUE, 0);
                 final int oldVolume = intent.getIntExtra(
                         AudioManager.EXTRA_PREV_VOLUME_STREAM_VALUE, 0);
                 if (newVolume != oldVolume) {

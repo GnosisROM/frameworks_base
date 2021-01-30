@@ -164,7 +164,6 @@ public class StagingManager {
         public void onBootPhase(int phase) {
             if (phase == SystemService.PHASE_BOOT_COMPLETED && sStagingManager != null) {
                 sStagingManager.markStagedSessionsAsSuccessful();
-                sStagingManager.markBootCompleted();
             }
         }
     }
@@ -178,10 +177,6 @@ public class StagingManager {
                 mStagedSessions.put(sessionInfo.sessionId, sessionInfo);
             }
         }
-    }
-
-    private void markBootCompleted() {
-        mApexManager.markBootCompleted();
     }
 
     /**
@@ -605,14 +600,13 @@ public class StagingManager {
             // If checkpoint is supported, then we only resume sessions if we are in checkpointing
             // mode. If not, we fail all sessions.
             if (supportsCheckpoint() && !needsCheckpoint()) {
-                String revertMsg = "Reverting back to safe state. Marking "
-                        + session.sessionId + " as failed.";
-                final String reasonForRevert = getReasonForRevert();
-                if (!TextUtils.isEmpty(reasonForRevert)) {
-                    revertMsg += " Reason for revert: " + reasonForRevert;
+                String errorMsg = "Reverting back to safe state. Marking " + session.sessionId
+                        + " as failed";
+                if (!TextUtils.isEmpty(mFailureReason)) {
+                    errorMsg = errorMsg + ": " + mFailureReason;
                 }
-                Slog.d(TAG, revertMsg);
-                session.setStagedSessionFailed(SessionInfo.STAGED_SESSION_UNKNOWN, revertMsg);
+                Slog.d(TAG, errorMsg);
+                session.setStagedSessionFailed(SessionInfo.STAGED_SESSION_UNKNOWN, errorMsg);
                 return;
             }
         } catch (RemoteException e) {
@@ -714,16 +708,6 @@ public class StagingManager {
                 mApexManager.markStagedSessionSuccessful(session.sessionId);
             }
         }
-    }
-
-    private String getReasonForRevert() {
-        if (!TextUtils.isEmpty(mFailureReason)) {
-            return mFailureReason;
-        }
-        if (!TextUtils.isEmpty(mNativeFailureReason)) {
-            return "Session reverted due to crashing native process: " + mNativeFailureReason;
-        }
-        return "";
     }
 
     private List<String> findAPKsInDir(File stageDir) {
@@ -1402,7 +1386,7 @@ public class StagingManager {
         }
 
         /**
-         * A placeholder state for starting the pre reboot verification.
+         * A dummy state for starting the pre reboot verification.
          *
          * See {@link PreRebootVerificationHandler} to see all nodes of pre reboot verification
          */

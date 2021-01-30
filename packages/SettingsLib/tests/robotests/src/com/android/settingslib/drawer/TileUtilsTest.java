@@ -284,7 +284,7 @@ public class TileUtilsTest {
 
         assertThat(outTiles).hasSize(1);
         final Bundle newMetaData = outTiles.get(0).getMetaData();
-        assertThat(newMetaData).isNotSameInstanceAs(oldMetadata);
+        assertThat(newMetaData).isNotSameAs(oldMetadata);
     }
 
     @Test

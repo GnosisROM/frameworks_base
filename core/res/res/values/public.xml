@@ -3043,7 +3043,6 @@
        =============================================================== -->
 
   <public-group type="attr" first-id="0x01010617">
-    <public name="canPauseRecording" />
     <!-- attribute definitions go here -->
   </public-group>
 

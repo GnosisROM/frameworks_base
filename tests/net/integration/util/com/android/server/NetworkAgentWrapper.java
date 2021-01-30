@@ -24,14 +24,13 @@ import static android.net.NetworkCapabilities.TRANSPORT_VPN;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI_AWARE;
 
-import static com.android.server.ConnectivityServiceTestUtils.transportToLegacyType;
+import static com.android.server.ConnectivityServiceTestUtilsKt.transportToLegacyType;
 
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotEquals;
 
-import android.annotation.NonNull;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
@@ -39,9 +38,9 @@ import android.net.Network;
 import android.net.NetworkAgent;
 import android.net.NetworkAgentConfig;
 import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.net.NetworkProvider;
 import android.net.NetworkSpecifier;
-import android.net.QosFilter;
 import android.net.SocketKeepalive;
 import android.net.UidRange;
 import android.os.ConditionVariable;
@@ -49,16 +48,14 @@ import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
-import com.android.net.module.util.ArrayTrackRecord;
 import com.android.server.connectivity.ConnectivityConstants;
-import com.android.testutils.HandlerUtils;
+import com.android.testutils.HandlerUtilsKt;
 import com.android.testutils.TestableNetworkCallback;
 
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NetworkAgentWrapper implements TestableNetworkCallback.HasNetwork {
+    private final NetworkInfo mNetworkInfo;
     private final NetworkCapabilities mNetworkCapabilities;
     private final HandlerThread mHandlerThread;
     private final Context mContext;
@@ -66,23 +63,18 @@ public class NetworkAgentWrapper implements TestableNetworkCallback.HasNetwork {
 
     private final ConditionVariable mDisconnected = new ConditionVariable();
     private final ConditionVariable mPreventReconnectReceived = new ConditionVariable();
-    private final AtomicBoolean mConnected = new AtomicBoolean(false);
     private int mScore;
     private NetworkAgent mNetworkAgent;
     private int mStartKeepaliveError = SocketKeepalive.ERROR_UNSUPPORTED;
     private int mStopKeepaliveError = SocketKeepalive.NO_KEEPALIVE;
-    // Controls how test network agent is going to wait before responding to keepalive
-    // start/stop. Useful when simulate KeepaliveTracker is waiting for response from modem.
-    private long mKeepaliveResponseDelay = 0L;
     private Integer mExpectedKeepaliveSlot = null;
-    private final ArrayTrackRecord<CallbackType>.ReadHead mCallbackHistory =
-            new ArrayTrackRecord<CallbackType>().newReadHead();
 
-    public NetworkAgentWrapper(int transport, LinkProperties linkProperties,
-            NetworkCapabilities ncTemplate, Context context) throws Exception {
+    public NetworkAgentWrapper(int transport, LinkProperties linkProperties, Context context)
+            throws Exception {
         final int type = transportToLegacyType(transport);
         final String typeName = ConnectivityManager.getNetworkTypeName(type);
-        mNetworkCapabilities = (ncTemplate != null) ? ncTemplate : new NetworkCapabilities();
+        mNetworkInfo = new NetworkInfo(type, 0, typeName, "Mock");
+        mNetworkCapabilities = new NetworkCapabilities();
         mNetworkCapabilities.addCapability(NET_CAPABILITY_NOT_SUSPENDED);
         mNetworkCapabilities.addTransportType(transport);
         switch (transport) {
@@ -113,29 +105,22 @@ public class NetworkAgentWrapper implements TestableNetworkCallback.HasNetwork {
         mHandlerThread = new HandlerThread(mLogTag);
         mHandlerThread.start();
 
-        mNetworkAgent = makeNetworkAgent(linkProperties, type, typeName);
+        mNetworkAgent = makeNetworkAgent(linkProperties);
     }
 
-    protected InstrumentedNetworkAgent makeNetworkAgent(LinkProperties linkProperties,
-            final int type, final String typeName)
+    protected InstrumentedNetworkAgent makeNetworkAgent(LinkProperties linkProperties)
             throws Exception {
-        return new InstrumentedNetworkAgent(this, linkProperties, type, typeName);
+        return new InstrumentedNetworkAgent(this, linkProperties);
     }
 
     public static class InstrumentedNetworkAgent extends NetworkAgent {
         private final NetworkAgentWrapper mWrapper;
-        private static final String PROVIDER_NAME = "InstrumentedNetworkAgentProvider";
 
-        public InstrumentedNetworkAgent(NetworkAgentWrapper wrapper, LinkProperties lp,
-                final int type, final String typeName) {
-            super(wrapper.mContext, wrapper.mHandlerThread.getLooper(), wrapper.mLogTag,
-                    wrapper.mNetworkCapabilities, lp, wrapper.mScore,
-                    new NetworkAgentConfig.Builder()
-                            .setLegacyType(type).setLegacyTypeName(typeName).build(),
-                    new NetworkProvider(wrapper.mContext, wrapper.mHandlerThread.getLooper(),
-                            PROVIDER_NAME));
+        public InstrumentedNetworkAgent(NetworkAgentWrapper wrapper, LinkProperties lp) {
+            super(wrapper.mHandlerThread.getLooper(), wrapper.mContext, wrapper.mLogTag,
+                    wrapper.mNetworkInfo, wrapper.mNetworkCapabilities, lp, wrapper.mScore,
+                    new NetworkAgentConfig(), NetworkProvider.ID_NONE);
             mWrapper = wrapper;
-            register();
         }
 
         @Override
@@ -149,31 +134,12 @@ public class NetworkAgentWrapper implements TestableNetworkCallback.HasNetwork {
             if (mWrapper.mExpectedKeepaliveSlot != null) {
                 assertEquals((int) mWrapper.mExpectedKeepaliveSlot, slot);
             }
-            mWrapper.mHandlerThread.getThreadHandler().postDelayed(
-                    () -> onSocketKeepaliveEvent(slot, mWrapper.mStartKeepaliveError),
-                    mWrapper.mKeepaliveResponseDelay);
+            onSocketKeepaliveEvent(slot, mWrapper.mStartKeepaliveError);
         }
 
         @Override
         public void stopSocketKeepalive(Message msg) {
-            final int slot = msg.arg1;
-            mWrapper.mHandlerThread.getThreadHandler().postDelayed(
-                    () -> onSocketKeepaliveEvent(slot, mWrapper.mStopKeepaliveError),
-                    mWrapper.mKeepaliveResponseDelay);
-        }
-
-        @Override
-        public void onQosCallbackRegistered(final int qosCallbackId,
-                final @NonNull QosFilter filter) {
-            Log.i(mWrapper.mLogTag, "onQosCallbackRegistered");
-            mWrapper.mCallbackHistory.add(
-                    new CallbackType.OnQosCallbackRegister(qosCallbackId, filter));
-        }
-
-        @Override
-        public void onQosCallbackUnregistered(final int qosCallbackId) {
-            Log.i(mWrapper.mLogTag, "onQosCallbackUnregistered");
-            mWrapper.mCallbackHistory.add(new CallbackType.OnQosCallbackUnregister(qosCallbackId));
+            onSocketKeepaliveEvent(msg.arg1, mWrapper.mStopKeepaliveError);
         }
 
         @Override
@@ -238,12 +204,10 @@ public class NetworkAgentWrapper implements TestableNetworkCallback.HasNetwork {
     }
 
     public void connect() {
-        if (!mConnected.compareAndSet(false /* expect */, true /* update */)) {
-            // compareAndSet returns false when the value couldn't be updated because it did not
-            // match the expected value.
-            fail("Test NetworkAgents can only be connected once");
-        }
-        mNetworkAgent.markConnected();
+        assertNotEquals("MockNetworkAgents can only be connected once",
+                getNetworkInfo().getDetailedState(), NetworkInfo.DetailedState.CONNECTED);
+        mNetworkInfo.setDetailedState(NetworkInfo.DetailedState.CONNECTED, null, null);
+        mNetworkAgent.sendNetworkInfo(mNetworkInfo);
     }
 
     public void suspend() {
@@ -255,7 +219,8 @@ public class NetworkAgentWrapper implements TestableNetworkCallback.HasNetwork {
     }
 
     public void disconnect() {
-        mNetworkAgent.unregister();
+        mNetworkInfo.setDetailedState(NetworkInfo.DetailedState.DISCONNECTED, null, null);
+        mNetworkAgent.sendNetworkInfo(mNetworkInfo);
     }
 
     @Override
@@ -283,10 +248,6 @@ public class NetworkAgentWrapper implements TestableNetworkCallback.HasNetwork {
         mStopKeepaliveError = reason;
     }
 
-    public void setKeepaliveResponseDelay(long delay) {
-        mKeepaliveResponseDelay = delay;
-    }
-
     public void setExpectedKeepaliveSlot(Integer slot) {
         mExpectedKeepaliveSlot = slot;
     }
@@ -295,64 +256,15 @@ public class NetworkAgentWrapper implements TestableNetworkCallback.HasNetwork {
         return mNetworkAgent;
     }
 
+    public NetworkInfo getNetworkInfo() {
+        return mNetworkInfo;
+    }
+
     public NetworkCapabilities getNetworkCapabilities() {
         return mNetworkCapabilities;
     }
 
-    public @NonNull ArrayTrackRecord<CallbackType>.ReadHead getCallbackHistory() {
-        return mCallbackHistory;
-    }
-
     public void waitForIdle(long timeoutMs) {
-        HandlerUtils.waitForIdle(mHandlerThread, timeoutMs);
-    }
-
-    abstract static class CallbackType {
-        final int mQosCallbackId;
-
-        protected CallbackType(final int qosCallbackId) {
-            mQosCallbackId = qosCallbackId;
-        }
-
-        static class OnQosCallbackRegister extends CallbackType {
-            final QosFilter mFilter;
-            OnQosCallbackRegister(final int qosCallbackId, final QosFilter filter) {
-                super(qosCallbackId);
-                mFilter = filter;
-            }
-
-            @Override
-            public boolean equals(final Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                final OnQosCallbackRegister that = (OnQosCallbackRegister) o;
-                return mQosCallbackId == that.mQosCallbackId
-                        && Objects.equals(mFilter, that.mFilter);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(mQosCallbackId, mFilter);
-            }
-        }
-
-        static class OnQosCallbackUnregister extends CallbackType {
-            OnQosCallbackUnregister(final int qosCallbackId) {
-                super(qosCallbackId);
-            }
-
-            @Override
-            public boolean equals(final Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                final OnQosCallbackUnregister that = (OnQosCallbackUnregister) o;
-                return mQosCallbackId == that.mQosCallbackId;
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(mQosCallbackId);
-            }
-        }
+        HandlerUtilsKt.waitForIdle(mHandlerThread, timeoutMs);
     }
 }

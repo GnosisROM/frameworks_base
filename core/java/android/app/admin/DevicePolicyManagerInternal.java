@@ -36,36 +36,36 @@ import java.util.Set;
 public abstract class DevicePolicyManagerInternal {
 
     /**
-     * Listener for changes in the allowlisted packages to show cross-profile
+     * Listener for changes in the white-listed packages to show cross-profile
      * widgets.
      */
     public interface OnCrossProfileWidgetProvidersChangeListener {
 
         /**
-         * Called when the allowlisted packages to show cross-profile widgets
+         * Called when the white-listed packages to show cross-profile widgets
          * have changed for a given user.
          *
-         * @param profileId The profile for which the allowlisted packages changed.
-         * @param packages The allowlisted packages.
+         * @param profileId The profile for which the white-listed packages changed.
+         * @param packages The white-listed packages.
          */
         public void onCrossProfileWidgetProvidersChanged(int profileId, List<String> packages);
     }
 
     /**
-     * Gets the packages whose widget providers are allowlisted to be
+     * Gets the packages whose widget providers are white-listed to be
      * available in the parent user.
      *
      * <p>This takes the DPMS lock.  DO NOT call from PM/UM/AM with their lock held.
      *
      * @param profileId The profile id.
      * @return The list of packages if such or empty list if there are
-     *    no allowlisted packages or the profile id is not a managed
+     *    no white-listed packages or the profile id is not a managed
      *    profile.
      */
     public abstract List<String> getCrossProfileWidgetProviders(int profileId);
 
     /**
-     * Adds a listener for changes in the allowlisted packages to show
+     * Adds a listener for changes in the white-listed packages to show
      * cross-profile app widgets.
      *
      * <p>This takes the DPMS lock.  DO NOT call from PM/UM/AM with their lock held.
@@ -86,26 +86,6 @@ public abstract class DevicePolicyManagerInternal {
      * @return true if the uid is an active admin with the given policy.
      */
     public abstract boolean isActiveAdminWithPolicy(int uid, int reqPolicy);
-
-    /**
-     * Checks if an app with given uid is an active device owner of its user.
-     *
-     * <p>This takes the DPMS lock.  DO NOT call from PM/UM/AM with their lock held.
-     *
-     * @param uid App uid.
-     * @return true if the uid is an active device owner.
-     */
-    public abstract boolean isActiveDeviceOwner(int uid);
-
-    /**
-     * Checks if an app with given uid is an active profile owner of its user.
-     *
-     * <p>This takes the DPMS lock.  DO NOT call from PM/UM/AM with their lock held.
-     *
-     * @param uid App uid.
-     * @return true if the uid is an active profile owner.
-     */
-    public abstract boolean isActiveProfileOwner(int uid);
 
     /**
      * Checks if an app with given uid is the active supervision admin.
@@ -201,7 +181,7 @@ public abstract class DevicePolicyManagerInternal {
      * {@link com.android.internal.R.array#vendor_cross_profile_apps}.</li>
      * </ul>
      *
-     * @return the combined set of allowlisted package names set via
+     * @return the combined set of whitelisted package names set via
      * {@link DevicePolicyManager#setCrossProfilePackages(ComponentName, Set)} and
      * {@link com.android.internal.R.array#cross_profile_apps} and
      * {@link com.android.internal.R.array#vendor_cross_profile_apps}

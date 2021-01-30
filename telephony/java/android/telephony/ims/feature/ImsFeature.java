@@ -44,6 +44,7 @@ import java.util.Map;
  * @hide
  */
 @SystemApi
+@TestApi
 public abstract class ImsFeature {
 
     private static final String LOG_TAG = "ImsFeature";
@@ -61,19 +62,19 @@ public abstract class ImsFeature {
      * CSFB for emergency calling.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final int FEATURE_EMERGENCY_MMTEL = 0;
     /**
      * This feature supports the MMTEL feature.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final int FEATURE_MMTEL = 1;
     /**
      * This feature supports the RCS feature.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final int FEATURE_RCS = 2;
     /**
      * Total number of features defined
@@ -123,7 +124,7 @@ public abstract class ImsFeature {
      * during this time will result in an {@link IllegalStateException}.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final int STATE_UNAVAILABLE = 0;
     /**
      * This {@link ImsFeature} state is initializing and should not be communicated with. This will
@@ -131,14 +132,14 @@ public abstract class ImsFeature {
      * during this time will result in an {@link IllegalStateException}.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final int STATE_INITIALIZING = 1;
     /**
      * This {@link ImsFeature} is ready for communication. Do not attempt to call framework methods
      * until {@see #onFeatureReady()} is called.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final int STATE_READY = 2;
 
     /**
@@ -168,13 +169,13 @@ public abstract class ImsFeature {
      * The capability was unable to be changed.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final int CAPABILITY_ERROR_GENERIC = -1;
     /**
      * The capability was able to be changed.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public static final int CAPABILITY_SUCCESS = 0;
 
     /**
@@ -336,7 +337,7 @@ public abstract class ImsFeature {
     /**
      * @hide
      */
-    public void initialize(Context context, int slotId) {
+    public final void initialize(Context context, int slotId) {
         mContext = context;
         mSlotId = slotId;
     }
@@ -348,7 +349,7 @@ public abstract class ImsFeature {
      * subscription IDs associated with this slot.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public final int getSlotIndex() {
         return mSlotId;
     }
@@ -358,7 +359,7 @@ public abstract class ImsFeature {
      * or {@link #STATE_UNAVAILABLE} if it has not been updated  yet.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public @ImsState int getFeatureState() {
         synchronized (mLock) {
             return mState;
@@ -372,7 +373,7 @@ public abstract class ImsFeature {
      * {@link #STATE_INITIALIZING}, or {@link #STATE_READY}.
      * @hide
      */
-    @SystemApi
+    @SystemApi @TestApi
     public final void setFeatureState(@ImsState int state) {
         synchronized (mLock) {
             if (mState != state) {
@@ -509,7 +510,6 @@ public abstract class ImsFeature {
      * @return true if the capability is enabled, false otherwise.
      * @hide
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     public abstract boolean queryCapabilityConfiguration(int capability, int radioTech);
 
     /**
@@ -548,6 +548,5 @@ public abstract class ImsFeature {
      * @return Binder instance that the framework will use to communicate with this feature.
      * @hide
      */
-    @SuppressWarnings("HiddenAbstractMethod")
     protected abstract IInterface getBinder();
 }

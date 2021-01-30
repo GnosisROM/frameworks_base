@@ -43,6 +43,7 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.UserInfo;
 import android.content.pm.UserInfo.UserInfoFlag;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -830,7 +831,7 @@ public class UserManager {
     public static final String DISALLOW_UNMUTE_MICROPHONE = "no_unmute_microphone";
 
     /**
-     * Specifies if a user is disallowed from adjusting the global volume. If set, the global volume
+     * Specifies if a user is disallowed from adjusting the master volume. If set, the master volume
      * will be muted. This can be set by device owners from API 21 and profile owners from API 24.
      * The default value is <code>false</code>.
      *
@@ -1020,7 +1021,7 @@ public class UserManager {
      * @see #getUserRestrictions()
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String DISALLOW_RECORD_AUDIO = "no_record_audio";
 
     /**
@@ -1056,7 +1057,7 @@ public class UserManager {
     public static final String DISALLOW_CAMERA = "no_camera";
 
     /**
-     * Specifies if a user is not allowed to unmute the device's global volume.
+     * Specifies if a user is not allowed to unmute the device's master volume.
      *
      * @see DevicePolicyManager#setMasterVolumeMuted(ComponentName, boolean)
      * @see DevicePolicyManager#clearUserRestriction(ComponentName, String)
@@ -1407,7 +1408,8 @@ public class UserManager {
      *
      * @hide
      */
-    @SystemApi // To allow seeing it from CTS.
+    @SystemApi
+    @TestApi // To allow seeing it from CTS.
     public static final String ACTION_USER_RESTRICTIONS_CHANGED =
             "android.os.action.USER_RESTRICTIONS_CHANGED";
 
@@ -1662,7 +1664,7 @@ public class UserManager {
      * @hide
      */
     @Deprecated
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public boolean canSwitchUsers() {
         boolean allowUserSwitchingWhenSystemUserLocked = Settings.Global.getInt(
                 mContext.getContentResolver(),
@@ -1992,16 +1994,13 @@ public class UserManager {
     }
 
     /**
-     * Checks if the calling context user can have a restricted profile.
-     * @return whether the context user can have a restricted profile.
+     * Checks if specified user can have restricted profile.
      * @hide
      */
-    @SystemApi
     @RequiresPermission(android.Manifest.permission.MANAGE_USERS)
-    @UserHandleAware
-    public boolean canHaveRestrictedProfile() {
+    public boolean canHaveRestrictedProfile(@UserIdInt int userId) {
         try {
-            return mService.canHaveRestrictedProfile(mUserId);
+            return mService.canHaveRestrictedProfile(userId);
         } catch (RemoteException re) {
             throw re.rethrowFromSystemServer();
         }
@@ -2023,30 +2022,11 @@ public class UserManager {
     }
 
     /**
-     * Get the parent of a restricted profile.
-     *
-     * @return the parent of the user or {@code null} if the user is not restricted profile
-     * @hide
-     */
-    @SystemApi
-    @RequiresPermission(anyOf = {Manifest.permission.MANAGE_USERS,
-            Manifest.permission.CREATE_USERS})
-    @UserHandleAware
-    public @Nullable UserHandle getRestrictedProfileParent() {
-        final UserInfo info = getUserInfo(mUserId);
-        if (info == null) return null;
-        if (!info.isRestricted()) return null;
-        final int parent = info.restrictedProfileParentId;
-        if (parent == UserHandle.USER_NULL) return null;
-        return UserHandle.of(parent);
-    }
-
-    /**
      * Checks if a user is a guest user.
      * @return whether user is a guest user.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @RequiresPermission(anyOf = {Manifest.permission.MANAGE_USERS,
             Manifest.permission.CREATE_USERS})
     public boolean isGuestUser(@UserIdInt int userId) {
@@ -2377,7 +2357,7 @@ public class UserManager {
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public long getUserStartRealtime() {
         try {
             return mService.getUserStartRealtime();
@@ -2392,7 +2372,7 @@ public class UserManager {
      *
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public long getUserUnlockRealtime() {
         try {
             return mService.getUserUnlockRealtime();
@@ -3194,55 +3174,28 @@ public class UserManager {
     }
 
     /**
-     * Returns information for all fully-created users on this device, including ones marked for
-     * deletion.
+     * Returns information for all users on this device, including ones marked for deletion.
+     * To retrieve only users that are alive, use {@link #getUsers(boolean)}.
      *
-     * <p>To retrieve only users that are not marked for deletion, use {@link #getAliveUsers()}.
-     *
-     * <p>To retrieve *all* users (including partial and pre-created users), use
-     * {@link #getUsers(boolean, boolean, boolean)) getUsers(false, false, false)}.
-     *
-     * <p>To retrieve a more specific list of users, use
-     * {@link #getUsers(boolean, boolean, boolean)}.
-     *
-     * @return the list of users that were created.
-     *
+     * @return the list of users that exist on the device.
      * @hide
      */
     @UnsupportedAppUsage
     @RequiresPermission(android.Manifest.permission.MANAGE_USERS)
     public List<UserInfo> getUsers() {
-        return getUsers(/*excludePartial= */ true, /* excludeDying= */ false,
-                /* excludePreCreated= */ true);
+        return getUsers(/* excludeDying= */ false);
     }
 
     /**
-     * Returns information for all "usable" users on this device (i.e, it excludes users that are
-     * marked for deletion, pre-created users, etc...).
+     * Returns information for all users on this device. Requires
+     * {@link android.Manifest.permission#MANAGE_USERS} permission.
      *
-     * <p>To retrieve all fully-created users, use {@link #getUsers()}.
-     *
-     * <p>To retrieve a more specific list of users, use
-     * {@link #getUsers(boolean, boolean, boolean)}.
-     *
+     * @param excludeDying specify if the list should exclude users being
+     *            removed.
      * @return the list of users that were created.
      * @hide
      */
-    @RequiresPermission(android.Manifest.permission.MANAGE_USERS)
-    public @NonNull List<UserInfo> getAliveUsers() {
-        return getUsers(/*excludePartial= */ true, /* excludeDying= */ true,
-                /* excludePreCreated= */ true);
-    }
-
-    /**
-     * @deprecated use {@link #getAliveUsers()} for {@code getUsers(true)}, or
-     * {@link #getUsers()} for @code getUsers(false)}.
-     *
-     * @hide
-     */
-    @Deprecated
     @UnsupportedAppUsage
-    @RequiresPermission(android.Manifest.permission.MANAGE_USERS)
     public @NonNull List<UserInfo> getUsers(boolean excludeDying) {
         return getUsers(/*excludePartial= */ true, excludeDying,
                 /* excludePreCreated= */ true);
@@ -4181,7 +4134,7 @@ public class UserManager {
     /**
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static boolean isDeviceInDemoMode(Context context) {
         return Settings.Global.getInt(context.getContentResolver(),
                 Settings.Global.DEVICE_DEMO_MODE, 0) > 0;

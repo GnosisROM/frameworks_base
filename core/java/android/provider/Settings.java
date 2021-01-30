@@ -59,7 +59,6 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.BatteryManager;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.os.DropBoxManager;
@@ -226,6 +225,7 @@ public final class Settings {
      */
     @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
     @SystemApi
+    @TestApi
     public static final String ACTION_TETHER_PROVISIONING_UI =
             "android.settings.TETHER_PROVISIONING_UI";
 
@@ -924,7 +924,7 @@ public final class Settings {
      * @hide
      */
     @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String ACTION_USER_DICTIONARY_INSERT =
             "com.android.settings.USER_DICTIONARY_INSERT";
 
@@ -999,20 +999,6 @@ public final class Settings {
             "android.settings.MANAGE_ALL_APPLICATIONS_SETTINGS";
 
     /**
-     * Activity Action: Show settings to manage all SIM profiles.
-     * <p>
-     * In some cases, a matching Activity may not exist, so ensure you
-     * safeguard against this.
-     * <p>
-     * Input: Nothing.
-     * <p>
-     * Output: Nothing.
-     */
-    @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
-    public static final String ACTION_MANAGE_ALL_SUBSCRIPTIONS_SETTINGS =
-            "android.settings.MANAGE_ALL_SUBSCRIPTIONS_SETTINGS";
-
-    /**
      * Activity Action: Show screen for controlling which apps can draw on top of other apps.
      * <p>
      * In some cases, a matching Activity may not exist, so ensure you safeguard against this.
@@ -1048,6 +1034,7 @@ public final class Settings {
      *
      * @hide
      */
+    @TestApi
     @SystemApi
     @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
     public static final String ACTION_MANAGE_APP_OVERLAY_PERMISSION =
@@ -1889,7 +1876,7 @@ public final class Settings {
             = "android.settings.ACTION_APP_NOTIFICATION_REDACTION";
 
     /** @hide */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static final String EXTRA_APP_UID = "app_uid";
 
     /**
@@ -2011,6 +1998,7 @@ public final class Settings {
      * @hide
      */
     @SystemApi
+    @TestApi
     @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
     public static final String ACTION_ENTERPRISE_PRIVACY_SETTINGS
             = "android.settings.ENTERPRISE_PRIVACY_SETTINGS";
@@ -2093,6 +2081,7 @@ public final class Settings {
      * @hide
      */
     @SystemApi
+    @TestApi
     @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
     public static final String ACTION_REQUEST_ENABLE_CONTENT_CAPTURE =
             "android.settings.REQUEST_ENABLE_CONTENT_CAPTURE";
@@ -2417,7 +2406,7 @@ public final class Settings {
      * This is the only type of reset available to non-system clients.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     @TestApi
     public static final int RESET_MODE_PACKAGE_DEFAULTS = 1;
 
@@ -3062,7 +3051,7 @@ public final class Settings {
         public static final Uri CONTENT_URI =
             Uri.parse("content://" + AUTHORITY + "/system");
 
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         private static final ContentProviderHolder sProviderHolder =
                 new ContentProviderHolder(CONTENT_URI);
 
@@ -3111,9 +3100,9 @@ public final class Settings {
             MOVED_TO_SECURE.add(Secure.INSTALL_NON_MARKET_APPS);
         }
 
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         private static final HashSet<String> MOVED_TO_GLOBAL;
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         private static final HashSet<String> MOVED_TO_SECURE_THEN_GLOBAL;
         static {
             MOVED_TO_GLOBAL = new HashSet<>();
@@ -4262,7 +4251,7 @@ public final class Settings {
          * Kept for use by legacy database upgrade code in DatabaseHelper.
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String VIBRATE_IN_SILENT = "vibrate_in_silent";
 
         /**
@@ -4557,7 +4546,7 @@ public final class Settings {
          * 3 = HCO
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String TTY_MODE = "tty_mode";
 
         /**
@@ -4584,7 +4573,7 @@ public final class Settings {
          * pending. The value is boolean (1 or 0).
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String NOTIFICATION_LIGHT_PULSE = "notification_light_pulse";
 
         /**
@@ -4593,7 +4582,7 @@ public final class Settings {
          * 1 = yes
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String POINTER_LOCATION = "pointer_location";
 
         /**
@@ -4602,7 +4591,7 @@ public final class Settings {
          * 1 = yes
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String SHOW_TOUCHES = "show_touches";
 
         /**
@@ -4630,14 +4619,14 @@ public final class Settings {
          * @hide
          */
         @Deprecated
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String DOCK_SOUNDS_ENABLED = Global.DOCK_SOUNDS_ENABLED;
 
         /**
          * Whether to play sounds when the keyguard is shown and dismissed.
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String LOCKSCREEN_SOUNDS_ENABLED = "lockscreen_sounds_enabled";
 
         /**
@@ -4660,7 +4649,7 @@ public final class Settings {
          * @hide
          */
         @Deprecated
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String DESK_DOCK_SOUND = Global.DESK_DOCK_SOUND;
 
         /**
@@ -4669,7 +4658,7 @@ public final class Settings {
          * @hide
          */
         @Deprecated
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String DESK_UNDOCK_SOUND = Global.DESK_UNDOCK_SOUND;
 
         /**
@@ -4678,7 +4667,7 @@ public final class Settings {
          * @hide
          */
         @Deprecated
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String CAR_DOCK_SOUND = Global.CAR_DOCK_SOUND;
 
         /**
@@ -4687,7 +4676,7 @@ public final class Settings {
          * @hide
          */
         @Deprecated
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String CAR_UNDOCK_SOUND = Global.CAR_UNDOCK_SOUND;
 
         /**
@@ -4696,7 +4685,7 @@ public final class Settings {
          * @hide
          */
         @Deprecated
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String LOCK_SOUND = Global.LOCK_SOUND;
 
         /**
@@ -4705,7 +4694,7 @@ public final class Settings {
          * @hide
          */
         @Deprecated
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String UNLOCK_SOUND = Global.UNLOCK_SOUND;
 
         /**
@@ -4754,7 +4743,7 @@ public final class Settings {
          *   +7 = fastest
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String POINTER_SPEED = "pointer_speed";
 
         /**
@@ -4812,7 +4801,7 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final Set<String> PUBLIC_SETTINGS = new ArraySet<>();
         static {
             PUBLIC_SETTINGS.add(END_BUTTON_BEHAVIOR);
@@ -4871,7 +4860,7 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final Set<String> PRIVATE_SETTINGS = new ArraySet<>();
         static {
             PRIVATE_SETTINGS.add(WIFI_USE_STATIC_IP);
@@ -4920,7 +4909,7 @@ public final class Settings {
          * These entries are considered common between the personal and the managed profile,
          * since the managed profile doesn't get to change them.
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         private static final Set<String> CLONE_TO_MANAGED_PROFILE = new ArraySet<>();
         static {
             CLONE_TO_MANAGED_PROFILE.add(DATE_FORMAT);
@@ -5247,7 +5236,7 @@ public final class Settings {
         public static final Uri CONTENT_URI =
             Uri.parse("content://" + AUTHORITY + "/secure");
 
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         private static final ContentProviderHolder sProviderHolder =
                 new ContentProviderHolder(CONTENT_URI);
 
@@ -5487,7 +5476,7 @@ public final class Settings {
         }
 
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static boolean putStringForUser(@NonNull ContentResolver resolver,
                 @NonNull String name, @Nullable String value, @Nullable String tag,
                 boolean makeDefault, @UserIdInt int userHandle, boolean overrideableByRestore) {
@@ -5564,6 +5553,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         @RequiresPermission(Manifest.permission.WRITE_SECURE_SETTINGS)
         public static void resetToDefaults(@NonNull ContentResolver resolver,
                 @Nullable String tag) {
@@ -5727,7 +5717,7 @@ public final class Settings {
         }
 
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static long getLongForUser(ContentResolver cr, String name, long def,
                 int userHandle) {
             String valString = getStringForUser(cr, name, userHandle);
@@ -5791,7 +5781,7 @@ public final class Settings {
         }
 
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static boolean putLongForUser(ContentResolver cr, String name, long value,
                 int userHandle) {
             return putStringForUser(cr, name, Long.toString(value), userHandle);
@@ -6034,6 +6024,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String AUTOFILL_FEATURE_FIELD_CLASSIFICATION =
                 "autofill_field_classification";
 
@@ -6067,6 +6058,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String AUTOFILL_USER_DATA_MAX_USER_DATA_SIZE =
                 "autofill_user_data_max_user_data_size";
 
@@ -6077,6 +6069,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String AUTOFILL_USER_DATA_MAX_FIELD_CLASSIFICATION_IDS_SIZE =
                 "autofill_user_data_max_field_classification_size";
 
@@ -6087,6 +6080,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String AUTOFILL_USER_DATA_MAX_CATEGORY_COUNT =
                 "autofill_user_data_max_category_count";
 
@@ -6096,6 +6090,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String AUTOFILL_USER_DATA_MAX_VALUE_LENGTH =
                 "autofill_user_data_max_value_length";
 
@@ -6105,6 +6100,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String AUTOFILL_USER_DATA_MIN_VALUE_LENGTH =
                 "autofill_user_data_min_value_length";
 
@@ -6154,6 +6150,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String USER_SETUP_COMPLETE = "user_setup_complete";
 
         /**
@@ -6463,7 +6460,7 @@ public final class Settings {
          * subject to current DeviceAdmin policy limits.
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String LOCK_SCREEN_LOCK_AFTER_TIMEOUT = "lock_screen_lock_after_timeout";
 
 
@@ -6505,7 +6502,7 @@ public final class Settings {
          * @deprecated
          */
         @Deprecated
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String LOCK_SCREEN_OWNER_INFO_ENABLED =
             "lock_screen_owner_info_enabled";
 
@@ -6518,6 +6515,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String LOCK_SCREEN_ALLOW_PRIVATE_NOTIFICATIONS =
                 "lock_screen_allow_private_notifications";
 
@@ -6636,7 +6634,7 @@ public final class Settings {
          * accessibility feature.
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         @TestApi
         public static final String ACCESSIBILITY_SHORTCUT_TARGET_SERVICE =
                 "accessibility_shortcut_target_service";
@@ -6990,7 +6988,7 @@ public final class Settings {
          * @see android.graphics.Typeface
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String ACCESSIBILITY_CAPTIONING_TYPEFACE =
                 "accessibility_captioning_typeface";
 
@@ -7030,7 +7028,7 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String ACCESSIBILITY_DISPLAY_DALTONIZER =
                 "accessibility_display_daltonizer";
 
@@ -7417,7 +7415,7 @@ public final class Settings {
          * Type: int ( 0 = disabled, 1 = enabled )
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String BACKUP_ENABLED = "backup_enabled";
 
         /**
@@ -7426,7 +7424,7 @@ public final class Settings {
          * Type: int ( 0 = disabled, 1 = enabled )
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String BACKUP_AUTO_RESTORE = "backup_auto_restore";
 
         /**
@@ -7434,14 +7432,14 @@ public final class Settings {
          * Type: int ( 0 = unprovisioned, 1 = fully provisioned )
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String BACKUP_PROVISIONED = "backup_provisioned";
 
         /**
          * Component of the transport to use for backup/restore.
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String BACKUP_TRANSPORT = "backup_transport";
 
         /**
@@ -7613,7 +7611,7 @@ public final class Settings {
          * Also prevents ANRs and crash dialogs from being suppressed.
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String ANR_SHOW_BACKGROUND = "anr_show_background";
 
         /**
@@ -7630,7 +7628,7 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String VOICE_RECOGNITION_SERVICE = "voice_recognition_service";
 
         /**
@@ -7639,7 +7637,7 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String SELECTED_SPELL_CHECKER = "selected_spell_checker";
 
         /**
@@ -7649,7 +7647,7 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String SELECTED_SPELL_CHECKER_SUBTYPE =
                 "selected_spell_checker_subtype";
 
@@ -7757,6 +7755,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String DOZE_ALWAYS_ON = "doze_always_on";
 
         /**
@@ -7944,7 +7943,7 @@ public final class Settings {
          * The default NFC payment component
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         @TestApi
         public static final String NFC_PAYMENT_DEFAULT_COMPONENT = "nfc_payment_default_component";
 
@@ -7958,14 +7957,14 @@ public final class Settings {
          * Specifies the package name currently configured to be the primary sms application
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String SMS_DEFAULT_APPLICATION = "sms_default_application";
 
         /**
          * Specifies the package name currently configured to be the default dialer application
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String DIALER_DEFAULT_APPLICATION = "dialer_default_application";
 
         /**
@@ -8103,7 +8102,7 @@ public final class Settings {
         /**
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         @TestApi
         public static final String IMMERSIVE_MODE_CONFIRMATIONS = "immersive_mode_confirmations";
 
@@ -8151,6 +8150,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String LOCK_SCREEN_SHOW_NOTIFICATIONS =
                 "lock_screen_show_notifications";
 
@@ -8498,7 +8498,7 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         @TestApi
         public static final String ENABLED_VR_LISTENERS = "enabled_vr_listeners";
 
@@ -8667,7 +8667,7 @@ public final class Settings {
          * The value is boolean (1 or 0).
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         @TestApi
         public static final String NOTIFICATION_BADGING = "notification_badging";
 
@@ -8823,6 +8823,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String LOCATION_ACCESS_CHECK_INTERVAL_MILLIS =
                 "location_access_check_interval_millis";
 
@@ -8831,6 +8832,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String LOCATION_ACCESS_CHECK_DELAY_MILLIS =
                 "location_access_check_delay_millis";
 
@@ -9904,7 +9906,7 @@ public final class Settings {
         * scorer app, external network scores will neither be requested nor accepted.
         * @hide
         */
-       @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+       @UnsupportedAppUsage
        public static final String NETWORK_SCORER_APP = "network_scorer_app";
 
         /**
@@ -10184,6 +10186,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String TETHER_OFFLOAD_DISABLED = "tether_offload_disabled";
 
         /**
@@ -10256,7 +10259,7 @@ public final class Settings {
         * by the system).
         * @hide
         */
-       @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+       @UnsupportedAppUsage
        public static final String WEBVIEW_PROVIDER = "webview_provider";
 
        /**
@@ -10648,7 +10651,7 @@ public final class Settings {
         * the setting needs to be set to 0 to disable it.
         * @hide
         */
-       @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+       @UnsupportedAppUsage
        public static final String WIFI_WATCHDOG_POOR_NETWORK_TEST_ENABLED =
                "wifi_watchdog_poor_network_test_enabled";
 
@@ -10826,7 +10829,7 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         @TestApi
         public static final String OVERLAY_DISPLAY_DEVICES = "overlay_display_devices";
 
@@ -11500,7 +11503,7 @@ public final class Settings {
          * @hide
          * @see com.android.server.power.batterysaver.BatterySaverPolicy
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         @TestApi
         public static final String BATTERY_SAVER_CONSTANTS = "battery_saver_constants";
 
@@ -11625,6 +11628,17 @@ public final class Settings {
          * @hide
          */
         public static final String ALWAYS_ON_DISPLAY_CONSTANTS = "always_on_display_constants";
+
+        /**
+        * System VDSO global setting. This links to the "sys.vdso" system property.
+        * The following values are supported:
+        * false  -> both 32 and 64 bit vdso disabled
+        * 32     -> 32 bit vdso enabled
+        * 64     -> 64 bit vdso enabled
+        * Any other value defaults to both 32 bit and 64 bit true.
+        * @hide
+        */
+        public static final String SYS_VDSO = "sys_vdso";
 
         /**
         * UidCpuPower global setting. This links the sys.uidcpupower system property.
@@ -12225,7 +12239,7 @@ public final class Settings {
          * See RIL_PreferredNetworkType in ril.h
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String PREFERRED_NETWORK_MODE =
                 "preferred_network_mode";
 
@@ -12288,8 +12302,8 @@ public final class Settings {
          * List of package names that should check ANGLE rules
          * @hide
          */
-        public static final String GLOBAL_SETTINGS_ANGLE_ALLOWLIST =
-                "angle_allowlist";
+        public static final String GLOBAL_SETTINGS_ANGLE_WHITELIST =
+                "angle_whitelist";
 
         /**
          * Show the "ANGLE In Use" dialog box to the user when ANGLE is the OpenGL driver.
@@ -12300,71 +12314,63 @@ public final class Settings {
                 "show_angle_in_use_dialog_box";
 
         /**
-         * Updatable driver global preference for all Apps.
+         * Game Driver global preference for all Apps.
          * 0 = Default
-         * 1 = All Apps use updatable production driver
-         * 2 = All apps use updatable prerelease driver
-         * 3 = All Apps use system graphics driver
+         * 1 = All Apps use Game Driver
+         * 2 = All Apps use system graphics driver
          * @hide
          */
-        public static final String UPDATABLE_DRIVER_ALL_APPS = "updatable_driver_all_apps";
+        public static final String GAME_DRIVER_ALL_APPS = "game_driver_all_apps";
 
         /**
-         * List of Apps selected to use updatable production driver.
+         * List of Apps selected to use Game Driver.
          * i.e. <pkg1>,<pkg2>,...,<pkgN>
          * @hide
          */
-        public static final String UPDATABLE_DRIVER_PRODUCTION_OPT_IN_APPS =
-                "updatable_driver_production_opt_in_apps";
+        public static final String GAME_DRIVER_OPT_IN_APPS = "game_driver_opt_in_apps";
 
         /**
-         * List of Apps selected to use updatable prerelease driver.
+         * List of Apps selected to use prerelease Game Driver.
          * i.e. <pkg1>,<pkg2>,...,<pkgN>
          * @hide
          */
-        public static final String UPDATABLE_DRIVER_PRERELEASE_OPT_IN_APPS =
-                "updatable_driver_prerelease_opt_in_apps";
+        public static final String GAME_DRIVER_PRERELEASE_OPT_IN_APPS =
+                "game_driver_prerelease_opt_in_apps";
 
         /**
-         * List of Apps selected not to use updatable production driver.
+         * List of Apps selected not to use Game Driver.
          * i.e. <pkg1>,<pkg2>,...,<pkgN>
          * @hide
          */
-        public static final String UPDATABLE_DRIVER_PRODUCTION_OPT_OUT_APPS =
-                "updatable_driver_production_opt_out_apps";
+        public static final String GAME_DRIVER_OPT_OUT_APPS = "game_driver_opt_out_apps";
 
         /**
-         * Apps on the denylist that are forbidden to use updatable production driver.
+         * Apps on the blacklist that are forbidden to use Game Driver.
          * @hide
          */
-        public static final String UPDATABLE_DRIVER_PRODUCTION_DENYLIST =
-                "updatable_driver_production_denylist";
+        public static final String GAME_DRIVER_BLACKLIST = "game_driver_blacklist";
 
         /**
-         * List of denylists, each denylist is a denylist for a specific version of
-         * updatable production driver.
+         * List of blacklists, each blacklist is a blacklist for a specific version of Game Driver.
          * @hide
          */
-        public static final String UPDATABLE_DRIVER_PRODUCTION_DENYLISTS =
-                "updatable_driver_production_denylists";
+        public static final String GAME_DRIVER_BLACKLISTS = "game_driver_blacklists";
 
         /**
-         * Apps on the allowlist that are allowed to use updatable production driver.
+         * Apps on the whitelist that are allowed to use Game Driver.
          * The string is a list of application package names, seperated by comma.
          * i.e. <apk1>,<apk2>,...,<apkN>
          * @hide
          */
-        public static final String UPDATABLE_DRIVER_PRODUCTION_ALLOWLIST =
-                "updatable_driver_production_allowlist";
+        public static final String GAME_DRIVER_WHITELIST = "game_driver_whitelist";
 
         /**
-         * List of libraries in sphal accessible by updatable driver
+         * List of libraries in sphal accessible by Game Driver
          * The string is a list of library names, separated by colon.
          * i.e. <lib1>:<lib2>:...:<libN>
          * @hide
          */
-        public static final String UPDATABLE_DRIVER_SPHAL_LIBRARIES =
-                "updatable_driver_sphal_libraries";
+        public static final String GAME_DRIVER_SPHAL_LIBRARIES = "game_driver_sphal_libraries";
 
         /**
          * Ordered GPU debug layer list for Vulkan
@@ -12818,7 +12824,7 @@ public final class Settings {
         @UnsupportedAppUsage
         public static final int ZEN_MODE_NO_INTERRUPTIONS = 2;
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final int ZEN_MODE_ALARMS = 3;
 
         /** @hide */ public static String zenModeToString(int mode) {
@@ -12881,15 +12887,15 @@ public final class Settings {
          *
          * @hide
          */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final String HEADS_UP_NOTIFICATIONS_ENABLED =
                 "heads_up_notifications_enabled";
 
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final int HEADS_UP_OFF = 0;
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static final int HEADS_UP_ON = 1;
 
         /**
@@ -13247,6 +13253,7 @@ public final class Settings {
          * @hide
          */
         @SystemApi
+        @TestApi
         public static final String AUTOFILL_COMPAT_MODE_ALLOWED_PACKAGES =
                 "autofill_compat_mode_allowed_packages";
 
@@ -13294,18 +13301,7 @@ public final class Settings {
          *
          * @hide
          */
-        @TestApi
         public static final String HIDDEN_API_POLICY = "hidden_api_policy";
-
-         /**
-         * Flag for forcing {@link com.android.server.compat.OverrideValidatorImpl}
-         * to consider this a non-debuggable build.
-         *
-         * @hide
-         */
-        public static final String FORCE_NON_DEBUGGABLE_FINAL_BUILD_FOR_COMPAT =
-                "force_non_debuggable_final_build_for_compat";
-
 
         /**
          * Current version of signed configuration applied.
@@ -13382,7 +13378,7 @@ public final class Settings {
         public static final String[] LEGACY_RESTORE_SETTINGS = {
         };
 
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         private static final ContentProviderHolder sProviderHolder =
                 new ContentProviderHolder(CONTENT_URI);
 
@@ -13432,7 +13428,7 @@ public final class Settings {
         }
 
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static String getStringForUser(ContentResolver resolver, String name,
                 int userHandle) {
             if (MOVED_TO_SECURE.contains(name)) {
@@ -13582,7 +13578,7 @@ public final class Settings {
         }
 
         /** @hide */
-        @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+        @UnsupportedAppUsage
         public static boolean putStringForUser(ContentResolver resolver,
                 String name, String value, int userHandle) {
             return putStringForUser(resolver, name, value, null, false, userHandle,
@@ -14420,17 +14416,6 @@ public final class Settings {
          */
         public static final String NR_NSA_TRACKING_SCREEN_OFF_MODE =
                 "nr_nsa_tracking_screen_off_mode";
-
-        /**
-         * Used to enable / disable the Restricted Networking Mode in which network access is
-         * restricted to apps holding the CONNECTIVITY_USE_RESTRICTED_NETWORKS permission.
-         *
-         * Values are:
-         * 0: disabled
-         * 1: enabled
-         * @hide
-         */
-        public static final String RESTRICTED_NETWORKING_MODE = "restricted_networking_mode";
     }
 
     /**
@@ -15064,7 +15049,7 @@ public final class Settings {
      * callingPackage, a negative result will be returned.
      * @hide
      */
-    @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
+    @UnsupportedAppUsage
     public static boolean isCallingPackageAllowedToWriteSettings(Context context, int uid,
             String callingPackage, boolean throwException) {
         return isCallingPackageAllowedToPerformAppOpsProtectedOperation(context, uid,

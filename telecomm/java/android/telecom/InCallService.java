@@ -680,7 +680,6 @@ public abstract class InCallService extends Service {
     public static abstract class VideoCall {
 
         /** @hide */
-        @SuppressWarnings("HiddenAbstractMethod")
         public abstract void destroy();
 
         /**

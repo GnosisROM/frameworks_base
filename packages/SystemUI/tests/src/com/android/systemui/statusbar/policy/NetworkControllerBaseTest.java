@@ -45,6 +45,7 @@ import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.provider.Settings;
 import android.provider.Settings.Global;
+import android.telephony.CdmaEriInformation;
 import android.telephony.CellSignalStrength;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PhoneStateListener;
@@ -118,6 +119,8 @@ public class NetworkControllerBaseTest extends SysuiTestCase {
     private NetworkCapabilities mNetCapabilities;
     private ConnectivityManager.NetworkCallback mNetworkCallback;
 
+    private CdmaEriInformation mEriInformation;
+
     @Rule
     public TestWatcher failWatcher = new TestWatcher() {
         @Override
@@ -178,6 +181,11 @@ public class NetworkControllerBaseTest extends SysuiTestCase {
         doReturn(TelephonyManager.NETWORK_TYPE_LTE).when(mTelephonyDisplayInfo).getNetworkType();
         doReturn(TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE).when(mTelephonyDisplayInfo)
                 .getOverrideNetworkType();
+
+        mEriInformation = new CdmaEriInformation(CdmaEriInformation.ERI_OFF,
+                CdmaEriInformation.ERI_ICON_MODE_NORMAL);
+        when(mMockTm.getCdmaEriInformation()).thenReturn(mEriInformation);
+
         mConfig = new Config();
         mConfig.hspaDataDistinguishable = true;
         mCallbackHandler = mock(CallbackHandler.class);
@@ -300,8 +308,9 @@ public class NetworkControllerBaseTest extends SysuiTestCase {
     }
 
     public void setCdmaRoaming(boolean isRoaming) {
-        when(mMockTm.getCdmaEnhancedRoamingIndicatorDisplayNumber()).thenReturn(
-                isRoaming ? TelephonyManager.ERI_ON : TelephonyManager.ERI_OFF);
+        mEriInformation.setEriIconIndex(isRoaming ?
+                CdmaEriInformation.ERI_ON : CdmaEriInformation.ERI_OFF);
+        when(mMockTm.getCdmaEriInformation()).thenReturn(mEriInformation);
     }
 
     public void setVoiceRegState(int voiceRegState) {
