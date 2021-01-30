@@ -4867,6 +4867,34 @@ public final class Settings {
         public static final String ADVANCED_REBOOT = "advanced_reboot";
 
         /**
+         * Whether to use the custom quick unlock screen control
+         * @hide
+         */
+        public static final String LOCKSCREEN_QUICK_UNLOCK_CONTROL =
+                "lockscreen_quick_unlock_control";
+
+        /**
+        /***************************
+         * Gnosis System Settings end
+         ***************************/
+        private static final int BOOLEAN_VALIDATOR = 0;
+        private static final int ANY_INTEGER_VALIDATOR = 1;
+        private static final int ANY_STRING_VALIDATOR = 2;
+        /**
+         * SettingsBackupAgent will combine its list with this so we dont need
+         * to add new things into SettingsProvider SystemSettingsValidators
+         * we cant use Validators interface so use a simple integer mapping
+         * BOOLEAN_VALIDATOR == 0
+         * ANY_INTEGER_VALIDATOR == 1
+         * ANY_STRING_VALIDATOR == 2
+         * @hide
+         */
+        public static final Map<String, Integer> GNOSIS_SETTINGS_VALIDATORS = new ArrayMap<>();
+        static {
+            GNOSIS_SETTINGS_VALIDATORS.put(LOCKSCREEN_QUICK_UNLOCK_CONTROL, BOOLEAN_VALIDATOR);
+        }
+
+        /**
          * These are all hidden system settings.
          *
          * @hide
