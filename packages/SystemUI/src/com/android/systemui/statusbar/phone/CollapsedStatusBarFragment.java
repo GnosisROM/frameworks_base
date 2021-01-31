@@ -42,6 +42,8 @@ import com.android.systemui.BatteryMeterView;
 import com.android.systemui.Dependency;
 import com.android.systemui.Interpolators;
 import com.android.systemui.R;
+import com.android.systemui.plugins.DarkIconDispatcher;
+import com.android.systemui.plugins.DarkIconDispatcher.DarkReceiver;
 import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.StatusBarState;
@@ -176,6 +178,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         showSystemIconArea(false);
         Logo = (ImageView)mStatusBar.findViewById(R.id.status_bar_logo);
         LogoRight = (ImageView)mStatusBar.findViewById(R.id.status_bar_logo_right);
+        Dependency.get(DarkIconDispatcher.class).addDarkReceiver(Logo);
+        Dependency.get(DarkIconDispatcher.class).addDarkReceiver(LogoRight);
         showClock(false);
         initEmergencyCryptkeeperText();
         initOperatorName();
@@ -214,6 +218,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         if (mBatteryMeterView != null) {
             mBatteryMeterView.removeCallback(mBatteryMeterViewCallback);
         }
+        Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(Logo);
+        Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(LogoRight);
     }
 
     public void initNotificationIconArea(NotificationIconAreaController
