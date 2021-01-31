@@ -66,6 +66,7 @@ import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentCallbacks2;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -73,6 +74,7 @@ import android.content.pm.IPackageManager;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.media.AudioAttributes;
@@ -170,6 +172,7 @@ import com.android.systemui.plugins.statusbar.NotificationSwipeActionHelper.Snoo
 import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.qs.QSFragment;
 import com.android.systemui.qs.QSPanel;
+import com.android.systemui.qs.QuickStatusBarHeader;
 import com.android.systemui.recents.Recents;
 import com.android.systemui.recents.ScreenPinningRequest;
 import com.android.systemui.shared.plugins.PluginManager;
@@ -411,6 +414,7 @@ public class StatusBar extends SystemUI implements DemoMode,
     private final RemoteInputQuickSettingsDisabler mRemoteInputQuickSettingsDisabler;
 
     private View mReportRejectedTouch;
+    private View mQSBarHeader;
 
     private boolean mExpandedVisible;
 
@@ -892,6 +896,9 @@ public class StatusBar extends SystemUI implements DemoMode,
         mAppFullscreen = result.mAppFullscreen;
         mAppImmersive = result.mAppImmersive;
 
+        mCustomSettingsObserver.observe();
+        mCustomSettingsObserver.update();
+
         // StatusBarManagerService has a back up of IME token and it's restored here.
         setImeWindowStatus(mDisplayId, result.mImeToken, result.mImeWindowVis,
                 result.mImeBackDisposition, result.mShowImeSwitcher);
@@ -1192,6 +1199,7 @@ public class StatusBar extends SystemUI implements DemoMode,
             fragmentHostManager.addTagListener(QS.TAG, (tag, f) -> {
                 QS qs = (QS) f;
                 if (qs instanceof QSFragment) {
+                    mQSBarHeader = ((QSFragment) qs).getHeader();
                     mQSPanel = ((QSFragment) qs).getQsPanel();
                     mQSPanel.setBrightnessMirror(mBrightnessMirrorController);
                 }
@@ -1946,6 +1954,38 @@ public class StatusBar extends SystemUI implements DemoMode,
     @VisibleForTesting
     void setUserSetupForTest(boolean userSetup) {
         mUserSetup = userSetup;
+    }
+
+    private CustomSettingsObserver mCustomSettingsObserver = new CustomSettingsObserver(mHandler);
+    private class CustomSettingsObserver extends ContentObserver {
+
+        CustomSettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_SHOW_BATTERY_PERCENT),
+                    false, this, UserHandle.USER_ALL);
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+             if (uri.equals(Settings.System.getUriFor(Settings.System.QS_SHOW_BATTERY_PERCENT))) {
+                setQsBatteryPercentMode();
+            }
+        }
+
+        public void update() {
+            setQsBatteryPercentMode();
+        }
+    }
+
+    private void setQsBatteryPercentMode() {
+        if (mQSBarHeader != null) {
+            ((QuickStatusBarHeader) mQSBarHeader).setBatteryPercentMode();
+        }
     }
 
     /**
