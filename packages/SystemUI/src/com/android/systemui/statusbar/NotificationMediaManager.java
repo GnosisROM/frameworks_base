@@ -93,7 +93,7 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable 
     public static final boolean DEBUG_MEDIA = false;
 
     private static final String LOCKSCREEN_MEDIA_METADATA =
-            Settings.Secure.LOCKSCREEN_MEDIA_METADATA;
+            Settings.System.LOCKSCREEN_MEDIA_METADATA;
 
     private final StatusBarStateController mStatusBarStateController
             = Dependency.get(StatusBarStateController.class);
@@ -131,6 +131,7 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable 
     private final Lazy<StatusBar> mStatusBarLazy;
     private final MediaArtworkProcessor mMediaArtworkProcessor;
     private final Set<AsyncTask<?, ?, ?>> mProcessArtworkTasks = new ArraySet<>();
+    private float mLockscreenMediaBlur;
 
     protected NotificationPresenter mPresenter;
     private MediaController mMediaController;
@@ -593,7 +594,9 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable 
             mScrimController.setHasBackdrop(hasArtwork);
         }
 
-        if ((hasArtwork || DEBUG_MEDIA_FAKE_ARTWORK)
+        // show artwork only if the media is playing
+        if (PlaybackState.STATE_PLAYING == getMediaControllerPlaybackState(mMediaController)
+                && (hasArtwork || DEBUG_MEDIA_FAKE_ARTWORK)
                 && (mStatusBarStateController.getState() != StatusBarState.SHADE || allowWhenShade)
                 &&  mBiometricUnlockController != null && mBiometricUnlockController.getMode()
                         != BiometricUnlockController.MODE_WAKE_AND_UNLOCK_PULSING
@@ -728,7 +731,13 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable 
     };
 
     private Bitmap processArtwork(Bitmap artwork) {
-        return mMediaArtworkProcessor.processArtwork(mContext, artwork);
+        return mMediaArtworkProcessor.processArtwork(mContext, artwork, mLockscreenMediaBlur);
+    }
+
+    public void setLockScreenMediaBlurLevel() {
+        mLockscreenMediaBlur = (float) Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.LOCKSCREEN_MEDIA_BLUR, 25,
+                UserHandle.USER_CURRENT);
     }
 
     @MainThread
