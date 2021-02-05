@@ -24,9 +24,7 @@ import android.annotation.MainThread;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.Notification;
-import android.content.ContentResolver;
 import android.content.Context;
-import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
@@ -38,7 +36,6 @@ import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.os.AsyncTask;
-import android.os.Handler;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.provider.DeviceConfig;
@@ -268,9 +265,6 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable 
         deviceConfig.addOnPropertiesChangedListener(DeviceConfig.NAMESPACE_SYSTEMUI,
                 mContext.getMainExecutor(),
                 mPropertiesChangedListener);
-        Handler mHandler = new Handler();
-        SettingsObserver settingsObserver = new SettingsObserver(mHandler);
-        settingsObserver.observe();
 
         final TunerService tunerService = Dependency.get(TunerService.class);
         tunerService.addTunable(this, LOCKSCREEN_MEDIA_METADATA);
@@ -282,36 +276,6 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable 
             mShowMediaMetadata = TunerService.parseIntegerSwitch(newValue, false);
             dispatchUpdateMediaMetaData(false /* changed */, true /* allowAnimation */);
         }
-    }
-
-    private boolean mLockscreenArt;
-
-    class SettingsObserver extends ContentObserver {
-        SettingsObserver(Handler handler) {
-            super(handler);
-        }
-
-        void observe() {
-            ContentResolver resolver = mContext.getContentResolver();
-            // Observe all users' changes
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.LOCKSCREEN_MEDIA_BLUR), false, this,
-                    UserHandle.USER_ALL);
-            updateSettings();
-        }
-
-        @Override 
-        public void onChange(boolean selfChange) {
-            updateSettings();
-        }
-    }
-
-    public void updateSettings() {
-        ContentResolver resolver = mContext.getContentResolver();
-        mLockscreenArt =  Settings.System.getIntForUser(resolver,
-                Settings.System.LOCKSCREEN_MEDIA_BLUR, 1,
-                UserHandle.USER_CURRENT) == 1;
-
     }
 
     private void removeEntry(NotificationEntry entry) {
