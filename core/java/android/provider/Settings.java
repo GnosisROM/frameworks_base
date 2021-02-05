@@ -4797,18 +4797,6 @@ public final class Settings {
           */
         public static final String STATUS_BAR_SHOW_BATTERY_PERCENT = "status_bar_show_battery_percent";
 
-        /** Whether to show lockscreen media art
-         *
-         * @hide
-         */
-        public static final String LOCKSCREEN_MEDIA_METADATA = "lockscreen_media_metadata";
-
-        /**
-         * media artwork wallpaper blur level on lockscreen
-         * @hide
-         */
-        public static final String LOCKSCREEN_MEDIA_BLUR = "lockscreen_media_blur";
-
         /**
          * Whether or not to enable multiple audio focus.
          * When enabled, requires more management by user over application playback activity,
@@ -5044,6 +5032,18 @@ public final class Settings {
          * @hide
          */
         public static final String WHEN_TO_MAKE_WIFI_CALLS = "when_to_make_wifi_calls";
+
+        /** Whether to show lockscreen media art
+         *
+         * @hide
+         */
+        public static final String LOCKSCREEN_MEDIA_METADATA = "lockscreen_media_metadata";
+
+        /**
+         * media artwork wallpaper blur level on lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_MEDIA_BLUR = "lockscreen_media_blur";
 
         // Settings moved to Settings.Secure
 

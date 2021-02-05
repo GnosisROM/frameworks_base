@@ -84,6 +84,7 @@ class MediaArtworkProcessor @Inject constructor() {
                 outBitmap = inBitmap.copy(Bitmap.Config.ARGB_8888, true/*mutable*/)
             }
             val swatch = MediaNotificationProcessor.findBackgroundSwatch(artwork)
+
             val canvas = Canvas(outBitmap)
             canvas.drawColor(ColorUtils.setAlphaComponent(swatch.rgb, COLOR_ALPHA))
             return outBitmap
