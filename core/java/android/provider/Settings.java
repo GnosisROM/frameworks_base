@@ -4767,6 +4767,12 @@ public final class Settings {
         public static final String STATUS_BAR_LOGO = "status_bar_logo";
 
         /**
+         * Statusbar logo custom style
+         * @hide
+         */
+        public static final String STATUS_BAR_LOGO_STYLE = "status_bar_logo_style";
+
+        /**
          * Setting to determine whether or not to show the battery percentage in the status bar.
          *    0 - Don't show percentage
          *    1 - Show percentage

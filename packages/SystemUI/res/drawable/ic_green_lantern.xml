@@ -23,5 +23,5 @@
         android:tint="?android:attr/colorControlNormal"
         android:width="24dip"
         android:height="24dip"
-        android:drawable="@drawable/ic_status_bar_logo" />
+        android:drawable="@drawable/ic_green_lantern_logo" />
 </layer-list>

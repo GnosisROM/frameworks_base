@@ -70,12 +70,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout="@layout/operator_name" />
-
-                <ImageView
+                    
+                    <com.android.systemui.statusbar.custom.LogoIcon
                     android:id="@+id/status_bar_logo"
                     android:layout_width="24dip"
                     android:layout_height="24dip"
-                    android:src="@drawable/status_bar_logo"
                     android:scaleType="centerInside"
                     android:paddingEnd="@dimen/status_bar_left_clock_end_padding"
                     android:layout_gravity="center"
