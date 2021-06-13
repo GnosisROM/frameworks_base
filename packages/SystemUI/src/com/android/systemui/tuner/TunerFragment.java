@@ -50,6 +50,9 @@ public class TunerFragment extends PreferenceFragment {
             "nav_bar",
             "lockscreen",
             "picture_in_picture",
+            "volume_and_do_not_disturb",
+            "doze",
+            KEY_PLUGINS,
     };
 
     private static final int MENU_REMOVE = Menu.FIRST + 1;
@@ -80,13 +83,6 @@ public class TunerFragment extends PreferenceFragment {
             for (int i = 0; i < DEBUG_ONLY.length; i++) {
                 Preference preference = findPreference(DEBUG_ONLY[i]);
                 if (preference != null) getPreferenceScreen().removePreference(preference);
-            }
-        }
-
-        if (Settings.Secure.getInt(getContext().getContentResolver(), SETTING_SEEN_TUNER_WARNING,
-                0) == 0) {
-            if (getFragmentManager().findFragmentByTag(WARNING_TAG) == null) {
-                new TunerWarningFragment().show(getFragmentManager(), WARNING_TAG);
             }
         }
     }

@@ -35,6 +35,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
 import com.android.internal.logging.MetricsLogger;
@@ -95,6 +96,7 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
 
     @Nullable
     protected View mBrightnessView;
+    protected ImageButton mAutoBrightnessView;
     @Nullable
     private BrightnessController mBrightnessController;
 
@@ -108,6 +110,7 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
 
     protected boolean mExpanded;
     protected boolean mListening;
+    private boolean mIsAutomaticBrightnessAvailable = false;
 
     private QSDetail.Callback mCallback;
     private final DumpManager mDumpManager;
@@ -227,7 +230,12 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
             R.layout.quick_settings_brightness_dialog, this, false);
         addView(mBrightnessView);
         mBrightnessController = new BrightnessController(getContext(),
+                findViewById(R.id.brightness_icon),
                 findViewById(R.id.brightness_slider), mBroadcastDispatcher);
+        mAutoBrightnessView = findViewById(R.id.brightness_icon);
+
+        mIsAutomaticBrightnessAvailable = getResources().getBoolean(
+                com.android.internal.R.bool.config_automatic_brightness_available);
     }
 
     protected QSTileLayout createRegularTileLayout() {
@@ -377,6 +385,10 @@ public class QSPanel extends LinearLayout implements Tunable, Callback, Brightne
     public void onTuningChanged(String key, String newValue) {
         if (QS_SHOW_BRIGHTNESS.equals(key) && mBrightnessView != null) {
             updateViewVisibilityForTuningValue(mBrightnessView, newValue);
+
+            if (mIsAutomaticBrightnessAvailable) {
+                updateViewVisibilityForTuningValue(mAutoBrightnessView, newValue);
+            }
         }
     }
 
