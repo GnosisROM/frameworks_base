@@ -29,22 +29,39 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.ContentResolver;
 import android.graphics.Insets;
 import android.graphics.Rect;
+import android.os.Handler;
+import android.provider.Settings;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.text.method.TextKeyListener;
 import android.util.AttributeSet;
+import android.view.KeyEvent;
+import android.view.View;
 import android.view.WindowInsetsAnimationControlListener;
 import android.view.WindowInsetsAnimationController;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
+import android.view.inputmethod.InputMethodInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.internal.widget.LockscreenCredential;
+import com.android.internal.widget.LockPatternUtils.RequestThrottledException;
 import com.android.internal.widget.TextViewInputDisabler;
 import com.android.systemui.R;
 import com.android.systemui.animation.Interpolators;
+
+import java.util.List;
 /**
  * Displays an alphanumeric (latin-1) key entry for the user to enter
  * an unlock password
@@ -64,6 +81,8 @@ public class KeyguardPasswordView extends KeyguardAbsKeyInputView {
 
     private Interpolator mLinearOutSlowInInterpolator;
     private Interpolator mFastOutLinearInInterpolator;
+
+    private final int userId = KeyguardUpdateMonitor.getCurrentUser();
 
     public KeyguardPasswordView(Context context) {
         this(context, null);

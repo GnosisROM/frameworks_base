@@ -4795,6 +4795,18 @@ public final class Settings {
         @Deprecated
         public static final String WINDOW_ANIMATION_SCALE = Global.WINDOW_ANIMATION_SCALE;
 
+        /** Whether to show lockscreen media art
+         *
+         * @hide
+         */
+        public static final String LOCKSCREEN_MEDIA_METADATA = "lockscreen_media_metadata";
+
+        /**
+         * media artwork wallpaper blur level on lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_MEDIA_BLUR = "lockscreen_media_blur";
+
         /**
          * Scaling factor for activity transition animations. Setting to 0 will disable window
          * animations.
@@ -4862,6 +4874,34 @@ public final class Settings {
          */
         @Readable
         public static final String VIBRATE_WHEN_RINGING = "vibrate_when_ringing";
+
+        /**
+         * Whether to use the custom quick unlock screen control
+         * @hide
+         */
+        public static final String LOCKSCREEN_QUICK_UNLOCK_CONTROL =
+                "lockscreen_quick_unlock_control";
+
+        /**
+        /***************************
+         * Gnosis System Settings end
+         ***************************/
+        private static final int BOOLEAN_VALIDATOR = 0;
+        private static final int ANY_INTEGER_VALIDATOR = 1;
+        private static final int ANY_STRING_VALIDATOR = 2;
+        /**
+         * SettingsBackupAgent will combine its list with this so we dont need
+         * to add new things into SettingsProvider SystemSettingsValidators
+         * we cant use Validators interface so use a simple integer mapping
+         * BOOLEAN_VALIDATOR == 0
+         * ANY_INTEGER_VALIDATOR == 1
+         * ANY_STRING_VALIDATOR == 2
+         * @hide
+         */
+        public static final Map<String, Integer> GNOSIS_SETTINGS_VALIDATORS = new ArrayMap<>();
+        static {
+            GNOSIS_SETTINGS_VALIDATORS.put(LOCKSCREEN_QUICK_UNLOCK_CONTROL, BOOLEAN_VALIDATOR);
+        }
 
         /**
          * When {@code 1}, Telecom enhanced call blocking functionality is enabled.  When
@@ -9611,6 +9651,18 @@ public final class Settings {
         public static final String INSTANT_APPS_ENABLED = "instant_apps_enabled";
 
         /**
+         * Select from different navigation bar layouts
+         * @hide
+         */
+        public static final String NAVBAR_LAYOUT_VIEWS = "navbar_layout_views";
+
+        /**
+         * Inverse navigation bar layout
+         * @hide
+         */
+        public static final String NAVBAR_INVERSE_LAYOUT = "navbar_inverse_layout";
+
+        /**
          * Has this pairable device been paired or upgraded from a previously paired system.
          * @hide
          */
@@ -9867,6 +9919,12 @@ public final class Settings {
         @Readable
         public static final String BACK_GESTURE_INSET_SCALE_RIGHT =
                 "back_gesture_inset_scale_right";
+
+        /**
+         * Position of gesture bar length slider.
+         * @hide
+         */
+        public static final String GESTURE_NAVBAR_LENGTH = "gesture_navbar_length";
 
         /**
          * Current provider of proximity-based sharing services.
